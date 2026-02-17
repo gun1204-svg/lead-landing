@@ -23,6 +23,11 @@ export const metadata: Metadata = {
   description:
     "비엔파트너스 마케팅 상담 랜딩페이지. 네이버 광고, 구글 광고, 퍼포먼스 마케팅 전문.",
 
+  icons: {
+  icon: "/icon.png",
+  apple: "/apple-icon.png",
+  },
+
   keywords: [
     "비엔파트너스",
     "Bienpartners",
