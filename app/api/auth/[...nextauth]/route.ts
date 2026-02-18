@@ -11,18 +11,12 @@ function readAdminUsers(): AdminUser[] {
   try {
     const raw = process.env.ADMIN_USERS;
     if (!raw) return [];
-
     const parsed = JSON.parse(raw);
-
     if (!Array.isArray(parsed)) return [];
-
     return parsed.filter(
-      (u) =>
-        u &&
-        typeof u.username === "string" &&
-        typeof u.passwordHash === "string"
+      (u) => u && typeof u.username === "string" && typeof u.passwordHash === "string"
     );
-  } catch (err) {
+  } catch {
     console.log("ADMIN_USERS JSON PARSE ERROR");
     return [];
   }
@@ -46,36 +40,42 @@ const handler = NextAuth({
         console.log("USERS COUNT:", users.length);
 
         if (!username || !password) return null;
-        if (!users.length) {
-          console.log("NO ADMIN_USERS FOUND");
-          return null;
-        }
+        if (!users.length) return null;
 
-        const user = users.find(
-          (u) => u.username.toLowerCase() === username
-        );
-
-        if (!user) {
-          console.log("USERNAME MISMATCH");
-          return null;
-        }
+        const user = users.find((u) => u.username.toLowerCase() === username);
+        if (!user) return null;
 
         const ok = await bcrypt.compare(password, user.passwordHash);
-
         console.log("PW MATCH:", ok);
-
         if (!ok) return null;
 
-        return {
-          id: user.username,
-          name: user.username,
-        };
+        // ✅ 중요: email/name을 채워줘야 세션/미들웨어/서버에서 안정적으로 인식됨
+        return { id: user.username, name: user.username, email: user.username };
       },
     }),
   ],
+
   session: { strategy: "jwt" },
   secret: process.env.NEXTAUTH_SECRET,
   pages: { signIn: "/admin/login" },
+
+  // ✅ JWT/Session에 user 정보 확실히 주입
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.name = (user as any).name;
+        token.email = (user as any).email;
+        token.sub = (user as any).id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      session.user = session.user || ({} as any);
+      (session.user as any).name = token.name;
+      (session.user as any).email = token.email;
+      return session;
+    },
+  },
 });
 
 export { handler as GET, handler as POST };
