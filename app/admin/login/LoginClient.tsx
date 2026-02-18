@@ -13,11 +13,16 @@ export default function LoginClient() {
   const [password, setPassword] = useState("");
 
   async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const res = await signIn("credentials", { email, password, redirect: false });
-    if (res?.ok) router.push(callbackUrl);
-    else alert("로그인 실패");
-  }
+  e.preventDefault();
+
+  // NextAuth가 redirect를 처리하도록 맡긴다 (쿠키 반영 안정적)
+  await signIn("credentials", {
+    email,
+    password,
+    callbackUrl,   // /admin/leads 등
+    redirect: true,
+  });
+}
 
   return (
     <main style={{ maxWidth: 420, margin: "0 auto", padding: 24 }}>
