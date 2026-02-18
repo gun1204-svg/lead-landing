@@ -15,14 +15,14 @@ export default function LoginClient() {
   async function onSubmit(e: React.FormEvent) {
   e.preventDefault();
 
-  // NextAuth가 redirect를 처리하도록 맡긴다 (쿠키 반영 안정적)
+  // ✅ 쿠키/세션 반영이 가장 안정적인 방식: NextAuth가 redirect 처리
   await signIn("credentials", {
-    email,
+    email,                 // 여기 값이 "admin" (아이디)
     password,
-    callbackUrl,   // /admin/leads 등
+    callbackUrl: "/admin/leads",
     redirect: true,
-  });
-}
+    });
+    }
 
   return (
     <main style={{ maxWidth: 420, margin: "0 auto", padding: 24 }}>
