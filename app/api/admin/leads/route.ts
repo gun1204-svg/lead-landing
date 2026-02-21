@@ -2,14 +2,24 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET() {
-  const session: any = await getServerSession();
-  if (!session?.user?.email) return NextResponse.json({ ok: false }, { status: 401 });
+  const session = await getServerSession(authOptions);
 
-  const landingKey = session?.user?.landing_key;
+  if (!session?.user?.email) {
+    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  const landingKey = (session.user as any)?.landing_key ?? null;
   if (!landingKey) {
-    return NextResponse.json({ ok: false, error: "Missing landing_key" }, { status: 403 });
+    return NextResponse.json(
+      { ok: false, error: "Missing landing_key" },
+      { status: 403 }
+    );
   }
 
   const { data, error } = await supabaseAdmin
