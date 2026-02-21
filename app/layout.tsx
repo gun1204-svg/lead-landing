@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Providers from "./providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,8 +25,8 @@ export const metadata: Metadata = {
     "비엔파트너스 마케팅 상담 랜딩페이지. 네이버 광고, 구글 광고, 퍼포먼스 마케팅 전문.",
 
   icons: {
-  icon: "/icon.png",
-  apple: "/apple-icon.png",
+    icon: "/icon.png",
+    apple: "/apple-icon.png",
   },
 
   keywords: [
@@ -74,10 +75,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        {/* ✅ NextAuth SessionProvider 적용 */}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
