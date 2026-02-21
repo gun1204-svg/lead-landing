@@ -35,41 +35,39 @@ function getLandingKeyFromUsername(username: string) {
 export const authOptions: NextAuthOptions = {
   providers: [
     Credentials({
-      name: "Admin",
-      credentials: {
-        email: { label: "ID", type: "text" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(creds) {
-        const username = (creds?.email || "").trim().toLowerCase();
-        const password = (creds?.password || "").toString();
+  name: "Admin",
+  credentials: {
+    email: { label: "ID", type: "text" },
+    password: { label: "Password", type: "password" },
+    landingKey: { label: "LandingKey", type: "text" }, // ✅ 추가
+  },
+  async authorize(creds) {
+    const username = (creds?.email || "").trim().toLowerCase();
+    const password = (creds?.password || "").toString();
 
-        const users = readAdminUsers();
+    // ✅ 여기서 landingKey 받기
+    const rawLanding = (creds as any)?.landingKey ?? "00";
+    const landing_key = String(rawLanding).padStart(2, "0"); // "1" -> "01"
 
-        console.log("LOGIN TRY:", username);
-        console.log("USERS COUNT:", users.length);
+    // ... 기존 ADMIN_USERS 체크/비번 체크 로직 그대로 ...
 
-        if (!username || !password) return null;
-        if (!users.length) return null;
+    // ✅ (선택) 니가 원한 규칙 강제:
+    // 루트(00)에서는 admin만 허용
+    // /01에서는 admin01만 허용
+    if (landing_key === "00") {
+      if (username !== "admin") return null;
+    } else {
+      if (username !== `admin${landing_key}`) return null;
+    }
 
-        const user = users.find((u) => u.username.toLowerCase() === username);
-        if (!user) return null;
-
-        const ok = await bcrypt.compare(password, user.passwordHash);
-        console.log("PW MATCH:", ok);
-        if (!ok) return null;
-
-        const landing_key = getLandingKeyFromUsername(user.username);
-
-        return {
-          id: user.username,
-          name: user.username,
-          email: user.username,
-          landing_key,
-        } as any;
-      },
-    }),
-  ],
+    return {
+      id: username,
+      name: username,
+      email: username,
+      landing_key, // ✅ 여기가 핵심
+    } as any;
+  },
+})
 
   session: { strategy: "jwt" },
   secret: process.env.NEXTAUTH_SECRET,

@@ -1,12 +1,5 @@
-import { Suspense } from "react";
-import LoginClient from "./LoginClient";
+import AdminLoginForm from "@/components/AdminLoginForm";
 
-export const dynamic = "force-dynamic";
-
-export default function AdminLoginPage() {
-  return (
-    <Suspense fallback={<div style={{ padding: 24 }}>불러오는 중...</div>}>
-      <LoginClient />
-    </Suspense>
-  );
+export default function Page() {
+  return <AdminLoginForm landingKey="00" callbackUrl="/admin/leads" />;
 }
