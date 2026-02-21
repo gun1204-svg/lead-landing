@@ -43,7 +43,7 @@ export async function PATCH(
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true, id, updated: data }, { status: 200 });
+    return NextResponse.json({ ok: true, data }, { status: 200 });
   } catch (e: any) {
     return NextResponse.json(
       { ok: false, error: e?.message ?? "Unknown error" },
