@@ -22,6 +22,18 @@ function readAdminUsers(): AdminUser[] {
   }
 }
 
+// ✅ admin01 -> "01" / admin02 -> "02" 처럼 아이디에서 landing_key 뽑기
+function getLandingKeyFromUsername(username: string) {
+  const u = (username || "").trim().toLowerCase();
+
+  // admin01, admin1, admin001 등 숫자 부분을 뽑음
+  const m = u.match(/^admin(\d+)$/);
+  if (!m) return null;
+
+  // "1" -> "01"로 보정하고 싶으면 padStart(2,'0')
+  return m[1].padStart(2, "0"); // admin1 -> "01"
+}
+
 const handler = NextAuth({
   providers: [
     Credentials({
@@ -49,8 +61,18 @@ const handler = NextAuth({
         console.log("PW MATCH:", ok);
         if (!ok) return null;
 
-        // ✅ 중요: email/name을 채워줘야 세션/미들웨어/서버에서 안정적으로 인식됨
-        return { id: user.username, name: user.username, email: user.username };
+        // ✅ 여기서 landing_key를 계산해서 user에 넣는다
+        const landing_key = getLandingKeyFromUsername(user.username);
+
+        // landing_key가 꼭 있어야만 로그인 허용하고 싶으면 아래 주석 해제
+        // if (!landing_key) return null;
+
+        return {
+          id: user.username,
+          name: user.username,
+          email: user.username, // 기존 구조 유지
+          landing_key,          // ✅ 추가
+        } as any;
       },
     }),
   ],
@@ -59,13 +81,15 @@ const handler = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
   pages: { signIn: "/admin/login" },
 
-  // ✅ JWT/Session에 user 정보 확실히 주입
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.name = (user as any).name;
         token.email = (user as any).email;
         token.sub = (user as any).id;
+
+        // ✅ token에 landing_key 저장
+        token.landing_key = (user as any).landing_key ?? null;
       }
       return token;
     },
@@ -73,6 +97,10 @@ const handler = NextAuth({
       session.user = session.user || ({} as any);
       (session.user as any).name = token.name;
       (session.user as any).email = token.email;
+
+      // ✅ session.user에 landing_key 내려주기
+      (session.user as any).landing_key = (token as any).landing_key ?? null;
+
       return session;
     },
   },
