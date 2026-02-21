@@ -2,11 +2,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+function getSupabaseAdmin() {
+  // ✅ 둘 중 하나만 있어도 OK
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url) throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_URL");
+  if (!key) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY");
+
+  return createClient(url, key, { auth: { persistSession: false } });
+}
 
 export async function PATCH(
   request: NextRequest,
@@ -15,6 +20,8 @@ export async function PATCH(
   const { id } = await params;
 
   try {
+    const supabaseAdmin = getSupabaseAdmin();
+
     const body = await request.json().catch(() => ({}));
     const status = body?.status;
 
@@ -45,7 +52,6 @@ export async function PATCH(
   }
 }
 
-// (선택) 프리플라이트/헬스용
 export async function OPTIONS() {
   return NextResponse.json({}, { status: 200 });
 }
