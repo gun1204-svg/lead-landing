@@ -10,14 +10,26 @@ function fillTemplate(tpl: string, vars: Record<string, string>) {
   return tpl.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? "");
 }
 
+// ✅ landing_key 정규화: "1" -> "01", 없으면 "00"
+function normalizeLandingKey(v: unknown) {
+  const s = String(v ?? "").trim();
+  if (!s) return "00";
+  if (/^\d{1,2}$/.test(s)) return s.padStart(2, "0");
+  return "00";
+}
+
 export async function POST(req: Request) {
-  const { name, phone, utm } = await req.json();
+  // ✅ landing_key를 body에서 같이 받기
+  const { name, phone, utm, landing_key } = await req.json();
 
   const cleanName = (name || "").trim();
   const cleanPhone = normalizePhone(phone || "");
   if (!cleanName || !cleanPhone) {
     return NextResponse.json({ ok: false, error: "INVALID" }, { status: 400 });
   }
+
+  // ✅ 최종 landing_key 결정
+  const lk = normalizeLandingKey(landing_key);
 
   // 설정 읽기
   const { data: settings, error: sErr } = await supabaseAdmin
@@ -38,6 +50,10 @@ export async function POST(req: Request) {
       {
         name: cleanName,
         phone: cleanPhone,
+
+        // ✅ landing_key 저장 (핵심)
+        landing_key: lk,
+
         source: utm?.source || null,
         utm_source: utm?.source || null,
         utm_campaign: utm?.campaign || null,
