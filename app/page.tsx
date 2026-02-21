@@ -30,9 +30,9 @@ export default function Home() {
     };
 
     const res = await fetch("/api/leads", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, phone, utm }),
+     method: "POST",
+     headers: { "Content-Type": "application/json" },
+     body: JSON.stringify({ name, phone, utm, landing_key: "00" }), // ✅ 추가
     });
 
     if (!res.ok) {
