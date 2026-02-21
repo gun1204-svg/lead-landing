@@ -31,16 +31,29 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
         landingKey: { label: "LandingKey", type: "text" },
       },
-      async authorize(creds) {
+      async authorize(creds, req) {
         const username = (creds?.email || "").trim().toLowerCase();
         const password = (creds?.password || "").toString();
+        if (!username || !password) return null;
 
-        // ✅ landingKey는 로그인 폼에서 같이 넘어옴
-        const rawLanding = (creds as any)?.landingKey ?? "00";
-        const landing_key = String(rawLanding).padStart(2, "0");
+        // ✅ landing_key 결정: callbackUrl -> referer fallback
+        const cb = (creds as any)?.callbackUrl || "";
+        const referer = req?.headers?.get("referer") || "";
 
+        const pick = cb || referer; // cb가 비면 referer를 사용
+        let landing_key = "00";
+
+        try {
+        const u = new URL(pick, "https://www.bienptns.com");
+        const first = u.pathname.split("/")[1]; // "/01/admin/login" or "/01/admin/leads"
+        if (/^\d{1,2}$/.test(first)) landing_key = first.padStart(2, "0");
+      } catch {
+        // ignore
+      }
+
+        // ---- 기존 ADMIN_USERS 검증 그대로 ----
         const users = readAdminUsers();
-        if (!username || !password || !users.length) return null;
+        if (!users.length) return null;
 
         const user = users.find((u) => u.username.toLowerCase() === username);
         if (!user) return null;
@@ -49,9 +62,7 @@ export const authOptions: NextAuthOptions = {
         console.log("PW MATCH:", ok);
         if (!ok) return null;
 
-        // ✅ 원하는 규칙 강제
-        // 루트(00) => admin만
-        // 01 => admin01만
+        // ✅ 규칙 강제 (네 요구사항)
         if (landing_key === "00") {
           if (username !== "admin") return null;
         } else {
@@ -59,12 +70,12 @@ export const authOptions: NextAuthOptions = {
         }
 
         return {
-          id: username,
-          name: username,
-          email: username,
-          landing_key,
+         id: username,
+         name: username,
+         email: username,
+         landing_key,
         } as any;
-      },
+       }
     }),
   ], // ✅ 콤마 필수
 
