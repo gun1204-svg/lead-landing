@@ -34,57 +34,58 @@ export const authOptions: NextAuthOptions = {
       async authorize(creds, req) {
         const username = (creds?.email || "").trim().toLowerCase();
         const password = (creds?.password || "").toString();
-        if (!username || !password) return null;
 
-        // ✅ 어떤 형태의 req.headers든 안전하게 읽기
-        const getHeader = (r: any, name: string) => {
-          const h = r?.headers;
-          if (!h) return "";
-          // Headers 객체인 경우
-          if (typeof h.get === "function") return h.get(name) || "";
-          // 일반 object인 경우 (대소문자 케이스 모두)
-          return (
-            h[name] ||
-            h[name.toLowerCase()] ||
-            h[name.toUpperCase()] ||
-            h[name[0].toUpperCase() + name.slice(1)] ||
-            ""
-          );
-        };
+        console.log("LOGIN TRY:", username);
 
-        // ✅ 1순위: callbackUrl(폼에서 넘김)
-        const cb = (creds as any)?.callbackUrl || "";
-
-        // ✅ 2순위: referer(페이지 경로)
-        const referer = getHeader(req, "referer");
-
-        const pick = cb || referer;
-        let landing_key = "00";
-
-        try {
-          const u = new URL(pick, "https://www.bienptns.com");
-          const first = u.pathname.split("/")[1]; // "/01/admin/login" -> "01"
-          if (/^\d{1,2}$/.test(first)) landing_key = first.padStart(2, "0");
-        } catch {
-          // ignore
+        if (!username || !password) {
+          console.log("MISSING CREDS");
+          return null;
         }
 
-        // ---- 기존 ADMIN_USERS 검증 로직 그대로 ----
         const users = readAdminUsers();
-        if (!users.length) return null;
+        console.log("USERS COUNT:", users.length);
+        console.log("USERNAMES:", users.map(u => u.username).join(","));
 
         const user = users.find((u) => u.username.toLowerCase() === username);
-        if (!user) return null;
+        console.log("FOUND USER:", !!user);
+
+        if (!user) {
+          console.log("USER NOT FOUND");
+          return null;
+        }
 
         const ok = await bcrypt.compare(password, user.passwordHash);
         console.log("PW MATCH:", ok);
-        if (!ok) return null;
 
-        // ✅ 네 요구사항 규칙 강제
+        if (!ok) {
+          console.log("PASSWORD MISMATCH");
+          return null;
+        }
+
+        // --- landing_key 계산 부분 ---
+        const cb = (creds as any)?.callbackUrl || "";
+        console.log("CALLBACKURL:", cb);
+
+        let landing_key = "00";
+        try {
+          const u = new URL(cb, "https://www.bienptns.com");
+          const first = u.pathname.split("/")[1];
+          if (/^\d{1,2}$/.test(first)) landing_key = first.padStart(2, "0");
+        } catch {}
+
+        console.log("LANDING_KEY:", landing_key);
+
+        // --- 규칙 강제 ---
         if (landing_key === "00") {
-          if (username !== "admin") return null;
+          if (username !== "admin") {
+            console.log("RULE DENY ROOT");
+            return null;
+          }
         } else {
-          if (username !== `admin${landing_key}`) return null;
+           if (username !== `admin${landing_key}`) {
+            console.log("RULE DENY LANDING");
+            return null;
+          }
         }
 
         return {
