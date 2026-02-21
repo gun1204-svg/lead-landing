@@ -54,10 +54,21 @@ export default function AdminLeads() {
     }
 
     const json = await res.json();
-    const updated = json.data;
 
-    setRows((prev) => prev.map((r) => (r.id === id ? updated : r)));
+    if (!json?.ok || !json?.data) {
+    console.error("PATCH payload error:", json);
     setSavingId(null);
+    alert("저장 실패");
+    return;
+    }
+
+const updated = json.data;
+
+setRows((prev) =>
+  (prev ?? []).map((r) => (r?.id === id ? updated : r))
+);
+
+setSavingId(null);
   }
 
   function downloadCsv() {
