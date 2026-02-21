@@ -1,6 +1,8 @@
 // app/api/admin/leads/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getServerSession } from "next-auth";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+
 
 function getSupabaseAdmin() {
   // ✅ 둘 중 하나만 있어도 OK
@@ -54,4 +56,30 @@ export async function PATCH(
 
 export async function OPTIONS() {
   return NextResponse.json({}, { status: 200 });
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getServerSession();
+  if (!session?.user?.email) return NextResponse.json({ ok: false }, { status: 401 });
+
+  const { id } = await params;
+  if (!id) return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
+
+  // 삭제된 row를 돌려주면(UX용) select로 받는 게 좋아
+  const { data, error } = await supabaseAdmin
+    .from("leads")
+    .delete()
+    .eq("id", id)
+    .select("*")
+    .single();
+
+  if (error) {
+    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+  }
+
+  // ✅ 규격 통일
+  return NextResponse.json({ ok: true, data });
 }
