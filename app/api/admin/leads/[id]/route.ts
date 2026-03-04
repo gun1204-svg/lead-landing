@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import type { NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -19,7 +18,7 @@ function normalizeLandingKey(v: unknown) {
   return null;
 }
 
-// ✅ 너가 원하는 상태만 허용
+// ✅ 허용 상태만
 function normalizeStatus(v: unknown) {
   const s = String(v ?? "").trim().toUpperCase();
   const allowed = new Set(["NEW", "BOOKED", "CALLED", "NO_ANSWER", "INVALID"]);
@@ -32,9 +31,10 @@ function normalizeMemo(v: unknown) {
   return s.slice(0, 500);
 }
 
+// ✅ Next.js 안전 시그니처
 export async function PATCH(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  req: Request,
+  { params }: { params: { id: string } }
 ) {
   const session = await getServerSession(authOptions);
   const user = session?.user as SessionUser | undefined;
@@ -48,12 +48,12 @@ export async function PATCH(
     return NextResponse.json({ ok: false, error: "Missing landing_key" }, { status: 403 });
   }
 
-  const { id } = await context.params;
+  const id = params?.id;
   if (!id) {
     return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
   }
 
-  const body = await request.json().catch(() => ({}));
+  const body = await req.json().catch(() => ({}));
 
   const nextStatus = body?.status !== undefined ? normalizeStatus(body.status) : undefined;
   const nextMemo = body?.memo !== undefined ? normalizeMemo(body.memo) : undefined;
@@ -73,11 +73,11 @@ export async function PATCH(
     .eq("id", id)
     .single();
 
-  if (gErr) {
-    return NextResponse.json({ ok: false, error: gErr.message }, { status: 404 });
+  if (gErr || !lead) {
+    return NextResponse.json({ ok: false, error: gErr?.message || "Not found" }, { status: 404 });
   }
 
-  const leadLK = normalizeLandingKey(lead?.landing_key) ?? null;
+  const leadLK = normalizeLandingKey(lead.landing_key) ?? null;
 
   // ✅ 루트(00)면 모든 LK 수정 가능, 아니면 본인 LK만
   if (userLK !== "00" && leadLK !== userLK) {
