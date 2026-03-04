@@ -7,11 +7,17 @@ import { useMemo, useState } from "react";
 function normalizeLK(v: unknown) {
   const s = String(v ?? "").trim();
   if (/^\d{1,2}$/.test(s)) return s.padStart(2, "0");
-  return "00";
+  return null;
+}
+
+function lkFromPathname() {
+  if (typeof window === "undefined") return null;
+  const first = window.location.pathname.split("/")[1]; // "/01/admin/login" -> "01"
+  return normalizeLK(first);
 }
 
 export default function AdminLoginForm({
-  callbackUrl,
+  callbackUrl, // 표시용으로만 남겨도 됨
   landingKey,
 }: {
   callbackUrl: string;
@@ -23,9 +29,11 @@ export default function AdminLoginForm({
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
-  const lk = useMemo(() => normalizeLK(landingKey), [landingKey]);
+  const lk = useMemo(() => {
+    return normalizeLK(landingKey) ?? lkFromPathname() ?? "00";
+  }, [landingKey]);
 
-  // ✅ 절대 props callbackUrl을 믿지 말고 lk로 확정 생성
+  // ✅ props callbackUrl 무시하고 lk로 강제
   const targetUrl = useMemo(() => `/${lk}/admin/leads`, [lk]);
 
   async function onSubmit(e: React.FormEvent) {
@@ -36,36 +44,27 @@ export default function AdminLoginForm({
     setMsg(null);
 
     try {
-      console.log("[LOGIN] try", { id, lk, targetUrl });
-
       const res = await signIn("credentials", {
         redirect: false,
         email: id,
         password: pw,
-        landingKey: lk,      // ✅ 안정
-        callbackUrl: targetUrl, // ✅ 여기서 undefined 방지
+        landingKey: lk,
+        callbackUrl: targetUrl,
       });
 
-      console.log("[LOGIN] result:", res);
-
       if (!res) {
-        setMsg("로그인 응답이 없습니다(네트워크/스크립트 오류 가능). 콘솔/네트워크 확인.");
+        setMsg("로그인 응답이 없습니다(네트워크/스크립트 오류).");
         return;
       }
-
       if (res.error) {
-        setMsg("로그인 실패: 아이디/비밀번호 또는 권한(landingKey)을 확인하세요.");
+        setMsg("로그인 실패: 아이디/비밀번호 또는 권한(landingKey) 확인");
         return;
       }
 
-      // ✅ 성공 시 우리가 만든 targetUrl로 이동
       router.replace(targetUrl);
-
-      // 세션 반영
       router.refresh();
-    } catch (err: any) {
-      console.error("[LOGIN] exception:", err);
-      setMsg("로그인 중 예외가 발생했습니다. 콘솔 로그를 확인해주세요.");
+    } catch (err) {
+      setMsg("로그인 중 예외 발생. 콘솔 확인");
     } finally {
       setLoading(false);
     }
@@ -78,23 +77,12 @@ export default function AdminLoginForm({
       <form onSubmit={onSubmit}>
         <div style={{ marginBottom: 10 }}>
           <label>ID</label>
-          <input
-            value={id}
-            onChange={(e) => setId(e.target.value)}
-            style={{ width: "100%", padding: 10, marginTop: 6 }}
-            autoComplete="username"
-          />
+          <input value={id} onChange={(e) => setId(e.target.value)} style={{ width: "100%", padding: 10, marginTop: 6 }} />
         </div>
 
         <div style={{ marginBottom: 12 }}>
           <label>Password</label>
-          <input
-            type="password"
-            value={pw}
-            onChange={(e) => setPw(e.target.value)}
-            style={{ width: "100%", padding: 10, marginTop: 6 }}
-            autoComplete="current-password"
-          />
+          <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} style={{ width: "100%", padding: 10, marginTop: 6 }} />
         </div>
 
         <button disabled={loading} style={{ width: "100%", padding: 12, fontWeight: 700 }}>
@@ -104,11 +92,13 @@ export default function AdminLoginForm({
         {msg && <p style={{ marginTop: 12, color: "crimson", whiteSpace: "pre-wrap" }}>{msg}</p>}
 
         <p style={{ marginTop: 12, fontSize: 12, opacity: 0.7 }}>
-          landingKey(normalized): {lk}
+          prop landingKey: {String(landingKey)}
+          <br />
+          landingKey(normalized+pathname): {lk}
           <br />
           targetUrl: {targetUrl}
           <br />
-          (props callbackUrl was: {callbackUrl})
+          (props callbackUrl: {callbackUrl})
         </p>
       </form>
     </div>
