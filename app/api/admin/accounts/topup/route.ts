@@ -15,7 +15,7 @@ function normalizeLandingKey(v: unknown) {
   return null;
 }
 
-// ✅ admin_id 입력을 유연하게: "01" 입력하면 "admin01"로 자동 변환
+// ✅ admin_id 입력을 유연하게: "01" -> "admin01"
 function normalizeAdminId(v: unknown) {
   const s = String(v ?? "").trim();
   if (!s) return "";
@@ -27,9 +27,11 @@ export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   const user = session?.user as SessionUser | undefined;
 
-  if (!user?.email) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  if (!user?.email) {
+    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
 
-  // ✅ root 체크는 반드시 정규화해서 비교
+  // ✅ Root(00)만 충전 가능
   const userLK = normalizeLandingKey(user?.landing_key);
   if (userLK !== "00") {
     return NextResponse.json({ ok: false, error: "Root only" }, { status: 403 });
@@ -44,14 +46,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "INVALID_INPUT" }, { status: 400 });
   }
 
-  const { data, error } = await supabaseAdmin.rpc("topup_admin", {
+  // ✅ 핵심: topup_admin이 returns void면 data는 null일 수 있음
+  const { error } = await supabaseAdmin.rpc("topup_admin", {
     p_admin_id: admin_id,
-    p_amount: amount,
+    p_amount: Math.floor(amount),
     p_note: note,
   });
 
-  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-  if (!data?.ok) return NextResponse.json(data, { status: 400 });
+  if (error) {
+    // Supabase 함수에서 raise exception하면 여기로 온다
+    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+  }
 
-  return NextResponse.json(data);
+  // ✅ 성공이면 ok:true로 고정 응답
+  return NextResponse.json({ ok: true });
 }
