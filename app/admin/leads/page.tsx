@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import AdminLeadsClient from "./AdminLeadsClient";
+import AdminLeadsClient from "../../../components/AdminLeadsClient";
 
 export const dynamic = "force-dynamic";
 

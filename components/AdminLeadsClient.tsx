@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 
 type Lead = {
   id: string;
@@ -37,6 +37,29 @@ const STATUS_META: Record<StatusKey, { label: string; bg: string; fg: string; bd
   INVALID: { label: "불량", bg: "#FEF2F2", fg: "#991B1B", bd: "#FECACA" },
 };
 
+function normalizeLK(v: unknown) {
+  const s = String(v ?? "").trim();
+  if (/^\d{1,2}$/.test(s)) return s.padStart(2, "0");
+  return "00";
+}
+
+function extractLKFromPath(pathname: string) {
+  // "/01/admin/leads" -> "01"
+  const m = pathname.match(/^\/(\d{1,2})(\/|$)/);
+  return normalizeLK(m?.[1] ?? "00");
+}
+
+function fmt(n: any) {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return "-";
+  return x.toLocaleString("ko-KR");
+}
+
+function safeNumber(v: any, fallback = 0) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
 function StatusBadge({ status }: { status: string | null }) {
   const key = (String(status ?? "NEW").toUpperCase() as StatusKey) || "NEW";
   const m = STATUS_META[key] ?? STATUS_META.NEW;
@@ -59,27 +82,23 @@ function StatusBadge({ status }: { status: string | null }) {
   );
 }
 
-function fmt(n: any) {
-  const x = Number(n);
-  if (!Number.isFinite(x)) return "-";
-  return x.toLocaleString("ko-KR");
-}
-
-function safeNumber(v: any, fallback = 0) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : fallback;
-}
-
 export default function AdminLeadsClient() {
   const router = useRouter();
   const sp = useSearchParams();
+  const pathname = usePathname();
 
   const sess = useSession();
   const authStatus = sess?.status;
   const session = sess?.data;
 
-  const selectedLK = sp.get("landing_key") ?? "00";
-  const userLK = ((session?.user as any)?.landing_key ?? "") as string;
+  // ✅ 현재 페이지 LK (/01/admin/leads -> 01)
+  const pageLK = useMemo(() => extractLKFromPath(pathname), [pathname]);
+
+  // ✅ 선택 LK: 쿼리 있으면 그걸, 없으면 현재 페이지 LK
+  const selectedLK = normalizeLK(sp.get("landing_key") ?? pageLK);
+
+  // ✅ 세션 LK
+  const userLK = normalizeLK((session?.user as any)?.landing_key ?? "");
   const canSwitchAny = userLK === "00";
 
   const [rows, setRows] = useState<Lead[]>([]);
@@ -89,14 +108,14 @@ export default function AdminLeadsClient() {
   const [draft, setDraft] = useState<Record<string, { status?: string; memo?: string }>>({});
   const [saving, setSaving] = useState<Record<string, boolean>>({});
 
-  // ✅ 대시보드 데이터
+  // 대시보드
   const [account, setAccount] = useState<Account | null>(null);
   const [stats, setStats] = useState<any | null>(null);
 
-  // ✅ 상태 필터
+  // 상태 필터
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
 
-  // ✅ 루트(00) 전용: 계정 목록/충전/단가설정
+  // 루트 전용 계정 목록/충전
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [topupAdminId, setTopupAdminId] = useState("");
   const [topupAmount, setTopupAmount] = useState<number>(0);
@@ -107,15 +126,12 @@ export default function AdminLeadsClient() {
   const visibleKeys = useMemo(() => {
     if (canSwitchAny) return LK_KEYS;
     if (userLK) return [userLK];
-    return ["00"];
-  }, [canSwitchAny, userLK]);
+    return [pageLK];
+  }, [canSwitchAny, userLK, pageLK]);
 
   const statusCounts = useMemo(() => {
-    // stats API가 있으면 그걸 쓰고, 없으면 rows 기반 fallback
+    if (stats?.counts?.status) return stats.counts.status as Record<string, number>;
     const base: Record<string, number> = {};
-    if (stats?.counts?.status) {
-      return stats.counts.status as Record<string, number>;
-    }
     for (const r of rows) {
       const k = String(r.status ?? "NEW").toUpperCase();
       base[k] = (base[k] ?? 0) + 1;
@@ -130,8 +146,11 @@ export default function AdminLeadsClient() {
 
   function setLandingKey(k: string) {
     const p = new URLSearchParams(sp.toString());
-    p.set("landing_key", k);
-    router.push(`/admin/leads?${p.toString()}`);
+    p.set("landing_key", normalizeLK(k));
+
+    // ✅ 중요한 수정: /admin/leads 고정 X, 현재 라우트(/01/admin/leads) 기준으로 이동
+    router.push(`/${pageLK}/admin/leads?${p.toString()}`);
+    router.refresh();
   }
 
   async function saveLead(id: string) {
@@ -139,7 +158,6 @@ export default function AdminLeadsClient() {
     const body: any = {};
     if (typeof d.status === "string") body.status = d.status;
     if (typeof d.memo === "string") body.memo = d.memo;
-
     if (Object.keys(body).length === 0) return;
 
     setSaving((m) => ({ ...m, [id]: true }));
@@ -174,10 +192,11 @@ export default function AdminLeadsClient() {
     }
   }
 
-  // ✅ 리드 + 통계 + 계정(선택 LK) 같이 로드
+  // ✅ 리드 + 통계 + 계정 로드
   useEffect(() => {
     if (authStatus === "unauthenticated") {
-      router.replace("/admin/login");
+      // ✅ 랜딩별 로그인으로 보내야 landingKey가 유지됨
+      router.replace(`/${pageLK}/admin/login`);
       return;
     }
     if (authStatus !== "authenticated") return;
@@ -212,15 +231,12 @@ export default function AdminLeadsClient() {
           setErr(`${leadsRes.status} ${leadsJson?.error || "error"}`);
           setRows([]);
         } else {
-          setRows((leadsJson.items || []) as Lead[]);
+          setRows((leadsJson.items || leadsJson.data || []) as Lead[]);
           setDraft({});
         }
 
-        if (statsRes.ok) setStats(statsJson);
-        else setStats(null);
-
-        if (accRes.ok) setAccount((accJson.item || null) as Account | null);
-        else setAccount(null);
+        setStats(statsRes.ok ? statsJson : null);
+        setAccount(accRes.ok ? ((accJson.item || null) as Account | null) : null);
       } catch (e: any) {
         if (e?.name !== "AbortError") {
           console.error(e);
@@ -235,9 +251,9 @@ export default function AdminLeadsClient() {
     })();
 
     return () => ac.abort();
-  }, [authStatus, router, selectedLK]);
+  }, [authStatus, router, selectedLK, pageLK]);
 
-  // ✅ 루트(00)일 때 전체 계정 리스트 로드
+  // ✅ 루트(00)일 때 계정 전체 리스트 로드
   useEffect(() => {
     if (authStatus !== "authenticated") return;
     if (userLK !== "00") return;
@@ -249,7 +265,7 @@ export default function AdminLeadsClient() {
         const res = await fetch("/api/admin/accounts", { cache: "no-store", signal: ac.signal });
         const json = await res.json().catch(() => ({}));
         if (res.ok) setAccounts((json.items || []) as Account[]);
-      } catch (e) {
+      } catch {
         // ignore
       } finally {
         setAccountsLoading(false);
@@ -301,7 +317,6 @@ export default function AdminLeadsClient() {
 
       await refreshAccountsList();
 
-      // 현재 보고 있는 LK 계정이면 상단 카드도 갱신
       if (account?.admin_id === admin_id) {
         const res2 = await fetch(`/api/admin/accounts?landing_key=${encodeURIComponent(selectedLK)}`, { cache: "no-store" });
         const j2 = await res2.json().catch(() => ({}));
@@ -329,7 +344,6 @@ export default function AdminLeadsClient() {
 
     await refreshAccountsList();
 
-    // 현재 선택된 LK도 갱신
     if (landing_key === selectedLK) {
       const res2 = await fetch(`/api/admin/accounts?landing_key=${encodeURIComponent(selectedLK)}`, { cache: "no-store" });
       const j2 = await res2.json().catch(() => ({}));
@@ -343,16 +357,17 @@ export default function AdminLeadsClient() {
 
   return (
     <div style={{ padding: 20, maxWidth: 1200, margin: "0 auto" }}>
+      {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 900 }}>Admin Leads</h1>
-          <p style={{ opacity: 0.7, marginTop: 4 }}>
-            user: {(session?.user as any)?.email} / my_landing_key: {userLK || "-"}
+          <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>Admin Leads</h1>
+          <p style={{ opacity: 0.7, marginTop: 6, marginBottom: 0 }}>
+            user: {(session?.user as any)?.email} / my_landing_key: {userLK || "-"} / page_lk: {pageLK}
           </p>
         </div>
 
         <button
-          onClick={() => signOut({ callbackUrl: "/admin/login" })}
+          onClick={() => signOut({ callbackUrl: `/${pageLK}/admin/login` })}
           style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #ddd", background: "#fff" }}
         >
           로그아웃
@@ -381,7 +396,7 @@ export default function AdminLeadsClient() {
         ))}
       </div>
 
-      {/* ✅ 대시보드 카드 */}
+      {/* 대시보드 카드 */}
       <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 10 }}>
         <div style={card}>
           잔액
@@ -401,15 +416,12 @@ export default function AdminLeadsClient() {
         </div>
       </div>
 
-      {/* ✅ 상태 탭(카운트) */}
+      {/* 상태 탭 */}
       <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
         {(["ALL", ...STATUS_OPTIONS] as const).map((s) => {
-          const active = statusFilter === s;
+          const active = statusFilter === (s as any);
           const label = s === "ALL" ? "전체" : STATUS_META[s].label;
-          const count =
-            s === "ALL"
-              ? rows.length
-              : (statusCounts?.[s] ?? 0);
+          const count = s === "ALL" ? rows.length : (statusCounts?.[s] ?? 0);
 
           return (
             <button
@@ -437,7 +449,7 @@ export default function AdminLeadsClient() {
         </p>
       )}
 
-      {/* ✅ 루트(00) 충전/단가 설정 */}
+      {/* 루트(00) 충전/단가 설정 */}
       {userLK === "00" && (
         <div style={{ marginTop: 18, border: "1px solid #eee", borderRadius: 14, padding: 12 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
@@ -508,7 +520,7 @@ export default function AdminLeadsClient() {
         </div>
       )}
 
-      {/* ✅ 리드 테이블 */}
+      {/* 리드 테이블 */}
       <div style={{ marginTop: 12, border: "1px solid #eee", borderRadius: 14, overflow: "hidden" }}>
         <div style={{ padding: 12, borderBottom: "1px solid #eee", fontWeight: 800 }}>
           landing_key: {selectedLK} • {loadingRows ? "불러오는 중..." : `${displayRows.length}건`}
