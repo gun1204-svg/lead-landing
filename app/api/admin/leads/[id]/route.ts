@@ -19,9 +19,10 @@ function normalizeLandingKey(v: unknown) {
   return null;
 }
 
+// ✅ 너가 원하는 상태만 허용
 function normalizeStatus(v: unknown) {
   const s = String(v ?? "").trim().toUpperCase();
-  const allowed = new Set(["NEW", "IN_PROGRESS", "DONE", "BLOCKED"]);
+  const allowed = new Set(["NEW", "BOOKED", "CALLED", "NO_ANSWER", "INVALID"]);
   return allowed.has(s) ? s : null;
 }
 
@@ -47,27 +48,25 @@ export async function PATCH(
     return NextResponse.json({ ok: false, error: "Missing landing_key" }, { status: 403 });
   }
 
-  // ✅ Next.js 타입 요구에 맞게 params는 await
   const { id } = await context.params;
   if (!id) {
     return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
   }
 
-  let body: any = {};
-  try {
-    body = await request.json();
-  } catch {
-    body = {};
+  const body = await request.json().catch(() => ({}));
+
+  const nextStatus = body?.status !== undefined ? normalizeStatus(body.status) : undefined;
+  const nextMemo = body?.memo !== undefined ? normalizeMemo(body.memo) : undefined;
+
+  if (nextStatus === null) {
+    return NextResponse.json({ ok: false, error: "Invalid status" }, { status: 400 });
   }
 
-  const nextStatus = normalizeStatus(body?.status);
-  const nextMemo = normalizeMemo(body?.memo);
-
-  if (nextStatus === null && nextMemo === null) {
+  if (nextStatus === undefined && nextMemo === undefined) {
     return NextResponse.json({ ok: false, error: "Nothing to update" }, { status: 400 });
   }
 
-  // ✅ 리드 landing_key 권한 체크
+  // ✅ lead 1건 읽어서 권한 체크
   const { data: lead, error: gErr } = await supabaseAdmin
     .from("leads")
     .select("id, landing_key")
@@ -80,13 +79,14 @@ export async function PATCH(
 
   const leadLK = normalizeLandingKey(lead?.landing_key) ?? null;
 
+  // ✅ 루트(00)면 모든 LK 수정 가능, 아니면 본인 LK만
   if (userLK !== "00" && leadLK !== userLK) {
     return NextResponse.json({ ok: false, error: "Forbidden landing_key" }, { status: 403 });
   }
 
   const patch: Record<string, any> = {};
-  if (nextStatus !== null) patch.status = nextStatus;
-  if (nextMemo !== null) patch.memo = nextMemo;
+  if (nextStatus !== undefined) patch.status = nextStatus;
+  if (nextMemo !== undefined) patch.memo = nextMemo;
 
   const { data: updated, error: uErr } = await supabaseAdmin
     .from("leads")
