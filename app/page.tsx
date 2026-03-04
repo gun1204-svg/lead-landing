@@ -1,48 +1,85 @@
 "use client";
+
 import { useState } from "react";
 
-const pages = [
-  "/intro/01.png",
-  "/intro/02.png",
-  "/intro/03.png",
-  "/intro/04.png",
-  "/intro/05.png",
-  "/intro/06.png",
-  "/intro/07.png",
-  "/intro/08.png",
-  "/intro/09.png",
-  "/intro/10.png",
-];
+const pages = Array.from({ length: 10 }, (_, i) => {
+  const n = String(i + 1).padStart(2, "0");
+  return `/intro/00/${n}.png`; // ✅ 폴더 구조 반영
+});
+
+function normalizePhone(phone: string) {
+  return phone.replace(/[^\d]/g, "");
+}
+
+function getUtmFromLocation() {
+  const sp = new URLSearchParams(window.location.search);
+  return {
+    utm_source: sp.get("utm_source") || "",
+    utm_campaign: sp.get("utm_campaign") || "",
+    utm_term: sp.get("utm_term") || "",
+    utm_content: sp.get("utm_content") || "",
+  };
+}
 
 export default function Home() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (submitting) return;
 
-    const utm = {
-      source: new URLSearchParams(window.location.search).get("utm_source") || "",
-      campaign: new URLSearchParams(window.location.search).get("utm_campaign") || "",
-      term: new URLSearchParams(window.location.search).get("utm_term") || "",
-      content: new URLSearchParams(window.location.search).get("utm_content") || "",
-    };
+    const trimmedName = name.trim();
+    const normalizedPhone = normalizePhone(phone);
 
-    const res = await fetch("/api/leads", {
-     method: "POST",
-     headers: { "Content-Type": "application/json" },
-     body: JSON.stringify({ name, phone, utm, landing_key: "00" }), // ✅ 추가
-    });
-
-    if (!res.ok) {
-      alert("전송 실패");
+    if (!trimmedName || !normalizedPhone) {
+      alert("이름/전화번호를 확인해주세요.");
       return;
     }
 
-    alert("상담 신청이 접수되었습니다!");
-    setName("");
-    setPhone("");
+    const utmFlat = getUtmFromLocation();
+
+    setSubmitting(true);
+    try {
+      const payload = {
+        name: trimmedName,
+        phone: normalizedPhone,
+        landing_key: "00",
+
+        // ✅ DB 컬럼 대응(평평한 형태)
+        ...utmFlat,
+
+        // ✅ 혹시 기존 백엔드가 utm 객체를 기대해도 호환
+        utm: {
+          source: utmFlat.utm_source,
+          campaign: utmFlat.utm_campaign,
+          term: utmFlat.utm_term,
+          content: utmFlat.utm_content,
+        },
+      };
+
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const text = await res.text().catch(() => "");
+      if (!res.ok) {
+        alert(`전송 실패 (${res.status})\n${text || "(no body)"}`);
+        return;
+      }
+
+      alert("상담 신청이 접수되었습니다!");
+      setName("");
+      setPhone("");
+    } catch (err: any) {
+      alert(`전송 실패 (network)\n${err?.message || String(err)}`);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -109,14 +146,19 @@ export default function Home() {
 
                 <button
                   type="submit"
-                  className="bg-black text-white py-2 rounded hover:bg-gray-800"
+                  disabled={submitting}
+                  className="bg-black text-white py-2 rounded hover:bg-gray-800 disabled:opacity-60"
                 >
-                  무료 상담 신청
+                  {submitting ? "전송 중..." : "무료 상담 신청"}
                 </button>
               </form>
 
               <div className="mt-6 text-xs text-gray-700 text-center">
                 대표번호: 010-3703-1068
+              </div>
+
+              <div className="mt-2 text-[10px] text-gray-400 text-center">
+                landing_key: 00
               </div>
             </div>
           </div>
@@ -124,7 +166,7 @@ export default function Home() {
       </div>
 
       {/* 모바일: 하단 고정 버튼 (safe-area 대응) */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
         <button
           onClick={() => setOpen(true)}
           className="w-full bg-black text-white py-3 rounded"
@@ -183,13 +225,21 @@ export default function Home() {
                 개인정보 수집에 동의합니다.
               </label>
 
-              <button type="submit" className="bg-black text-white py-3 rounded">
-                상담 신청
+              <button
+                type="submit"
+                disabled={submitting}
+                className="bg-black text-white py-3 rounded disabled:opacity-60"
+              >
+                {submitting ? "전송 중..." : "상담 신청"}
               </button>
             </form>
 
             <div className="mt-4 text-xs text-gray-700 text-center">
               대표번호: 010-3703-1068
+            </div>
+
+            <div className="mt-2 text-[10px] text-gray-400 text-center">
+              landing_key: 00
             </div>
           </div>
         </div>
