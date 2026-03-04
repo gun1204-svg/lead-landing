@@ -1,7 +1,7 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 
 function normalizeLK(v: unknown) {
@@ -18,13 +18,11 @@ export default function AdminLoginForm({
   landingKey: string;
 }) {
   const router = useRouter();
-  const pathname = usePathname(); // ✅ 핵심: 현재 URL을 Next가 아는 값으로 받기
+  const pathname = usePathname();
 
   const seg1 = pathname?.split("/")[1]; // "/01/admin/login" -> "01"
-  const lk = normalizeLK(landingKey) ?? normalizeLK(seg1) ?? "00";
-
-  // ✅ callbackUrl도 props 믿지 말고 lk로 확정
-  const targetUrl = `/${lk}/admin/leads`;
+  const lk = normalizeLK(seg1) ?? normalizeLK(landingKey) ?? "00"; // ✅ pathname 우선
+  const targetUrl = `/${lk}/admin/leads`; // ✅ 항상 lk로 고정
 
   const [id, setId] = useState("");
   const [pw, setPw] = useState("");
@@ -47,19 +45,13 @@ export default function AdminLoginForm({
         callbackUrl: targetUrl,
       });
 
-      if (!res) {
-        setMsg("로그인 응답이 없습니다(네트워크/스크립트 오류).");
-        return;
-      }
-      if (res.error) {
-        setMsg("로그인 실패: 아이디/비밀번호 또는 권한(landingKey) 확인");
-        return;
-      }
+      if (!res) return setMsg("로그인 응답 없음");
+      if (res.error) return setMsg("로그인 실패");
 
       router.replace(targetUrl);
       router.refresh();
     } catch (err) {
-      setMsg("로그인 중 예외 발생. 콘솔 확인");
+      setMsg("로그인 예외(콘솔 확인)");
     } finally {
       setLoading(false);
     }
@@ -67,6 +59,22 @@ export default function AdminLoginForm({
 
   return (
     <div style={{ maxWidth: 420, margin: "60px auto", padding: 20, border: "1px solid #ddd", borderRadius: 12 }}>
+      <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 10 }}>
+        BUILD: ADMINLOGINFORM_V2
+        <br />
+        pathname: {pathname}
+        <br />
+        seg1: {String(seg1)}
+        <br />
+        prop landingKey: {String(landingKey)}
+        <br />
+        landingKey(final): {lk}
+        <br />
+        targetUrl: {targetUrl}
+        <br />
+        (props callbackUrl: {callbackUrl})
+      </div>
+
       <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12 }}>Admin Login</h1>
 
       <form onSubmit={onSubmit}>
@@ -84,16 +92,7 @@ export default function AdminLoginForm({
           {loading ? "로그인 중..." : "로그인"}
         </button>
 
-        {msg && <p style={{ marginTop: 12, color: "crimson", whiteSpace: "pre-wrap" }}>{msg}</p>}
-
-        {/* ✅ 디버그: 이 3줄이 진짜 원인을 바로 보여줌 */}
-        <p style={{ marginTop: 12, fontSize: 12, opacity: 0.7 }}>
-          pathname: {pathname}
-          <br />
-          prop landingKey: {String(landingKey)}
-          <br />
-          landingKey(final): {lk} / targetUrl: {targetUrl}
-        </p>
+        {msg && <p style={{ marginTop: 12, color: "crimson" }}>{msg}</p>}
       </form>
     </div>
   );
