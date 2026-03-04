@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import type { NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 type SessionUser = {
   email?: string | null;
-  landing_key?: string | null; // "00" | "01"...
+  landing_key?: string | null;
 };
 
 function normalizeLandingKey(v: unknown) {
@@ -20,7 +21,6 @@ function normalizeLandingKey(v: unknown) {
 
 function normalizeStatus(v: unknown) {
   const s = String(v ?? "").trim().toUpperCase();
-  // 너 DB 상태값에 맞춰서 여기만 늘리면 됨
   const allowed = new Set(["NEW", "IN_PROGRESS", "DONE", "BLOCKED"]);
   return allowed.has(s) ? s : null;
 }
@@ -28,12 +28,12 @@ function normalizeStatus(v: unknown) {
 function normalizeMemo(v: unknown) {
   const s = String(v ?? "").trim();
   if (!s) return null;
-  return s.slice(0, 500); // 메모 길이 제한
+  return s.slice(0, 500);
 }
 
 export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
   const user = session?.user as SessionUser | undefined;
@@ -47,14 +47,15 @@ export async function PATCH(
     return NextResponse.json({ ok: false, error: "Missing landing_key" }, { status: 403 });
   }
 
-  const id = params?.id;
+  // ✅ Next.js 타입 요구에 맞게 params는 await
+  const { id } = await context.params;
   if (!id) {
     return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
   }
 
   let body: any = {};
   try {
-    body = await req.json();
+    body = await request.json();
   } catch {
     body = {};
   }
@@ -66,7 +67,7 @@ export async function PATCH(
     return NextResponse.json({ ok: false, error: "Nothing to update" }, { status: 400 });
   }
 
-  // ✅ 리드 1건 읽어서 landing_key 권한 체크
+  // ✅ 리드 landing_key 권한 체크
   const { data: lead, error: gErr } = await supabaseAdmin
     .from("leads")
     .select("id, landing_key")
@@ -79,9 +80,6 @@ export async function PATCH(
 
   const leadLK = normalizeLandingKey(lead?.landing_key) ?? null;
 
-  // 권한:
-  // - 루트(00)면 모두 수정 가능
-  // - 아니면 lead의 landing_key가 내 landing_key와 같아야 함
   if (userLK !== "00" && leadLK !== userLK) {
     return NextResponse.json({ ok: false, error: "Forbidden landing_key" }, { status: 403 });
   }
