@@ -1,93 +1,105 @@
-// app/api/admin/leads/[id]/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-function getLandingKeyFromSession(session: any) {
-  return session?.user?.landing_key ?? null;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+type SessionUser = {
+  email?: string | null;
+  landing_key?: string | null; // "00" | "01"...
+};
+
+function normalizeLandingKey(v: unknown) {
+  const s = String(v ?? "").trim();
+  if (!s) return null;
+  if (/^\d{1,2}$/.test(s)) return s.padStart(2, "0");
+  return null;
+}
+
+function normalizeStatus(v: unknown) {
+  const s = String(v ?? "").trim().toUpperCase();
+  // 너 DB 상태값에 맞춰서 여기만 늘리면 됨
+  const allowed = new Set(["NEW", "IN_PROGRESS", "DONE", "BLOCKED"]);
+  return allowed.has(s) ? s : null;
+}
+
+function normalizeMemo(v: unknown) {
+  const s = String(v ?? "").trim();
+  if (!s) return null;
+  return s.slice(0, 500); // 메모 길이 제한
 }
 
 export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  req: Request,
+  { params }: { params: { id: string } }
 ) {
-  const session: any = await getServerSession();
-  if (!session?.user?.email) return NextResponse.json({ ok: false }, { status: 401 });
+  const session = await getServerSession(authOptions);
+  const user = session?.user as SessionUser | undefined;
 
-  const landingKey = getLandingKeyFromSession(session);
-  if (!landingKey) return NextResponse.json({ ok: false, error: "Missing landing_key" }, { status: 403 });
-
-  const { id } = await params;
-
-  try {
-    const body = await request.json().catch(() => ({}));
-    const status = body?.status;
-    const memo = body?.memo;
-
-    if (!id) return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
-    if (!status || typeof status !== "string") {
-      return NextResponse.json({ ok: false, error: "Invalid status" }, { status: 400 });
-    }
-
-    const patch: Record<string, any> = { status };
-    if (typeof memo === "string") patch.memo = memo;
-
-    const { data, error } = await supabaseAdmin
-      .from("leads")
-      .update(patch)
-      .eq("id", id)
-      .eq("landing_key", landingKey) // ✅ 핵심: 다른 랜딩 리드 수정 방지
-      .select("*")
-      .single();
-
-    if (error) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-    }
-    if (!data) {
-      // id는 맞지만 landing_key가 달라서 수정이 안 된 경우
-      return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
-    }
-
-    return NextResponse.json({ ok: true, data });
-  } catch (e: any) {
-    return NextResponse.json(
-      { ok: false, error: e?.message ?? "Unknown error" },
-      { status: 500 }
-    );
+  if (!user?.email) {
+    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
-}
 
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session: any = await getServerSession();
-  if (!session?.user?.email) return NextResponse.json({ ok: false }, { status: 401 });
+  const userLK = normalizeLandingKey(user?.landing_key);
+  if (!userLK) {
+    return NextResponse.json({ ok: false, error: "Missing landing_key" }, { status: 403 });
+  }
 
-  const landingKey = getLandingKeyFromSession(session);
-  if (!landingKey) return NextResponse.json({ ok: false, error: "Missing landing_key" }, { status: 403 });
+  const id = params?.id;
+  if (!id) {
+    return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
+  }
 
-  const { id } = await params;
-  if (!id) return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
+  let body: any = {};
+  try {
+    body = await req.json();
+  } catch {
+    body = {};
+  }
 
-  const { data, error } = await supabaseAdmin
+  const nextStatus = normalizeStatus(body?.status);
+  const nextMemo = normalizeMemo(body?.memo);
+
+  if (nextStatus === null && nextMemo === null) {
+    return NextResponse.json({ ok: false, error: "Nothing to update" }, { status: 400 });
+  }
+
+  // ✅ 리드 1건 읽어서 landing_key 권한 체크
+  const { data: lead, error: gErr } = await supabaseAdmin
     .from("leads")
-    .delete()
+    .select("id, landing_key")
     .eq("id", id)
-    .eq("landing_key", landingKey) // ✅ 핵심: 다른 랜딩 리드 삭제 방지
-    .select("*")
     .single();
 
-  if (error) {
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-  }
-  if (!data) {
-    return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
+  if (gErr) {
+    return NextResponse.json({ ok: false, error: gErr.message }, { status: 404 });
   }
 
-  return NextResponse.json({ ok: true, data });
-}
+  const leadLK = normalizeLandingKey(lead?.landing_key) ?? null;
 
-export async function OPTIONS() {
-  return NextResponse.json({}, { status: 200 });
+  // 권한:
+  // - 루트(00)면 모두 수정 가능
+  // - 아니면 lead의 landing_key가 내 landing_key와 같아야 함
+  if (userLK !== "00" && leadLK !== userLK) {
+    return NextResponse.json({ ok: false, error: "Forbidden landing_key" }, { status: 403 });
+  }
+
+  const patch: Record<string, any> = {};
+  if (nextStatus !== null) patch.status = nextStatus;
+  if (nextMemo !== null) patch.memo = nextMemo;
+
+  const { data: updated, error: uErr } = await supabaseAdmin
+    .from("leads")
+    .update(patch)
+    .eq("id", id)
+    .select("id, created_at, name, phone, status, memo, landing_key")
+    .single();
+
+  if (uErr) {
+    return NextResponse.json({ ok: false, error: uErr.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true, item: updated });
 }
