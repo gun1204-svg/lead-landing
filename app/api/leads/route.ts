@@ -4,8 +4,6 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 function normalizePhone(phone: string) {
   return phone.replace(/[^\d]/g, "");
 }
-
-// ✅ landing_key 정규화: "1" -> "01", 없으면 "00"
 function normalizeLandingKey(v: unknown) {
   const s = String(v ?? "").trim();
   if (!s) return "00";
@@ -24,25 +22,24 @@ export async function POST(req: Request) {
 
   const lk = normalizeLandingKey(landing_key);
 
-  const { error: lErr } = await supabaseAdmin.from("leads").insert([
-    {
-      name: cleanName,
-      phone: cleanPhone,
-      landing_key: lk,
+  const { data, error } = await supabaseAdmin.rpc("create_lead_and_charge", {
+    p_name: cleanName,
+    p_phone: cleanPhone,
+    p_landing_key: lk,
+    p_source: utm?.source ?? null,
+    p_utm_source: utm?.source ?? null,
+    p_utm_campaign: utm?.campaign ?? null,
+    p_utm_term: utm?.term ?? null,
+    p_utm_content: utm?.content ?? null,
+  });
 
-      // utm는 지금 구조 유지 (프론트가 utm 객체로 보내도 됨)
-      source: utm?.source || null,
-      utm_source: utm?.source || null,
-      utm_campaign: utm?.campaign || null,
-      utm_term: utm?.term || null,
-      utm_content: utm?.content || null,
-    },
-  ]);
+  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
 
-  if (lErr) {
-    console.error(lErr);
-    return NextResponse.json({ ok: false, error: "DB_ERROR" }, { status: 500 });
+  if (!data?.ok) {
+    // 잔액 부족 -> 402로 내려서 프론트에서 “마감” 처리 가능
+    const code = data?.error === "INSUFFICIENT_BALANCE" ? 402 : 400;
+    return NextResponse.json(data, { status: code });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json(data);
 }

@@ -14,8 +14,61 @@ type Lead = {
   landing_key: string | null;
 };
 
+type Account = {
+  admin_id: string;
+  landing_key: string;
+  balance: number;
+  price_per_lead: number;
+  is_active: boolean;
+  updated_at?: string | null;
+};
+
 const LK_KEYS = Array.from({ length: 21 }, (_, i) => String(i).padStart(2, "0"));
-const STATUS_OPTIONS = ["NEW", "IN_PROGRESS", "DONE", "BLOCKED"] as const;
+
+const STATUS_OPTIONS = ["NEW", "BOOKED", "CALLED", "NO_ANSWER", "INVALID"] as const;
+type StatusKey = typeof STATUS_OPTIONS[number];
+type StatusFilter = "ALL" | StatusKey;
+
+const STATUS_META: Record<StatusKey, { label: string; bg: string; fg: string; bd: string }> = {
+  NEW: { label: "신규", bg: "#EEF2FF", fg: "#3730A3", bd: "#C7D2FE" },
+  BOOKED: { label: "예약", bg: "#ECFDF5", fg: "#065F46", bd: "#A7F3D0" },
+  CALLED: { label: "통화", bg: "#ECFEFF", fg: "#155E75", bd: "#A5F3FC" },
+  NO_ANSWER: { label: "부재", bg: "#FEF9C3", fg: "#854D0E", bd: "#FDE68A" },
+  INVALID: { label: "불량", bg: "#FEF2F2", fg: "#991B1B", bd: "#FECACA" },
+};
+
+function StatusBadge({ status }: { status: string | null }) {
+  const key = (String(status ?? "NEW").toUpperCase() as StatusKey) || "NEW";
+  const m = STATUS_META[key] ?? STATUS_META.NEW;
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "4px 10px",
+        borderRadius: 999,
+        fontSize: 12,
+        fontWeight: 900,
+        background: m.bg,
+        color: m.fg,
+        border: `1px solid ${m.bd}`,
+      }}
+    >
+      {m.label}
+    </span>
+  );
+}
+
+function fmt(n: any) {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return "-";
+  return x.toLocaleString("ko-KR");
+}
+
+function safeNumber(v: any, fallback = 0) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
 
 export default function AdminLeadsClient() {
   const router = useRouter();
@@ -27,6 +80,7 @@ export default function AdminLeadsClient() {
 
   const selectedLK = sp.get("landing_key") ?? "00";
   const userLK = ((session?.user as any)?.landing_key ?? "") as string;
+  const canSwitchAny = userLK === "00";
 
   const [rows, setRows] = useState<Lead[]>([]);
   const [err, setErr] = useState<string | null>(null);
@@ -35,13 +89,44 @@ export default function AdminLeadsClient() {
   const [draft, setDraft] = useState<Record<string, { status?: string; memo?: string }>>({});
   const [saving, setSaving] = useState<Record<string, boolean>>({});
 
-  const canSwitchAny = userLK === "00";
+  // ✅ 대시보드 데이터
+  const [account, setAccount] = useState<Account | null>(null);
+  const [stats, setStats] = useState<any | null>(null);
+
+  // ✅ 상태 필터
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+
+  // ✅ 루트(00) 전용: 계정 목록/충전/단가설정
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [topupAdminId, setTopupAdminId] = useState("");
+  const [topupAmount, setTopupAmount] = useState<number>(0);
+  const [topupNote, setTopupNote] = useState("");
+  const [topupLoading, setTopupLoading] = useState(false);
+  const [accountsLoading, setAccountsLoading] = useState(false);
 
   const visibleKeys = useMemo(() => {
     if (canSwitchAny) return LK_KEYS;
     if (userLK) return [userLK];
     return ["00"];
   }, [canSwitchAny, userLK]);
+
+  const statusCounts = useMemo(() => {
+    // stats API가 있으면 그걸 쓰고, 없으면 rows 기반 fallback
+    const base: Record<string, number> = {};
+    if (stats?.counts?.status) {
+      return stats.counts.status as Record<string, number>;
+    }
+    for (const r of rows) {
+      const k = String(r.status ?? "NEW").toUpperCase();
+      base[k] = (base[k] ?? 0) + 1;
+    }
+    return base;
+  }, [stats, rows]);
+
+  const displayRows = useMemo(() => {
+    if (statusFilter === "ALL") return rows;
+    return rows.filter((r) => String(r.status ?? "NEW").toUpperCase() === statusFilter);
+  }, [rows, statusFilter]);
 
   function setLandingKey(k: string) {
     const p = new URLSearchParams(sp.toString());
@@ -89,6 +174,7 @@ export default function AdminLeadsClient() {
     }
   }
 
+  // ✅ 리드 + 통계 + 계정(선택 LK) 같이 로드
   useEffect(() => {
     if (authStatus === "unauthenticated") {
       router.replace("/admin/login");
@@ -103,26 +189,45 @@ export default function AdminLeadsClient() {
       setLoadingRows(true);
 
       try {
-        const res = await fetch(`/api/admin/leads?landing_key=${encodeURIComponent(selectedLK)}`, {
-          cache: "no-store",
-          signal: ac.signal,
-        });
+        const [leadsRes, statsRes, accRes] = await Promise.all([
+          fetch(`/api/admin/leads?landing_key=${encodeURIComponent(selectedLK)}`, {
+            cache: "no-store",
+            signal: ac.signal,
+          }),
+          fetch(`/api/admin/stats?landing_key=${encodeURIComponent(selectedLK)}`, {
+            cache: "no-store",
+            signal: ac.signal,
+          }),
+          fetch(`/api/admin/accounts?landing_key=${encodeURIComponent(selectedLK)}`, {
+            cache: "no-store",
+            signal: ac.signal,
+          }),
+        ]);
 
-        const json = await res.json().catch(() => ({}));
+        const leadsJson = await leadsRes.json().catch(() => ({}));
+        const statsJson = await statsRes.json().catch(() => ({}));
+        const accJson = await accRes.json().catch(() => ({}));
 
-        if (!res.ok) {
-          setErr(`${res.status} ${json?.error || "error"}`);
+        if (!leadsRes.ok) {
+          setErr(`${leadsRes.status} ${leadsJson?.error || "error"}`);
           setRows([]);
-          return;
+        } else {
+          setRows((leadsJson.items || []) as Lead[]);
+          setDraft({});
         }
 
-        setRows((json.items || []) as Lead[]);
-        setDraft({});
+        if (statsRes.ok) setStats(statsJson);
+        else setStats(null);
+
+        if (accRes.ok) setAccount((accJson.item || null) as Account | null);
+        else setAccount(null);
       } catch (e: any) {
         if (e?.name !== "AbortError") {
           console.error(e);
           setErr("NETWORK_ERROR");
           setRows([]);
+          setStats(null);
+          setAccount(null);
         }
       } finally {
         setLoadingRows(false);
@@ -131,6 +236,106 @@ export default function AdminLeadsClient() {
 
     return () => ac.abort();
   }, [authStatus, router, selectedLK]);
+
+  // ✅ 루트(00)일 때 전체 계정 리스트 로드
+  useEffect(() => {
+    if (authStatus !== "authenticated") return;
+    if (userLK !== "00") return;
+
+    const ac = new AbortController();
+    (async () => {
+      setAccountsLoading(true);
+      try {
+        const res = await fetch("/api/admin/accounts", { cache: "no-store", signal: ac.signal });
+        const json = await res.json().catch(() => ({}));
+        if (res.ok) setAccounts((json.items || []) as Account[]);
+      } catch (e) {
+        // ignore
+      } finally {
+        setAccountsLoading(false);
+      }
+    })();
+
+    return () => ac.abort();
+  }, [authStatus, userLK]);
+
+  async function refreshAccountsList() {
+    if (userLK !== "00") return;
+    const res = await fetch("/api/admin/accounts", { cache: "no-store" });
+    const json = await res.json().catch(() => ({}));
+    if (res.ok) setAccounts((json.items || []) as Account[]);
+  }
+
+  async function doTopup() {
+    if (userLK !== "00") return;
+
+    const admin_id = topupAdminId.trim();
+    const amount = safeNumber(topupAmount, 0);
+    const note = topupNote.trim();
+
+    if (!admin_id || amount <= 0) {
+      alert("admin_id / 금액 입력");
+      return;
+    }
+
+    setTopupLoading(true);
+    setErr(null);
+
+    try {
+      const res = await fetch("/api/admin/accounts/topup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ admin_id, amount, note }),
+      });
+
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(json?.error || "충전 실패");
+        return;
+      }
+
+      alert("충전 완료");
+      setTopupAdminId("");
+      setTopupAmount(0);
+      setTopupNote("");
+
+      await refreshAccountsList();
+
+      // 현재 보고 있는 LK 계정이면 상단 카드도 갱신
+      if (account?.admin_id === admin_id) {
+        const res2 = await fetch(`/api/admin/accounts?landing_key=${encodeURIComponent(selectedLK)}`, { cache: "no-store" });
+        const j2 = await res2.json().catch(() => ({}));
+        if (res2.ok) setAccount(j2.item || null);
+      }
+    } finally {
+      setTopupLoading(false);
+    }
+  }
+
+  async function saveAccountSetting(admin_id: string, landing_key: string, price_per_lead: number, is_active: boolean) {
+    if (userLK !== "00") return;
+
+    const res = await fetch("/api/admin/accounts", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ admin_id, landing_key, price_per_lead, is_active }),
+    });
+
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(json?.error || "저장 실패");
+      return;
+    }
+
+    await refreshAccountsList();
+
+    // 현재 선택된 LK도 갱신
+    if (landing_key === selectedLK) {
+      const res2 = await fetch(`/api/admin/accounts?landing_key=${encodeURIComponent(selectedLK)}`, { cache: "no-store" });
+      const j2 = await res2.json().catch(() => ({}));
+      if (res2.ok) setAccount(j2.item || null);
+    }
+  }
 
   if (!authStatus || authStatus === "loading") {
     return <div style={{ padding: 20 }}>loading...</div>;
@@ -154,6 +359,7 @@ export default function AdminLeadsClient() {
         </button>
       </div>
 
+      {/* landing_key 선택 */}
       <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
         {visibleKeys.map((k) => (
           <button
@@ -168,10 +374,61 @@ export default function AdminLeadsClient() {
               color: k === selectedLK ? "#fff" : "#111",
               cursor: "pointer",
             }}
+            title={canSwitchAny ? "landing_key 변경" : "권한: 본인 landing_key만"}
           >
             {k}
           </button>
         ))}
+      </div>
+
+      {/* ✅ 대시보드 카드 */}
+      <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 10 }}>
+        <div style={card}>
+          잔액
+          <div style={cardBig}>{fmt(account?.balance)}</div>
+        </div>
+        <div style={card}>
+          리드 단가
+          <div style={cardBig}>{fmt(account?.price_per_lead)}</div>
+        </div>
+        <div style={card}>
+          오늘 리드
+          <div style={cardBig}>{fmt(stats?.counts?.today)}</div>
+        </div>
+        <div style={card}>
+          이번달 리드
+          <div style={cardBig}>{fmt(stats?.counts?.month)}</div>
+        </div>
+      </div>
+
+      {/* ✅ 상태 탭(카운트) */}
+      <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {(["ALL", ...STATUS_OPTIONS] as const).map((s) => {
+          const active = statusFilter === s;
+          const label = s === "ALL" ? "전체" : STATUS_META[s].label;
+          const count =
+            s === "ALL"
+              ? rows.length
+              : (statusCounts?.[s] ?? 0);
+
+          return (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s as StatusFilter)}
+              style={{
+                padding: "6px 10px",
+                borderRadius: 999,
+                border: "1px solid #ddd",
+                fontWeight: active ? 900 : 600,
+                background: active ? "#111" : "#fff",
+                color: active ? "#fff" : "#111",
+                cursor: "pointer",
+              }}
+            >
+              {label} ({count})
+            </button>
+          );
+        })}
       </div>
 
       {err && (
@@ -180,9 +437,81 @@ export default function AdminLeadsClient() {
         </p>
       )}
 
+      {/* ✅ 루트(00) 충전/단가 설정 */}
+      {userLK === "00" && (
+        <div style={{ marginTop: 18, border: "1px solid #eee", borderRadius: 14, padding: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+            <h3 style={{ margin: 0, fontWeight: 900 }}>Root: 충전 / 단가 설정</h3>
+            <button
+              onClick={refreshAccountsList}
+              style={{ padding: "6px 10px", borderRadius: 10, border: "1px solid #ddd", background: "#fff" }}
+            >
+              목록 새로고침
+            </button>
+          </div>
+
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+            <input
+              placeholder="admin_id (admin01)"
+              value={topupAdminId}
+              onChange={(e) => setTopupAdminId(e.target.value)}
+              style={inp}
+            />
+            <input
+              placeholder="충전 금액"
+              type="number"
+              value={topupAmount ? String(topupAmount) : ""}
+              onChange={(e) => setTopupAmount(Number(e.target.value))}
+              style={inp}
+            />
+            <input
+              placeholder="메모(선택)"
+              value={topupNote}
+              onChange={(e) => setTopupNote(e.target.value)}
+              style={inp}
+            />
+            <button
+              onClick={doTopup}
+              disabled={topupLoading}
+              style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #ddd", background: "#111", color: "#fff" }}
+            >
+              {topupLoading ? "충전중..." : "충전"}
+            </button>
+          </div>
+
+          <div style={{ marginTop: 12, opacity: accountsLoading ? 0.6 : 1 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  <th style={th}>admin</th>
+                  <th style={th}>LK</th>
+                  <th style={th}>잔액</th>
+                  <th style={th}>단가</th>
+                  <th style={th}>활성</th>
+                  <th style={th}>저장</th>
+                </tr>
+              </thead>
+              <tbody>
+                {accounts.map((a) => (
+                  <AccountRow key={a.admin_id} a={a} onSave={saveAccountSetting} />
+                ))}
+                {accounts.length === 0 && (
+                  <tr>
+                    <td colSpan={6} style={{ padding: 12, color: "#666" }}>
+                      계정 없음 (admin_accounts 테이블에 seed 필요)
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ 리드 테이블 */}
       <div style={{ marginTop: 12, border: "1px solid #eee", borderRadius: 14, overflow: "hidden" }}>
         <div style={{ padding: 12, borderBottom: "1px solid #eee", fontWeight: 800 }}>
-          landing_key: {selectedLK} • {loadingRows ? "불러오는 중..." : `${rows.length}건`}
+          landing_key: {selectedLK} • {loadingRows ? "불러오는 중..." : `${displayRows.length}건`}
         </div>
 
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -197,9 +526,9 @@ export default function AdminLeadsClient() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((l) => {
+            {displayRows.map((l) => {
               const d = draft[l.id] || {};
-              const curStatus = (d.status ?? l.status ?? "NEW") as string;
+              const curStatus = (d.status ?? l.status ?? "NEW") as StatusKey;
               const curMemo = (d.memo ?? l.memo ?? "") as string;
 
               const changed =
@@ -213,21 +542,24 @@ export default function AdminLeadsClient() {
                   <td style={td}>{l.phone ?? "-"}</td>
 
                   <td style={td}>
-                    <select
-                      value={curStatus}
-                      onChange={(e) =>
-                        setDraft((prev) => ({
-                          ...prev,
-                          [l.id]: { ...prev[l.id], status: e.target.value },
-                        }))
-                      }
-                    >
-                      {STATUS_OPTIONS.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <StatusBadge status={curStatus} />
+                      <select
+                        value={curStatus}
+                        onChange={(e) =>
+                          setDraft((prev) => ({
+                            ...prev,
+                            [l.id]: { ...prev[l.id], status: e.target.value },
+                          }))
+                        }
+                      >
+                        {STATUS_OPTIONS.map((s) => (
+                          <option key={s} value={s}>
+                            {STATUS_META[s].label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </td>
 
                   <td style={td}>
@@ -264,7 +596,7 @@ export default function AdminLeadsClient() {
               );
             })}
 
-            {!loadingRows && rows.length === 0 && (
+            {!loadingRows && displayRows.length === 0 && (
               <tr>
                 <td colSpan={6} style={{ padding: 14, color: "#666" }}>
                   데이터 없음
@@ -277,6 +609,72 @@ export default function AdminLeadsClient() {
     </div>
   );
 }
+
+function AccountRow({
+  a,
+  onSave,
+}: {
+  a: Account;
+  onSave: (admin_id: string, landing_key: string, price_per_lead: number, is_active: boolean) => Promise<void>;
+}) {
+  const [price, setPrice] = useState<number>(safeNumber(a.price_per_lead, 0));
+  const [active, setActive] = useState<boolean>(!!a.is_active);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setPrice(safeNumber(a.price_per_lead, 0));
+    setActive(!!a.is_active);
+  }, [a.price_per_lead, a.is_active]);
+
+  return (
+    <tr>
+      <td style={td}>{a.admin_id}</td>
+      <td style={td}>{a.landing_key}</td>
+      <td style={td}>{fmt(a.balance)}</td>
+      <td style={td}>
+        <input type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} style={{ width: 120 }} />
+      </td>
+      <td style={td}>
+        <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
+      </td>
+      <td style={td}>
+        <button
+          onClick={async () => {
+            setSaving(true);
+            try {
+              await onSave(a.admin_id, a.landing_key, safeNumber(price, 0), active);
+            } finally {
+              setSaving(false);
+            }
+          }}
+          style={{ padding: "6px 10px", borderRadius: 10, border: "1px solid #ddd", background: "#fff" }}
+          disabled={saving}
+        >
+          {saving ? "저장중..." : "저장"}
+        </button>
+      </td>
+    </tr>
+  );
+}
+
+const card: React.CSSProperties = {
+  border: "1px solid #eee",
+  borderRadius: 14,
+  padding: 12,
+  background: "#fff",
+};
+
+const cardBig: React.CSSProperties = {
+  fontSize: 20,
+  fontWeight: 900,
+  marginTop: 6,
+};
+
+const inp: React.CSSProperties = {
+  padding: "8px 10px",
+  borderRadius: 10,
+  border: "1px solid #ddd",
+};
 
 const th: React.CSSProperties = {
   textAlign: "left",
