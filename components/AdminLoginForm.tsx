@@ -1,8 +1,8 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { useState } from "react";
 
 function normalizeLK(v: unknown) {
   const s = String(v ?? "").trim();
@@ -10,31 +10,26 @@ function normalizeLK(v: unknown) {
   return null;
 }
 
-function lkFromPathname() {
-  if (typeof window === "undefined") return null;
-  const first = window.location.pathname.split("/")[1]; // "/01/admin/login" -> "01"
-  return normalizeLK(first);
-}
-
 export default function AdminLoginForm({
-  callbackUrl, // 표시용으로만 남겨도 됨
+  callbackUrl,
   landingKey,
 }: {
   callbackUrl: string;
   landingKey: string;
 }) {
   const router = useRouter();
+  const pathname = usePathname(); // ✅ 핵심: 현재 URL을 Next가 아는 값으로 받기
+
+  const seg1 = pathname?.split("/")[1]; // "/01/admin/login" -> "01"
+  const lk = normalizeLK(landingKey) ?? normalizeLK(seg1) ?? "00";
+
+  // ✅ callbackUrl도 props 믿지 말고 lk로 확정
+  const targetUrl = `/${lk}/admin/leads`;
+
   const [id, setId] = useState("");
   const [pw, setPw] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-
-  const lk = useMemo(() => {
-    return normalizeLK(landingKey) ?? lkFromPathname() ?? "00";
-  }, [landingKey]);
-
-  // ✅ props callbackUrl 무시하고 lk로 강제
-  const targetUrl = useMemo(() => `/${lk}/admin/leads`, [lk]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -91,14 +86,13 @@ export default function AdminLoginForm({
 
         {msg && <p style={{ marginTop: 12, color: "crimson", whiteSpace: "pre-wrap" }}>{msg}</p>}
 
+        {/* ✅ 디버그: 이 3줄이 진짜 원인을 바로 보여줌 */}
         <p style={{ marginTop: 12, fontSize: 12, opacity: 0.7 }}>
+          pathname: {pathname}
+          <br />
           prop landingKey: {String(landingKey)}
           <br />
-          landingKey(normalized+pathname): {lk}
-          <br />
-          targetUrl: {targetUrl}
-          <br />
-          (props callbackUrl: {callbackUrl})
+          landingKey(final): {lk} / targetUrl: {targetUrl}
         </p>
       </form>
     </div>
