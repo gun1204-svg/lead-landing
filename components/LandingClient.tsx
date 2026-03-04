@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
-const pages = [
+const allPages = [
   "/intro/01.png",
   "/intro/02.png",
   "/intro/03.png",
@@ -19,40 +19,89 @@ function normalizePhone(phone: string) {
   return phone.replace(/[^\d]/g, "");
 }
 
+function normalizeLK(v: unknown) {
+  const s = String(v ?? "").trim();
+  if (/^\d{1,2}$/.test(s)) return s.padStart(2, "0");
+  return "00";
+}
+
+function getUtmFromLocation() {
+  const sp = new URLSearchParams(window.location.search);
+  return {
+    utm_source: sp.get("utm_source") || "",
+    utm_campaign: sp.get("utm_campaign") || "",
+    utm_term: sp.get("utm_term") || "",
+    utm_content: sp.get("utm_content") || "",
+  };
+}
+
 export default function LandingClient({ landingKey }: { landingKey: string }) {
+  const pages = landingKey === "01"
+    ? ["/intro/09.png"]
+    : allPages;
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const lk = useMemo(() => normalizeLK(landingKey), [landingKey]);
+
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (submitting) return;
 
-    const utm = {
-      source: new URLSearchParams(window.location.search).get("utm_source") || "",
-      campaign: new URLSearchParams(window.location.search).get("utm_campaign") || "",
-      term: new URLSearchParams(window.location.search).get("utm_term") || "",
-      content: new URLSearchParams(window.location.search).get("utm_content") || "",
-    };
+    const trimmedName = name.trim();
+    const normalizedPhone = normalizePhone(phone);
 
-    const res = await fetch("/api/leads", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: name.trim(),
-        phone: normalizePhone(phone),
-        utm,
-        landing_key: landingKey, // ✅ 핵심: 동적
-      }),
-    });
-
-    if (!res.ok) {
-      alert("전송 실패");
+    if (!trimmedName || !normalizedPhone) {
+      alert("이름/전화번호를 확인해주세요.");
       return;
     }
 
-    alert("상담 신청이 접수되었습니다!");
-    setName("");
-    setPhone("");
+    const utmFlat = getUtmFromLocation();
+
+    setSubmitting(true);
+    try {
+      const payload = {
+        name: trimmedName,
+        phone: normalizedPhone,
+        landing_key: lk,
+
+        // ✅ 1) DB 컬럼(평평한 형태) 대응
+        ...utmFlat,
+
+        // ✅ 2) 기존 백엔드가 utm 객체를 기대해도 동작하도록 호환(둘 다 보냄)
+        utm: {
+          source: utmFlat.utm_source,
+          campaign: utmFlat.utm_campaign,
+          term: utmFlat.utm_term,
+          content: utmFlat.utm_content,
+        },
+      };
+
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const text = await res.text().catch(() => "");
+
+      if (!res.ok) {
+        // ✅ 원인 파악용: 상태코드 + 서버 응답 표시
+        alert(`전송 실패 (${res.status})\n${text || "(no body)"}`);
+        return;
+      }
+
+      alert("상담 신청이 접수되었습니다!");
+      setName("");
+      setPhone("");
+    } catch (err: any) {
+      alert(`전송 실패 (network)\n${err?.message || String(err)}`);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -116,9 +165,10 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
                 <button
                   type="submit"
-                  className="bg-black text-white py-2 rounded hover:bg-gray-800"
+                  disabled={submitting}
+                  className="bg-black text-white py-2 rounded hover:bg-gray-800 disabled:opacity-60"
                 >
-                  무료 상담 신청
+                  {submitting ? "전송 중..." : "무료 상담 신청"}
                 </button>
               </form>
 
@@ -127,7 +177,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
               </div>
 
               <div className="mt-2 text-[10px] text-gray-400 text-center">
-                landing_key: {landingKey}
+                landing_key: {lk}
               </div>
             </div>
           </div>
@@ -135,7 +185,10 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       </div>
 
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-        <button onClick={() => setOpen(true)} className="w-full bg-black text-white py-3 rounded">
+        <button
+          onClick={() => setOpen(true)}
+          className="w-full bg-black text-white py-3 rounded"
+        >
           무료 상담 신청
         </button>
       </div>
@@ -164,6 +217,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
             <form
               onSubmit={async (e) => {
                 await handleSubmit(e);
+                // 전송 성공/실패와 무관하게 닫고 싶지 않으면 여기서 setOpen(false) 제거
                 setOpen(false);
               }}
               className="flex flex-col gap-4"
@@ -189,8 +243,12 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                 개인정보 수집에 동의합니다.
               </label>
 
-              <button type="submit" className="bg-black text-white py-3 rounded">
-                상담 신청
+              <button
+                type="submit"
+                disabled={submitting}
+                className="bg-black text-white py-3 rounded disabled:opacity-60"
+              >
+                {submitting ? "전송 중..." : "상담 신청"}
               </button>
             </form>
 
@@ -199,7 +257,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
             </div>
 
             <div className="mt-2 text-[10px] text-gray-400 text-center">
-              landing_key: {landingKey}
+              landing_key: {lk}
             </div>
           </div>
         </div>
