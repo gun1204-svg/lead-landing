@@ -2,19 +2,6 @@
 
 import { useMemo, useState } from "react";
 
-const allPages = [
-  "/intro/01.png",
-  "/intro/02.png",
-  "/intro/03.png",
-  "/intro/04.png",
-  "/intro/05.png",
-  "/intro/06.png",
-  "/intro/07.png",
-  "/intro/08.png",
-  "/intro/09.png",
-  "/intro/10.png",
-];
-
 function normalizePhone(phone: string) {
   return phone.replace(/[^\d]/g, "");
 }
@@ -35,10 +22,23 @@ function getUtmFromLocation() {
   };
 }
 
+// ✅ /intro/{landingKey}/xx.png 자동 세트
+function buildDefaultPages(lk: string) {
+  return Array.from({ length: 10 }, (_, i) => {
+    const n = String(i + 1).padStart(2, "0");
+    return `/intro/${lk}/${n}.png`;
+  });
+}
+
+// ✅ 랜딩별 커스텀(필요하면 계속 추가)
+const landingPages: Record<string, string[]> = {
+  // /01 은 09 한 장만
+  "01": ["/intro/01/09.png"],
+  // 예시)
+  // "02": ["/intro/02/01.png", "/intro/02/02.png"],
+};
+
 export default function LandingClient({ landingKey }: { landingKey: string }) {
-  const pages = landingKey === "01"
-    ? ["/intro/09.png"]
-    : allPages;
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [open, setOpen] = useState(false);
@@ -46,6 +46,10 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
   const lk = useMemo(() => normalizeLK(landingKey), [landingKey]);
 
+  // ✅ pages는 lk 기준으로 결정
+  const pages = useMemo(() => {
+    return landingPages[lk] ?? buildDefaultPages("00"); // 기본은 00 세트
+  }, [lk]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -68,10 +72,10 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
         phone: normalizedPhone,
         landing_key: lk,
 
-        // ✅ 1) DB 컬럼(평평한 형태) 대응
+        // ✅ DB 컬럼(평평한 형태) 대응
         ...utmFlat,
 
-        // ✅ 2) 기존 백엔드가 utm 객체를 기대해도 동작하도록 호환(둘 다 보냄)
+        // ✅ 기존 백엔드가 utm 객체를 기대해도 호환
         utm: {
           source: utmFlat.utm_source,
           campaign: utmFlat.utm_campaign,
@@ -89,7 +93,6 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       const text = await res.text().catch(() => "");
 
       if (!res.ok) {
-        // ✅ 원인 파악용: 상태코드 + 서버 응답 표시
         alert(`전송 실패 (${res.status})\n${text || "(no body)"}`);
         return;
       }
@@ -217,7 +220,6 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
             <form
               onSubmit={async (e) => {
                 await handleSubmit(e);
-                // 전송 성공/실패와 무관하게 닫고 싶지 않으면 여기서 setOpen(false) 제거
                 setOpen(false);
               }}
               className="flex flex-col gap-4"
