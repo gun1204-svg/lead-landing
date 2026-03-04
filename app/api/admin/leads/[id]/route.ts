@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import type { NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -18,7 +19,6 @@ function normalizeLandingKey(v: unknown) {
   return null;
 }
 
-// ✅ 허용 상태만
 function normalizeStatus(v: unknown) {
   const s = String(v ?? "").trim().toUpperCase();
   const allowed = new Set(["NEW", "BOOKED", "CALLED", "NO_ANSWER", "INVALID"]);
@@ -31,10 +31,9 @@ function normalizeMemo(v: unknown) {
   return s.slice(0, 500);
 }
 
-// ✅ Next.js 안전 시그니처
 export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
   const user = session?.user as SessionUser | undefined;
@@ -48,7 +47,7 @@ export async function PATCH(
     return NextResponse.json({ ok: false, error: "Missing landing_key" }, { status: 403 });
   }
 
-  const id = params?.id;
+  const { id } = await context.params;
   if (!id) {
     return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
   }
@@ -66,7 +65,7 @@ export async function PATCH(
     return NextResponse.json({ ok: false, error: "Nothing to update" }, { status: 400 });
   }
 
-  // ✅ lead 1건 읽어서 권한 체크
+  // 권한 체크용 lead 조회
   const { data: lead, error: gErr } = await supabaseAdmin
     .from("leads")
     .select("id, landing_key")
@@ -79,7 +78,7 @@ export async function PATCH(
 
   const leadLK = normalizeLandingKey(lead.landing_key) ?? null;
 
-  // ✅ 루트(00)면 모든 LK 수정 가능, 아니면 본인 LK만
+  // 루트(00)는 전체 수정 가능, 그 외는 본인 LK만
   if (userLK !== "00" && leadLK !== userLK) {
     return NextResponse.json({ ok: false, error: "Forbidden landing_key" }, { status: 403 });
   }
