@@ -2,9 +2,9 @@
 
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
-function normalizeLK(v: string) {
+function normalizeLK(v: unknown) {
   const s = String(v ?? "").trim();
   if (/^\d{1,2}$/.test(s)) return s.padStart(2, "0");
   return "00";
@@ -23,24 +23,27 @@ export default function AdminLoginForm({
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
+  const lk = useMemo(() => normalizeLK(landingKey), [landingKey]);
+
+  // ✅ 절대 props callbackUrl을 믿지 말고 lk로 확정 생성
+  const targetUrl = useMemo(() => `/${lk}/admin/leads`, [lk]);
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (loading) return;
-
-    const lk = normalizeLK(landingKey);
 
     setLoading(true);
     setMsg(null);
 
     try {
-      console.log("[LOGIN] try", { id, lk, callbackUrl });
+      console.log("[LOGIN] try", { id, lk, targetUrl });
 
       const res = await signIn("credentials", {
         redirect: false,
         email: id,
         password: pw,
-        landingKey: lk,        // ✅ 반드시 넣기(제일 안정적)
-        callbackUrl,           // ✅ 이동 목표
+        landingKey: lk,      // ✅ 안정
+        callbackUrl: targetUrl, // ✅ 여기서 undefined 방지
       });
 
       console.log("[LOGIN] result:", res);
@@ -55,10 +58,10 @@ export default function AdminLoginForm({
         return;
       }
 
-      // ✅ res.url을 믿지 말고 우리가 원하는 곳으로 확정 이동
-      router.replace(callbackUrl);
+      // ✅ 성공 시 우리가 만든 targetUrl로 이동
+      router.replace(targetUrl);
 
-      // ✅ 세션 쿠키 반영 타이밍 안정화
+      // 세션 반영
       router.refresh();
     } catch (err: any) {
       console.error("[LOGIN] exception:", err);
@@ -99,8 +102,13 @@ export default function AdminLoginForm({
         </button>
 
         {msg && <p style={{ marginTop: 12, color: "crimson", whiteSpace: "pre-wrap" }}>{msg}</p>}
+
         <p style={{ marginTop: 12, fontSize: 12, opacity: 0.7 }}>
-          landingKey: {normalizeLK(landingKey)} / callbackUrl: {callbackUrl}
+          landingKey(normalized): {lk}
+          <br />
+          targetUrl: {targetUrl}
+          <br />
+          (props callbackUrl was: {callbackUrl})
         </p>
       </form>
     </div>
