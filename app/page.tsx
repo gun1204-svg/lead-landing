@@ -46,7 +46,7 @@ export default function Home() {
       const payload = {
         name: trimmedName,
         phone: normalizedPhone,
-        landing_key: "00",
+        landing_key: lk,
 
         // ✅ DB 컬럼 대응(평평한 형태)
         ...utmFlat,
@@ -153,10 +153,7 @@ export default function Home() {
                 </button>
               </form>
 
-              <div className="mt-2 text-[10px] text-gray-400 text-center">
-                landing_key: 00
               </div>
-            </div>
           </div>
         </aside>
       </div>
@@ -230,9 +227,7 @@ export default function Home() {
               </button>
             </form>
 
-            <div className="mt-2 text-[10px] text-gray-400 text-center">
-              landing_key: 00
-            </div>
+
           </div>
         </div>
       )}
