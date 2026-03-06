@@ -1,11 +1,7 @@
 "use client";
 
-import { useState } from "react";
-
-const pages = Array.from({ length: 10 }, (_, i) => {
-  const n = String(i + 1).padStart(2, "0");
-  return `/intro/00/${n}.png`; // ✅ 폴더 구조 반영
-});
+import { useMemo, useState } from "react";
+import { getLandingConfig } from "@/lib/landing";
 
 function normalizePhone(phone: string) {
   return phone.replace(/[^\d]/g, "");
@@ -22,6 +18,15 @@ function getUtmFromLocation() {
 }
 
 export default function Home() {
+  const config = getLandingConfig("00");
+
+  const pages = useMemo(() => {
+    return Array.from({ length: 10 }, (_, i) => {
+      const n = String(i + 1).padStart(2, "0");
+      return `${config.introPath}/${n}.png`;
+    });
+  }, [config.introPath]);
+
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [open, setOpen] = useState(false);
@@ -46,12 +51,10 @@ export default function Home() {
       const payload = {
         name: trimmedName,
         phone: normalizedPhone,
-        landing_key: "00",
+        landing_key: config.key,
 
-        // ✅ DB 컬럼 대응(평평한 형태)
         ...utmFlat,
 
-        // ✅ 혹시 기존 백엔드가 utm 객체를 기대해도 호환
         utm: {
           source: utmFlat.utm_source,
           campaign: utmFlat.utm_campaign,
@@ -75,6 +78,7 @@ export default function Home() {
       alert("상담 신청이 접수되었습니다!");
       setName("");
       setPhone("");
+      setOpen(false);
     } catch (err: any) {
       alert(`전송 실패 (network)\n${err?.message || String(err)}`);
     } finally {
@@ -84,7 +88,6 @@ export default function Home() {
 
   return (
     <main className="w-screen h-[100svh] overflow-hidden bg-white">
-      {/* 좌측 상단 로고 (클릭 시 1페이지로 이동) */}
       <div
         className="fixed top-4 left-4 z-50 cursor-pointer"
         onClick={() => {
@@ -100,7 +103,6 @@ export default function Home() {
       </div>
 
       <div className="h-full w-full grid grid-cols-1 lg:grid-cols-[1fr_420px]">
-        {/* 왼쪽: 소개서 스크롤 */}
         <div className="scroll-area h-full overflow-y-scroll snap-y snap-mandatory pb-24 lg:pb-0">
           {pages.map((src) => (
             <section key={src} className="snap-start snap-always h-[100svh]">
@@ -114,12 +116,11 @@ export default function Home() {
           ))}
         </div>
 
-        {/* 오른쪽: PC 고정 상담 폼 */}
         <aside className="hidden lg:block h-full border-l bg-gray-50">
           <div className="sticky top-0 h-[100svh] flex items-center justify-center p-6">
             <div className="w-full max-w-[380px] bg-white p-8 rounded-xl shadow-md">
               <h1 className="text-2xl font-bold mb-4 text-center text-black">
-                비엔파트너스 마케팅 상담
+                {config.title}
               </h1>
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -149,26 +150,23 @@ export default function Home() {
                   disabled={submitting}
                   className="bg-black text-white py-2 rounded hover:bg-gray-800 disabled:opacity-60"
                 >
-                  {submitting ? "전송 중..." : "무료 상담 신청"}
+                  {submitting ? "전송 중..." : config.submitLabel}
                 </button>
               </form>
-
-              </div>
+            </div>
           </div>
         </aside>
       </div>
 
-      {/* 모바일: 하단 고정 버튼 (safe-area 대응) */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
         <button
           onClick={() => setOpen(true)}
           className="w-full bg-black text-white py-3 rounded"
         >
-          무료 상담 신청
+          {config.submitLabel}
         </button>
       </div>
 
-      {/* 모바일: 모달 폼 */}
       {open && (
         <div
           className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
@@ -187,16 +185,10 @@ export default function Home() {
             </button>
 
             <h2 className="text-xl font-bold mb-4 text-center text-black">
-              비엔파트너스 마케팅 상담
+              {config.title}
             </h2>
 
-            <form
-              onSubmit={async (e) => {
-                await handleSubmit(e);
-                setOpen(false);
-              }}
-              className="flex flex-col gap-4"
-            >
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <input
                 className="border p-3 rounded text-black placeholder:text-gray-400"
                 placeholder="이름"
@@ -226,8 +218,6 @@ export default function Home() {
                 {submitting ? "전송 중..." : "상담 신청"}
               </button>
             </form>
-
-
           </div>
         </div>
       )}
