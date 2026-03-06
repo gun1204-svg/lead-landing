@@ -183,10 +183,6 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                 </button>
               </form>
 
-              <div className="mt-6 text-xs text-gray-700 text-center">
-                대표번호: 010-3703-1068
-              </div>
-
               <div className="mt-2 text-[10px] text-gray-400 text-center">
                 landing_key: {lk}
               </div>
@@ -263,10 +259,6 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                 {submitting ? "전송 중..." : "상담 신청"}
               </button>
             </form>
-
-            <div className="mt-4 text-xs text-gray-700 text-center">
-              대표번호: 010-3703-1068
-            </div>
 
             <div className="mt-2 text-[10px] text-gray-400 text-center">
               landing_key: {lk}
