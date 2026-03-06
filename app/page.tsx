@@ -46,7 +46,7 @@ export default function Home() {
       const payload = {
         name: trimmedName,
         phone: normalizedPhone,
-        landing_key: lk,
+        landing_key: "00",
 
         // ✅ DB 컬럼 대응(평평한 형태)
         ...utmFlat,
