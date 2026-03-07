@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getLandingConfig } from "@/lib/landing";
@@ -11,6 +12,47 @@ function normalizeLandingKey(v: unknown) {
   if (!s) return "00";
   if (/^\d{1,2}$/.test(s)) return s.padStart(2, "0");
   return "00";
+}
+
+function normalizePhoneForMeta(phone?: string | null) {
+  if (!phone) return undefined;
+  const digits = phone.replace(/[^\d]/g, "");
+  if (!digits) return undefined;
+
+  if (digits.startsWith("0")) {
+    return `82${digits.slice(1)}`;
+  }
+  if (digits.startsWith("82")) {
+    return digits;
+  }
+  return digits;
+}
+
+function sha256(value?: string | null) {
+  if (!value) return undefined;
+  const normalized = String(value).trim().toLowerCase();
+  if (!normalized) return undefined;
+  return crypto.createHash("sha256").update(normalized).digest("hex");
+}
+
+function getClientIp(req: Request) {
+  const xForwardedFor = req.headers.get("x-forwarded-for");
+  if (xForwardedFor) {
+    return xForwardedFor.split(",")[0]?.trim();
+  }
+
+  const xRealIp = req.headers.get("x-real-ip");
+  if (xRealIp) return xRealIp;
+
+  return undefined;
+}
+
+function getDefaultPageUrl(req: Request, landingKey: string) {
+  const proto = req.headers.get("x-forwarded-proto") || "https";
+  const host = req.headers.get("host");
+
+  if (!host) return `https://bienptns.com/${landingKey}`;
+  return `${proto}://${host}/${landingKey}`;
 }
 
 async function sendTelegram(text: string, chatId?: string) {
@@ -36,12 +78,98 @@ async function sendTelegram(text: string, chatId?: string) {
   }
 }
 
+async function sendMetaLeadEvent(input: {
+  eventId: string;
+  pageUrl: string;
+  name: string;
+  phone: string;
+  landingKey: string;
+  leadId?: string;
+  fbp?: string;
+  fbc?: string;
+  clientIpAddress?: string;
+  clientUserAgent?: string;
+}) {
+  const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+  const accessToken = process.env.META_ACCESS_TOKEN;
+  const testEventCode = process.env.META_TEST_EVENT_CODE;
+
+  if (!pixelId || !accessToken) {
+    console.log("meta env missing");
+    return { ok: false, skipped: true as const };
+  }
+
+  const endpoint = `https://graph.facebook.com/v23.0/${pixelId}/events?access_token=${encodeURIComponent(
+    accessToken
+  )}`;
+
+  const payload: Record<string, unknown> = {
+    data: [
+      {
+        event_name: "Lead",
+        event_time: Math.floor(Date.now() / 1000),
+        action_source: "website",
+        event_source_url: input.pageUrl,
+        event_id: input.eventId,
+        user_data: {
+          client_ip_address: input.clientIpAddress,
+          client_user_agent: input.clientUserAgent,
+          fbp: input.fbp,
+          fbc: input.fbc,
+          external_id: sha256(input.leadId),
+          fn: sha256(input.name),
+          ph: sha256(normalizePhoneForMeta(input.phone)),
+        },
+        custom_data: {
+          content_name: `landing_${input.landingKey}`,
+          landing_key: input.landingKey,
+        },
+      },
+    ],
+  };
+
+  if (testEventCode) {
+    payload.test_event_code = testEventCode;
+  }
+
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    cache: "no-store",
+  });
+
+  const result = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    console.error("meta capi error:", result);
+    return { ok: false, error: result };
+  }
+
+  return { ok: true, data: result };
+}
+
 export async function POST(req: Request) {
   try {
-    const { name, phone, utm, landing_key } = await req.json();
+    const body = await req.json();
 
-    const cleanName = (name || "").trim();
-    const cleanPhone = normalizePhone(phone || "");
+    const name = String(body?.name ?? "").trim();
+    const phone = String(body?.phone ?? "").trim();
+    const landing_key = body?.landing_key;
+    const event_id = body?.event_id;
+    const page_url = body?.page_url;
+    const fbp = body?.fbp;
+    const fbc = body?.fbc;
+
+    const utm = body?.utm ?? {
+      source: body?.utm_source ?? null,
+      campaign: body?.utm_campaign ?? null,
+      term: body?.utm_term ?? null,
+      content: body?.utm_content ?? null,
+    };
+
+    const cleanName = name;
+    const cleanPhone = normalizePhone(phone);
 
     if (!cleanName || !cleanPhone) {
       return NextResponse.json({ ok: false, error: "INVALID" }, { status: 400 });
@@ -50,8 +178,13 @@ export async function POST(req: Request) {
     const lk = normalizeLandingKey(landing_key);
     const landingConfig = getLandingConfig(lk);
 
+    const eventId = String(event_id ?? "").trim();
+    const pageUrl = String(page_url ?? "").trim() || getDefaultPageUrl(req, lk);
+
     // 같은 전화번호 + 같은 랜딩 + 최근 7일 중복 차단
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const sevenDaysAgo = new Date(
+      Date.now() - 7 * 24 * 60 * 60 * 1000
+    ).toISOString();
 
     const { data: existing, error: existingError } = await supabaseAdmin
       .from("leads")
@@ -89,7 +222,10 @@ export async function POST(req: Request) {
     });
 
     if (error) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+      return NextResponse.json(
+        { ok: false, error: error.message },
+        { status: 500 }
+      );
     }
 
     if (!data?.ok) {
@@ -97,6 +233,29 @@ export async function POST(req: Request) {
       return NextResponse.json(data, { status: code });
     }
 
+    const leadId = data?.lead_id ? String(data.lead_id) : undefined;
+
+    // Meta Conversion API 전송
+    try {
+      if (eventId) {
+        await sendMetaLeadEvent({
+          eventId,
+          pageUrl,
+          name: cleanName,
+          phone: cleanPhone,
+          landingKey: lk,
+          leadId,
+          fbp: typeof fbp === "string" ? fbp : undefined,
+          fbc: typeof fbc === "string" ? fbc : undefined,
+          clientIpAddress: getClientIp(req),
+          clientUserAgent: req.headers.get("user-agent") ?? undefined,
+        });
+      }
+    } catch (metaErr) {
+      console.error("meta capi send error:", metaErr);
+    }
+
+    // 텔레그램 알림
     try {
       const now = new Date().toLocaleString("ko-KR", {
         timeZone: "Asia/Seoul",
@@ -125,7 +284,10 @@ ${now}`,
       console.error("telegram alert error:", tgErr);
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json({
+      ...data,
+      duplicate: false,
+    });
   } catch (err: any) {
     return NextResponse.json(
       { ok: false, error: err?.message || "UNKNOWN_ERROR" },

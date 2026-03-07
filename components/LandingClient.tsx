@@ -1,8 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { getLandingConfig, normalizeLK } from "@/lib/landing";
+
+declare global {
+  interface Window {
+    fbq?: (
+      command: "track",
+      eventName: string,
+      params?: Record<string, unknown>,
+      options?: Record<string, unknown>
+    ) => void;
+  }
+}
 
 function normalizePhone(phone: string) {
   return phone.replace(/[^\d]/g, "");
@@ -16,6 +27,36 @@ function getUtmFromLocation() {
     utm_term: sp.get("utm_term") || "",
     utm_content: sp.get("utm_content") || "",
   };
+}
+
+function getCookie(name: string) {
+  if (typeof document === "undefined") return undefined;
+
+  const match = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith(`${name}=`));
+
+  return match ? decodeURIComponent(match.split("=")[1]) : undefined;
+}
+
+function getFbc() {
+  const existing = getCookie("_fbc");
+  if (existing) return existing;
+
+  if (typeof window === "undefined") return undefined;
+
+  const fbclid = new URLSearchParams(window.location.search).get("fbclid");
+  if (!fbclid) return undefined;
+
+  return `fb.1.${Date.now()}.${fbclid}`;
+}
+
+function generateEventId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}_${Math.random().toString(36).slice(2)}`;
 }
 
 export default function LandingClient({ landingKey }: { landingKey: string }) {
@@ -41,6 +82,15 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.fbq) {
+      window.fbq("track", "ViewContent", {
+        content_name: `landing_${config.key}`,
+        landing_key: config.key,
+      });
+    }
+  }, [config.key]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (submitting) return;
@@ -54,13 +104,22 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
     }
 
     const utmFlat = getUtmFromLocation();
+    const eventId = generateEventId();
+    const pageUrl = window.location.href;
+    const fbp = getCookie("_fbp");
+    const fbc = getFbc();
 
     setSubmitting(true);
+
     try {
       const payload = {
         name: trimmedName,
         phone: normalizedPhone,
         landing_key: config.key,
+        event_id: eventId,
+        page_url: pageUrl,
+        fbp,
+        fbc,
         ...utmFlat,
         utm: {
           source: utmFlat.utm_source,
@@ -76,13 +135,33 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
         body: JSON.stringify(payload),
       });
 
-      const text = await res.text().catch(() => "");
+      const json = await res.json().catch(() => null);
+
       if (!res.ok) {
-        alert(`전송 실패 (${res.status})\n${text || "(no body)"}`);
+        alert(`전송 실패 (${res.status})\n${json?.error || "(no body)"}`);
         return;
       }
 
-      alert("상담 신청이 접수되었습니다!");
+      if (!json?.duplicate && typeof window !== "undefined" && window.fbq) {
+        window.fbq(
+          "track",
+          "Lead",
+          {
+            content_name: `landing_${config.key}`,
+            landing_key: config.key,
+          },
+          {
+            eventID: eventId,
+          }
+        );
+      }
+
+      alert(
+        json?.duplicate
+          ? "이미 접수된 상담 정보입니다."
+          : "상담 신청이 접수되었습니다!"
+      );
+
       setName("");
       setPhone("");
       setOpen(false);
@@ -174,8 +253,6 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                 >
                   {submitting ? "전송 중..." : config.submitLabel}
                 </button>
-
-
               </form>
             </div>
           </div>
@@ -245,8 +322,6 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
               >
                 {submitting ? "전송 중..." : config.mobileSubmitLabel ?? config.submitLabel}
               </button>
-
-
             </form>
           </div>
         </div>
