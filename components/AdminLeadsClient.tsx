@@ -23,6 +23,11 @@ type Account = {
   updated_at?: string | null;
 };
 
+type AdminLeadsClientProps = {
+  landingKey?: string;
+  isMainAdmin?: boolean;
+};
+
 const LK_KEYS = Array.from({ length: 21 }, (_, i) => String(i).padStart(2, "0"));
 
 const STATUS_OPTIONS = ["NEW", "BOOKED", "CALLED", "NO_ANSWER", "INVALID"] as const;
@@ -44,7 +49,6 @@ function normalizeLK(v: unknown) {
 }
 
 function extractLKFromPath(pathname: string) {
-  // "/01/admin/leads" -> "01"
   const m = pathname.match(/^\/(\d{1,2})(\/|$)/);
   return normalizeLK(m?.[1] ?? "00");
 }
@@ -82,7 +86,10 @@ function StatusBadge({ status }: { status: string | null }) {
   );
 }
 
-export default function AdminLeadsClient() {
+export default function AdminLeadsClient({
+  landingKey,
+  isMainAdmin = false,
+}: AdminLeadsClientProps) {
   const router = useRouter();
   const sp = useSearchParams();
   const pathname = usePathname();
@@ -91,13 +98,13 @@ export default function AdminLeadsClient() {
   const authStatus = sess?.status;
   const session = sess?.data;
 
-  // ✅ 현재 페이지 LK (/01/admin/leads -> 01)
-  const pageLK = useMemo(() => extractLKFromPath(pathname), [pathname]);
+  const pageLK = useMemo(() => {
+    if (landingKey) return normalizeLK(landingKey);
+    return extractLKFromPath(pathname);
+  }, [landingKey, pathname]);
 
-  // ✅ 선택 LK: 쿼리 있으면 그걸, 없으면 현재 페이지 LK
   const selectedLK = normalizeLK(sp.get("landing_key") ?? pageLK);
 
-  // ✅ 세션 LK
   const userLK = normalizeLK((session?.user as any)?.landing_key ?? "");
   const canSwitchAny = userLK === "00";
 
@@ -107,15 +114,13 @@ export default function AdminLeadsClient() {
 
   const [draft, setDraft] = useState<Record<string, { status?: string; memo?: string }>>({});
   const [saving, setSaving] = useState<Record<string, boolean>>({});
+  const [deleting, setDeleting] = useState<Record<string, boolean>>({});
 
-  // 대시보드
   const [account, setAccount] = useState<Account | null>(null);
   const [stats, setStats] = useState<any | null>(null);
 
-  // 상태 필터
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
 
-  // 루트 전용 계정 목록/충전
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [topupAdminId, setTopupAdminId] = useState("");
   const [topupAmount, setTopupAmount] = useState<number>(0);
@@ -148,8 +153,11 @@ export default function AdminLeadsClient() {
     const p = new URLSearchParams(sp.toString());
     p.set("landing_key", normalizeLK(k));
 
-    // ✅ 중요한 수정: /admin/leads 고정 X, 현재 라우트(/01/admin/leads) 기준으로 이동
-    router.push(`/${pageLK}/admin/leads?${p.toString()}`);
+    if (isMainAdmin) {
+      router.push(`/admin/leads?${p.toString()}`);
+    } else {
+      router.push(`/${pageLK}/admin/leads?${p.toString()}`);
+    }
     router.refresh();
   }
 
@@ -192,11 +200,42 @@ export default function AdminLeadsClient() {
     }
   }
 
-  // ✅ 리드 + 통계 + 계정 로드
+  async function deleteLead(id: string) {
+    if (!isMainAdmin) return;
+
+    const ok = window.confirm("이 리드를 삭제하시겠습니까?");
+    if (!ok) return;
+
+    setDeleting((m) => ({ ...m, [id]: true }));
+    setErr(null);
+
+    try {
+      const res = await fetch(`/api/admin/leads/${id}`, {
+        method: "DELETE",
+      });
+
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErr(`${res.status} ${json?.error || "error"}`);
+        return;
+      }
+
+      setRows((prev) => prev.filter((r) => r.id !== id));
+    } catch (e) {
+      console.error(e);
+      setErr("NETWORK_ERROR");
+    } finally {
+      setDeleting((m) => ({ ...m, [id]: false }));
+    }
+  }
+
   useEffect(() => {
     if (authStatus === "unauthenticated") {
-      // ✅ 랜딩별 로그인으로 보내야 landingKey가 유지됨
-      router.replace(`/${pageLK}/admin/login`);
+      if (isMainAdmin) {
+        router.replace("/admin/login");
+      } else {
+        router.replace(`/${pageLK}/admin/login`);
+      }
       return;
     }
     if (authStatus !== "authenticated") return;
@@ -251,9 +290,8 @@ export default function AdminLeadsClient() {
     })();
 
     return () => ac.abort();
-  }, [authStatus, router, selectedLK, pageLK]);
+  }, [authStatus, router, selectedLK, pageLK, isMainAdmin]);
 
-  // ✅ 루트(00)일 때 계정 전체 리스트 로드
   useEffect(() => {
     if (authStatus !== "authenticated") return;
     if (userLK !== "00") return;
@@ -266,7 +304,6 @@ export default function AdminLeadsClient() {
         const json = await res.json().catch(() => ({}));
         if (res.ok) setAccounts((json.items || []) as Account[]);
       } catch {
-        // ignore
       } finally {
         setAccountsLoading(false);
       }
@@ -357,7 +394,6 @@ export default function AdminLeadsClient() {
 
   return (
     <div style={{ padding: 20, maxWidth: 1200, margin: "0 auto" }}>
-      {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>Admin Leads</h1>
@@ -367,14 +403,17 @@ export default function AdminLeadsClient() {
         </div>
 
         <button
-          onClick={() => signOut({ callbackUrl: `/${pageLK}/admin/login` })}
+          onClick={() =>
+            signOut({
+              callbackUrl: isMainAdmin ? "/admin/login" : `/${pageLK}/admin/login`,
+            })
+          }
           style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #ddd", background: "#fff" }}
         >
           로그아웃
         </button>
       </div>
 
-      {/* landing_key 선택 */}
       <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
         {visibleKeys.map((k) => (
           <button
@@ -396,8 +435,14 @@ export default function AdminLeadsClient() {
         ))}
       </div>
 
-      {/* 대시보드 카드 */}
-      <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 10 }}>
+      <div
+        style={{
+          marginTop: 12,
+          display: "grid",
+          gridTemplateColumns: isMainAdmin ? "repeat(4, minmax(0, 1fr))" : "repeat(2, minmax(0, 1fr))",
+          gap: 10,
+        }}
+      >
         <div style={card}>
           잔액
           <div style={cardBig}>{fmt(account?.balance)}</div>
@@ -406,17 +451,21 @@ export default function AdminLeadsClient() {
           리드 단가
           <div style={cardBig}>{fmt(account?.price_per_lead)}</div>
         </div>
-        <div style={card}>
-          오늘 리드
-          <div style={cardBig}>{fmt(stats?.counts?.today)}</div>
-        </div>
-        <div style={card}>
-          이번달 리드
-          <div style={cardBig}>{fmt(stats?.counts?.month)}</div>
-        </div>
+
+        {isMainAdmin && (
+          <>
+            <div style={card}>
+              오늘 리드
+              <div style={cardBig}>{fmt(stats?.counts?.today)}</div>
+            </div>
+            <div style={card}>
+              이번달 리드
+              <div style={cardBig}>{fmt(stats?.counts?.month)}</div>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* 상태 탭 */}
       <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
         {(["ALL", ...STATUS_OPTIONS] as const).map((s) => {
           const active = statusFilter === (s as any);
@@ -449,7 +498,6 @@ export default function AdminLeadsClient() {
         </p>
       )}
 
-      {/* 루트(00) 충전/단가 설정 */}
       {userLK === "00" && (
         <div style={{ marginTop: 18, border: "1px solid #eee", borderRadius: 14, padding: 12 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
@@ -520,7 +568,6 @@ export default function AdminLeadsClient() {
         </div>
       )}
 
-      {/* 리드 테이블 */}
       <div style={{ marginTop: 12, border: "1px solid #eee", borderRadius: 14, overflow: "hidden" }}>
         <div style={{ padding: 12, borderBottom: "1px solid #eee", fontWeight: 800 }}>
           landing_key: {selectedLK} • {loadingRows ? "불러오는 중..." : `${displayRows.length}건`}
@@ -535,6 +582,7 @@ export default function AdminLeadsClient() {
               <th style={th}>상태</th>
               <th style={th}>메모</th>
               <th style={th}>저장</th>
+              {isMainAdmin && <th style={th}>삭제</th>}
             </tr>
           </thead>
           <tbody>
@@ -604,13 +652,32 @@ export default function AdminLeadsClient() {
                       {saving[l.id] ? "저장중..." : "저장"}
                     </button>
                   </td>
+
+                  {isMainAdmin && (
+                    <td style={td}>
+                      <button
+                        onClick={() => deleteLead(l.id)}
+                        disabled={!!deleting[l.id]}
+                        style={{
+                          padding: "6px 10px",
+                          borderRadius: 10,
+                          border: "1px solid #f1c0c0",
+                          background: "#fff5f5",
+                          color: "#b91c1c",
+                          cursor: deleting[l.id] ? "not-allowed" : "pointer",
+                        }}
+                      >
+                        {deleting[l.id] ? "삭제중..." : "삭제"}
+                      </button>
+                    </td>
+                  )}
                 </tr>
               );
             })}
 
             {!loadingRows && displayRows.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ padding: 14, color: "#666" }}>
+                <td colSpan={isMainAdmin ? 7 : 6} style={{ padding: 14, color: "#666" }}>
                   데이터 없음
                 </td>
               </tr>

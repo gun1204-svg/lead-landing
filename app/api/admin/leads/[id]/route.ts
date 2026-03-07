@@ -65,7 +65,6 @@ export async function PATCH(
     return NextResponse.json({ ok: false, error: "Nothing to update" }, { status: 400 });
   }
 
-  // 권한 체크용 lead 조회
   const { data: lead, error: gErr } = await supabaseAdmin
     .from("leads")
     .select("id, landing_key")
@@ -78,7 +77,6 @@ export async function PATCH(
 
   const leadLK = normalizeLandingKey(lead.landing_key) ?? null;
 
-  // 루트(00)는 전체 수정 가능, 그 외는 본인 LK만
   if (userLK !== "00" && leadLK !== userLK) {
     return NextResponse.json({ ok: false, error: "Forbidden landing_key" }, { status: 403 });
   }
@@ -99,4 +97,42 @@ export async function PATCH(
   }
 
   return NextResponse.json({ ok: true, item: updated });
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  const session = await getServerSession(authOptions);
+  const user = session?.user as SessionUser | undefined;
+
+  if (!user?.email) {
+    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  const userLK = normalizeLandingKey(user?.landing_key);
+
+  // 00(메인 admin)만 삭제 가능
+  if (userLK !== "00") {
+    return NextResponse.json(
+      { ok: false, error: "Only main admin can delete" },
+      { status: 403 }
+    );
+  }
+
+  const { id } = await context.params;
+  if (!id) {
+    return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
+  }
+
+  const { error } = await supabaseAdmin
+    .from("leads")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
 }
