@@ -44,7 +44,6 @@ function normalizeLK(v: unknown) {
 }
 
 function extractLKFromPath(pathname: string) {
-  // "/01/admin/leads" -> "01"
   const m = pathname.match(/^\/(\d{1,2})(\/|$)/);
   return normalizeLK(m?.[1] ?? "00");
 }
@@ -58,6 +57,29 @@ function fmt(n: any) {
 function safeNumber(v: any, fallback = 0) {
   const n = Number(v);
   return Number.isFinite(n) ? n : fallback;
+}
+
+function countToday(rows: Lead[]) {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const d = now.getDate();
+
+  return rows.filter((r) => {
+    const dt = new Date(r.created_at);
+    return dt.getFullYear() === y && dt.getMonth() === m && dt.getDate() === d;
+  }).length;
+}
+
+function countMonth(rows: Lead[]) {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+
+  return rows.filter((r) => {
+    const dt = new Date(r.created_at);
+    return dt.getFullYear() === y && dt.getMonth() === m;
+  }).length;
 }
 
 function StatusBadge({ status }: { status: string | null }) {
@@ -91,7 +113,6 @@ export default function AdminLeadsClient() {
   const authStatus = sess?.status;
   const session = sess?.data;
 
-  // 현재 페이지 LK (/00/admin/leads -> 00)
   const pageLK = useMemo(() => extractLKFromPath(pathname), [pathname]);
 
   // ✅ 00을 메인 admin으로 사용
@@ -100,13 +121,11 @@ export default function AdminLeadsClient() {
   // 선택 LK: 쿼리 있으면 그걸, 없으면 현재 페이지 LK
   const selectedLK = normalizeLK(sp.get("landing_key") ?? pageLK);
 
-  // 세션 LK
   const userLK = normalizeLK((session?.user as any)?.landing_key ?? "");
-
-  // 00만 전체 랜딩 전환 가능
   const canSwitchAny = userLK === "00";
 
   const [rows, setRows] = useState<Lead[]>([]);
+  const [allRows, setAllRows] = useState<Lead[]>([]); // ✅ 00용 전체 랜딩 합산 계산용
   const [err, setErr] = useState<string | null>(null);
   const [loadingRows, setLoadingRows] = useState(false);
 
@@ -147,6 +166,13 @@ export default function AdminLeadsClient() {
     return rows.filter((r) => String(r.status ?? "NEW").toUpperCase() === statusFilter);
   }, [rows, statusFilter]);
 
+  const todayCount = useMemo(() => countToday(rows), [rows]);
+  const monthCount = useMemo(() => countMonth(rows), [rows]);
+
+  const totalTodayCount = useMemo(() => countToday(allRows), [allRows]);
+  const totalMonthCount = useMemo(() => countMonth(allRows), [allRows]);
+  const totalAllCount = useMemo(() => allRows.length, [allRows]);
+
   function setLandingKey(k: string) {
     const p = new URLSearchParams(sp.toString());
     p.set("landing_key", normalizeLK(k));
@@ -179,7 +205,10 @@ export default function AdminLeadsClient() {
       }
 
       const item: Lead | undefined = json?.item;
-      if (item?.id) setRows((prev) => prev.map((r) => (r.id === item.id ? item : r)));
+      if (item?.id) {
+        setRows((prev) => prev.map((r) => (r.id === item.id ? item : r)));
+        setAllRows((prev) => prev.map((r) => (r.id === item.id ? item : r)));
+      }
 
       setDraft((prev) => {
         const next = { ...prev };
@@ -215,6 +244,7 @@ export default function AdminLeadsClient() {
       }
 
       setRows((prev) => prev.filter((r) => r.id !== id));
+      setAllRows((prev) => prev.filter((r) => r.id !== id));
     } catch (e) {
       console.error(e);
       setErr("NETWORK_ERROR");
@@ -223,6 +253,7 @@ export default function AdminLeadsClient() {
     }
   }
 
+  // ✅ 선택된 landing_key의 리드 / stats / account
   useEffect(() => {
     if (authStatus === "unauthenticated") {
       router.replace(`/${pageLK}/admin/login`);
@@ -282,6 +313,38 @@ export default function AdminLeadsClient() {
     return () => ac.abort();
   }, [authStatus, router, selectedLK, pageLK]);
 
+  // ✅ 00 메인 admin용 전체 랜딩 리드 목록
+  useEffect(() => {
+    if (authStatus !== "authenticated") return;
+    if (!isMainAdmin) return;
+
+    const ac = new AbortController();
+
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/leads", {
+          cache: "no-store",
+          signal: ac.signal,
+        });
+
+        const json = await res.json().catch(() => ({}));
+        if (res.ok) {
+          setAllRows((json.items || json.data || []) as Lead[]);
+        } else {
+          setAllRows([]);
+        }
+      } catch (e: any) {
+        if (e?.name !== "AbortError") {
+          console.error(e);
+          setAllRows([]);
+        }
+      }
+    })();
+
+    return () => ac.abort();
+  }, [authStatus, isMainAdmin]);
+
+  // ✅ 루트(00)일 때 계정 전체 리스트 로드
   useEffect(() => {
     if (authStatus !== "authenticated") return;
     if (userLK !== "00") return;
@@ -451,15 +514,32 @@ export default function AdminLeadsClient() {
           <>
             <div style={card}>
               오늘 리드
-              <div style={cardBig}>{fmt(stats?.counts?.today)}</div>
+              <div style={cardBig}>{fmt(stats?.counts?.today ?? todayCount)}</div>
             </div>
             <div style={card}>
               이번달 리드
-              <div style={cardBig}>{fmt(stats?.counts?.month)}</div>
+              <div style={cardBig}>{fmt(stats?.counts?.month ?? monthCount)}</div>
             </div>
           </>
         )}
       </div>
+
+      {isMainAdmin && (
+        <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
+          <div style={card}>
+            전체 오늘 리드
+            <div style={cardBig}>{fmt(totalTodayCount)}</div>
+          </div>
+          <div style={card}>
+            전체 이번달 리드
+            <div style={cardBig}>{fmt(totalMonthCount)}</div>
+          </div>
+          <div style={card}>
+            전체 누적 리드
+            <div style={cardBig}>{fmt(totalAllCount)}</div>
+          </div>
+        </div>
+      )}
 
       <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
         {(["ALL", ...STATUS_OPTIONS] as const).map((s) => {
@@ -712,10 +792,19 @@ function AccountRow({
       <td style={td}>{a.landing_key}</td>
       <td style={td}>{fmt(a.balance)}</td>
       <td style={td}>
-        <input type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} style={{ width: 120 }} />
+        <input
+          type="number"
+          value={price}
+          onChange={(e) => setPrice(Number(e.target.value))}
+          style={{ width: 120 }}
+        />
       </td>
       <td style={td}>
-        <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
+        <input
+          type="checkbox"
+          checked={active}
+          onChange={(e) => setActive(e.target.checked)}
+        />
       </td>
       <td style={td}>
         <button
