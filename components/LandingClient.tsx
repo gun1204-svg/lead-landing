@@ -243,7 +243,26 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
                 <label className="text-sm flex items-center gap-2 text-black">
                   <input type="checkbox" required />
-                  상담 진행을 위한 개인정보 수집에 동의합니다
+                  <span>
+                    개인정보 수집 및 이용에 동의합니다{" "}
+                    <a
+                      href="/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline"
+                    >
+                      (개인정보처리방침)
+                    </a>{" "}
+                    /{" "}
+                    <a
+                      href="/terms"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline"
+                    >
+                      (이용약관)
+                    </a>
+                  </span>
                 </label>
 
                 <button
@@ -312,7 +331,26 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
               <label className="text-sm flex items-center gap-2 text-black">
                 <input type="checkbox" required />
-                상담 진행을 위한 개인정보 수집에 동의합니다
+                <span>
+                  개인정보 수집 및 이용에 동의합니다{" "}
+                  <a
+                    href="/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
+                    (개인정보처리방침)
+                  </a>{" "}
+                  /{" "}
+                  <a
+                    href="/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
+                    (이용약관)
+                  </a>
+                </span>
               </label>
 
               <button
