@@ -23,11 +23,6 @@ type Account = {
   updated_at?: string | null;
 };
 
-type AdminLeadsClientProps = {
-  landingKey?: string;
-  isMainAdmin?: boolean;
-};
-
 const LK_KEYS = Array.from({ length: 21 }, (_, i) => String(i).padStart(2, "0"));
 
 const STATUS_OPTIONS = ["NEW", "BOOKED", "CALLED", "NO_ANSWER", "INVALID"] as const;
@@ -49,6 +44,7 @@ function normalizeLK(v: unknown) {
 }
 
 function extractLKFromPath(pathname: string) {
+  // "/01/admin/leads" -> "01"
   const m = pathname.match(/^\/(\d{1,2})(\/|$)/);
   return normalizeLK(m?.[1] ?? "00");
 }
@@ -86,10 +82,7 @@ function StatusBadge({ status }: { status: string | null }) {
   );
 }
 
-export default function AdminLeadsClient({
-  landingKey,
-  isMainAdmin = false,
-}: AdminLeadsClientProps) {
+export default function AdminLeadsClient() {
   const router = useRouter();
   const sp = useSearchParams();
   const pathname = usePathname();
@@ -98,14 +91,19 @@ export default function AdminLeadsClient({
   const authStatus = sess?.status;
   const session = sess?.data;
 
-  const pageLK = useMemo(() => {
-    if (landingKey) return normalizeLK(landingKey);
-    return extractLKFromPath(pathname);
-  }, [landingKey, pathname]);
+  // 현재 페이지 LK (/00/admin/leads -> 00)
+  const pageLK = useMemo(() => extractLKFromPath(pathname), [pathname]);
 
+  // ✅ 00을 메인 admin으로 사용
+  const isMainAdmin = pageLK === "00";
+
+  // 선택 LK: 쿼리 있으면 그걸, 없으면 현재 페이지 LK
   const selectedLK = normalizeLK(sp.get("landing_key") ?? pageLK);
 
+  // 세션 LK
   const userLK = normalizeLK((session?.user as any)?.landing_key ?? "");
+
+  // 00만 전체 랜딩 전환 가능
   const canSwitchAny = userLK === "00";
 
   const [rows, setRows] = useState<Lead[]>([]);
@@ -153,11 +151,7 @@ export default function AdminLeadsClient({
     const p = new URLSearchParams(sp.toString());
     p.set("landing_key", normalizeLK(k));
 
-    if (isMainAdmin) {
-      router.push(`/admin/leads?${p.toString()}`);
-    } else {
-      router.push(`/${pageLK}/admin/leads?${p.toString()}`);
-    }
+    router.push(`/${pageLK}/admin/leads?${p.toString()}`);
     router.refresh();
   }
 
@@ -231,11 +225,7 @@ export default function AdminLeadsClient({
 
   useEffect(() => {
     if (authStatus === "unauthenticated") {
-      if (isMainAdmin) {
-        router.replace("/admin/login");
-      } else {
-        router.replace(`/${pageLK}/admin/login`);
-      }
+      router.replace(`/${pageLK}/admin/login`);
       return;
     }
     if (authStatus !== "authenticated") return;
@@ -290,7 +280,7 @@ export default function AdminLeadsClient({
     })();
 
     return () => ac.abort();
-  }, [authStatus, router, selectedLK, pageLK, isMainAdmin]);
+  }, [authStatus, router, selectedLK, pageLK]);
 
   useEffect(() => {
     if (authStatus !== "authenticated") return;
@@ -355,7 +345,9 @@ export default function AdminLeadsClient({
       await refreshAccountsList();
 
       if (account?.admin_id === admin_id) {
-        const res2 = await fetch(`/api/admin/accounts?landing_key=${encodeURIComponent(selectedLK)}`, { cache: "no-store" });
+        const res2 = await fetch(`/api/admin/accounts?landing_key=${encodeURIComponent(selectedLK)}`, {
+          cache: "no-store",
+        });
         const j2 = await res2.json().catch(() => ({}));
         if (res2.ok) setAccount(j2.item || null);
       }
@@ -364,7 +356,12 @@ export default function AdminLeadsClient({
     }
   }
 
-  async function saveAccountSetting(admin_id: string, landing_key: string, price_per_lead: number, is_active: boolean) {
+  async function saveAccountSetting(
+    admin_id: string,
+    landing_key: string,
+    price_per_lead: number,
+    is_active: boolean
+  ) {
     if (userLK !== "00") return;
 
     const res = await fetch("/api/admin/accounts", {
@@ -382,7 +379,9 @@ export default function AdminLeadsClient({
     await refreshAccountsList();
 
     if (landing_key === selectedLK) {
-      const res2 = await fetch(`/api/admin/accounts?landing_key=${encodeURIComponent(selectedLK)}`, { cache: "no-store" });
+      const res2 = await fetch(`/api/admin/accounts?landing_key=${encodeURIComponent(selectedLK)}`, {
+        cache: "no-store",
+      });
       const j2 = await res2.json().catch(() => ({}));
       if (res2.ok) setAccount(j2.item || null);
     }
@@ -403,11 +402,7 @@ export default function AdminLeadsClient({
         </div>
 
         <button
-          onClick={() =>
-            signOut({
-              callbackUrl: isMainAdmin ? "/admin/login" : `/${pageLK}/admin/login`,
-            })
-          }
+          onClick={() => signOut({ callbackUrl: `/${pageLK}/admin/login` })}
           style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #ddd", background: "#fff" }}
         >
           로그아웃
@@ -533,7 +528,13 @@ export default function AdminLeadsClient({
             <button
               onClick={doTopup}
               disabled={topupLoading}
-              style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #ddd", background: "#111", color: "#fff" }}
+              style={{
+                padding: "8px 12px",
+                borderRadius: 10,
+                border: "1px solid #ddd",
+                background: "#111",
+                color: "#fff",
+              }}
             >
               {topupLoading ? "충전중..." : "충전"}
             </button>
