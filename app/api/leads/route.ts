@@ -49,16 +49,23 @@ export async function POST(req: Request) {
 
     const lk = normalizeLandingKey(landing_key);
 
-    // ✅ 중복 리드 체크 (같은 전화 + 같은 랜딩 + 최근 7일)
+    // 같은 전화번호 + 같은 랜딩 + 최근 7일 중복 차단
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    const { data: existing } = await supabaseAdmin
+    const { data: existing, error: existingError } = await supabaseAdmin
       .from("leads")
       .select("id")
       .eq("phone", cleanPhone)
       .eq("landing_key", lk)
       .gte("created_at", sevenDaysAgo)
       .limit(1);
+
+    if (existingError) {
+      return NextResponse.json(
+        { ok: false, error: existingError.message },
+        { status: 500 }
+      );
+    }
 
     if (existing && existing.length > 0) {
       console.log("duplicate lead blocked:", cleanPhone, lk);
@@ -90,6 +97,10 @@ export async function POST(req: Request) {
     }
 
     try {
+      const now = new Date().toLocaleString("ko-KR", {
+        timeZone: "Asia/Seoul",
+      });
+
       await sendTelegram(
 `🔥 새 상담 리드 접수
 
@@ -112,7 +123,6 @@ ${now}`
     }
 
     return NextResponse.json(data);
-
   } catch (err: any) {
     return NextResponse.json(
       { ok: false, error: err?.message || "UNKNOWN_ERROR" },
