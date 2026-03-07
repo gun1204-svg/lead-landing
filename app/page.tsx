@@ -143,9 +143,29 @@ export default function Home() {
                   required
                 />
 
-                <label className="text-sm flex items-center gap-2 text-black">
-                  <input type="checkbox" required />
-                  상담 진행을 위한 개인정보 수집에 동의합니다
+                <label className="text-sm flex items-start gap-2 text-black leading-5">
+                  <input type="checkbox" required className="mt-1" />
+                  <span>
+                    개인정보 수집 및 이용에 동의합니다
+                    <br />
+                    <a
+                      href="/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline"
+                    >
+                      (개인정보처리방침)
+                    </a>{" "}
+                    /{" "}
+                    <a
+                      href="/terms"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline"
+                    >
+                      (이용약관)
+                    </a>
+                  </span>
                 </label>
 
                 <button
@@ -155,8 +175,6 @@ export default function Home() {
                 >
                   {submitting ? "전송 중..." : config.submitLabel}
                 </button>
-
-
               </form>
             </div>
           </div>
@@ -214,9 +232,29 @@ export default function Home() {
                 required
               />
 
-              <label className="text-sm flex items-center gap-2 text-black">
-                <input type="checkbox" required />
-                상담 진행을 위한 개인정보 수집에 동의합니다
+              <label className="text-sm flex items-start gap-2 text-black leading-5">
+                <input type="checkbox" required className="mt-1" />
+                <span>
+                  개인정보 수집 및 이용에 동의합니다
+                  <br />
+                  <a
+                    href="/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
+                    (개인정보처리방침)
+                  </a>{" "}
+                  /{" "}
+                  <a
+                    href="/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
+                    (이용약관)
+                  </a>
+                </span>
               </label>
 
               <button
@@ -226,8 +264,6 @@ export default function Home() {
               >
                 {submitting ? "전송 중..." : config.mobileSubmitLabel ?? config.submitLabel}
               </button>
-
-
             </form>
           </div>
         </div>
