@@ -21,11 +21,12 @@ export default function Home() {
   const config = getLandingConfig("00");
 
   const pages = useMemo(() => {
-    return Array.from({ length: 10 }, (_, i) => {
+    const count = config.pageCount ?? 10;
+    return Array.from({ length: count }, (_, i) => {
       const n = String(i + 1).padStart(2, "0");
       return `${config.introPath}/${n}.png`;
     });
-  }, [config.introPath]);
+  }, [config.introPath, config.pageCount]);
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -52,9 +53,7 @@ export default function Home() {
         name: trimmedName,
         phone: normalizedPhone,
         landing_key: config.key,
-
         ...utmFlat,
-
         utm: {
           source: utmFlat.utm_source,
           campaign: utmFlat.utm_campaign,
@@ -119,9 +118,13 @@ export default function Home() {
         <aside className="hidden lg:block h-full border-l bg-gray-50">
           <div className="sticky top-0 h-[100svh] flex items-center justify-center p-6">
             <div className="w-full max-w-[380px] bg-white p-8 rounded-xl shadow-md">
-              <h1 className="text-2xl font-bold mb-4 text-center text-black">
+              <h1 className="text-2xl font-bold text-center text-black">
                 {config.title}
               </h1>
+
+              <p className="text-sm text-gray-600 text-center mt-2 mb-4">
+                {config.description}
+              </p>
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <input
@@ -142,7 +145,7 @@ export default function Home() {
 
                 <label className="text-sm flex items-center gap-2 text-black">
                   <input type="checkbox" required />
-                  개인정보 수집에 동의합니다.
+                  상담 진행을 위한 개인정보 수집에 동의합니다
                 </label>
 
                 <button
@@ -152,6 +155,8 @@ export default function Home() {
                 >
                   {submitting ? "전송 중..." : config.submitLabel}
                 </button>
+
+
               </form>
             </div>
           </div>
@@ -163,7 +168,7 @@ export default function Home() {
           onClick={() => setOpen(true)}
           className="w-full bg-black text-white py-3 rounded"
         >
-          {config.submitLabel}
+          {config.mobileSubmitLabel ?? config.submitLabel}
         </button>
       </div>
 
@@ -184,9 +189,13 @@ export default function Home() {
               ✕
             </button>
 
-            <h2 className="text-xl font-bold mb-4 text-center text-black">
+            <h2 className="text-xl font-bold text-center text-black">
               {config.title}
             </h2>
+
+            <p className="text-sm text-gray-600 text-center mt-2 mb-4">
+              {config.description}
+            </p>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <input
@@ -207,7 +216,7 @@ export default function Home() {
 
               <label className="text-sm flex items-center gap-2 text-black">
                 <input type="checkbox" required />
-                개인정보 수집에 동의합니다.
+                상담 진행을 위한 개인정보 수집에 동의합니다
               </label>
 
               <button
@@ -215,8 +224,10 @@ export default function Home() {
                 disabled={submitting}
                 className="bg-black text-white py-3 rounded disabled:opacity-60"
               >
-                {submitting ? "전송 중..." : "상담 신청"}
+                {submitting ? "전송 중..." : config.mobileSubmitLabel ?? config.submitLabel}
               </button>
+
+
             </form>
           </div>
         </div>
