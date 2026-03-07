@@ -42,11 +42,32 @@ export async function POST(req: Request) {
 
     const cleanName = (name || "").trim();
     const cleanPhone = normalizePhone(phone || "");
+
     if (!cleanName || !cleanPhone) {
       return NextResponse.json({ ok: false, error: "INVALID" }, { status: 400 });
     }
 
     const lk = normalizeLandingKey(landing_key);
+
+    // ✅ 중복 리드 체크 (같은 전화 + 같은 랜딩 + 최근 7일)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: existing } = await supabaseAdmin
+      .from("leads")
+      .select("id")
+      .eq("phone", cleanPhone)
+      .eq("landing_key", lk)
+      .gte("created_at", sevenDaysAgo)
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      console.log("duplicate lead blocked:", cleanPhone, lk);
+
+      return NextResponse.json({
+        ok: true,
+        duplicate: true,
+      });
+    }
 
     const { data, error } = await supabaseAdmin.rpc("create_lead_and_charge", {
       p_name: cleanName,
@@ -70,22 +91,28 @@ export async function POST(req: Request) {
 
     try {
       await sendTelegram(
-        `새 리드 접수
+`🔥 새 상담 리드 접수
 
-이름: ${cleanName}
-전화: ${cleanPhone}
-랜딩: ${lk}
+🏥 랜딩: ${lk}
+👤 이름: ${cleanName}
+📞 전화: ${cleanPhone}
+tel:${cleanPhone}
 
+📊 광고 정보
 utm_source: ${utm?.source ?? ""}
 utm_campaign: ${utm?.campaign ?? ""}
 utm_term: ${utm?.term ?? ""}
-utm_content: ${utm?.content ?? ""}`
+utm_content: ${utm?.content ?? ""}
+
+🕒 접수시간
+${now}`
       );
     } catch (tgErr) {
       console.error("telegram alert error:", tgErr);
     }
 
     return NextResponse.json(data);
+
   } catch (err: any) {
     return NextResponse.json(
       { ok: false, error: err?.message || "UNKNOWN_ERROR" },
