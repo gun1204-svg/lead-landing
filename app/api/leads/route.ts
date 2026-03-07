@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { getLandingConfig } from "@/lib/landing";
 
 function normalizePhone(phone: string) {
   return phone.replace(/[^\d]/g, "");
@@ -12,9 +13,8 @@ function normalizeLandingKey(v: unknown) {
   return "00";
 }
 
-async function sendTelegram(text: string) {
+async function sendTelegram(text: string, chatId?: string) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
 
   if (!token || !chatId) {
     console.log("telegram env missing");
@@ -48,6 +48,7 @@ export async function POST(req: Request) {
     }
 
     const lk = normalizeLandingKey(landing_key);
+    const landingConfig = getLandingConfig(lk);
 
     // 같은 전화번호 + 같은 랜딩 + 최근 7일 중복 차단
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -104,7 +105,8 @@ export async function POST(req: Request) {
       await sendTelegram(
 `🔥 새 상담 리드 접수
 
-🏥 랜딩: ${lk}
+🏥 병원: ${landingConfig.hospitalName}
+🗂 랜딩: ${lk}
 👤 이름: ${cleanName}
 📞 전화: ${cleanPhone}
 tel:${cleanPhone}
@@ -116,7 +118,8 @@ utm_term: ${utm?.term ?? ""}
 utm_content: ${utm?.content ?? ""}
 
 🕒 접수시간
-${now}`
+${now}`,
+        landingConfig.telegramChatId
       );
     } catch (tgErr) {
       console.error("telegram alert error:", tgErr);
