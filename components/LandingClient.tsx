@@ -293,12 +293,20 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       </div>
 
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-        <button
-          onClick={() => setOpen(true)}
+       <button
+         onClick={() => {
+            if (typeof window !== "undefined" && window.fbq) {
+              window.fbq("track", "Contact", {
+                landing_key: config.key,
+              });
+            }
+
+            setOpen(true);
+          }}
           className="w-full bg-black text-white py-3 rounded"
-        >
+       >
           {config.mobileSubmitLabel ?? config.submitLabel}
-        </button>
+       </button>
       </div>
 
       {open && (
