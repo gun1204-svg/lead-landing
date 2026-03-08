@@ -7,7 +7,7 @@ import { getLandingConfig, normalizeLK } from "@/lib/landing";
 declare global {
   interface Window {
     fbq?: (
-      command: "track",
+      command: "track" | "trackCustom",
       eventName: string,
       params?: Record<string, unknown>,
       options?: Record<string, unknown>
@@ -97,6 +97,46 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
     }
   }, [config.key]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let fired = false;
+
+    const handleScroll = () => {
+      if (fired) return;
+
+      const scrollArea = document.querySelector(".scroll-area") as HTMLElement | null;
+      if (!scrollArea) return;
+
+      const maxScroll = scrollArea.scrollHeight - scrollArea.clientHeight;
+      if (maxScroll <= 0) return;
+
+      const scrollPercent = (scrollArea.scrollTop / maxScroll) * 100;
+
+      if (scrollPercent >= 50) {
+        fired = true;
+
+        if (window.fbq) {
+          window.fbq("trackCustom", "Scroll50", {
+            content_name: `landing_${config.key}`,
+            landing_key: config.key,
+          });
+        }
+
+        scrollArea.removeEventListener("scroll", handleScroll);
+      }
+    };
+
+    const scrollArea = document.querySelector(".scroll-area") as HTMLElement | null;
+    if (!scrollArea) return;
+
+    scrollArea.addEventListener("scroll", handleScroll);
+
+    return () => {
+      scrollArea.removeEventListener("scroll", handleScroll);
+    };
+  }, [config.key, pages.length]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (submitting) return;
@@ -163,10 +203,10 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
           );
         }
 
-        if (typeof window !== "undefined" && (window as any).kakaoPixel) {
-        (window as any)
-        .kakaoPixel("4124381110897915848")
-        .participation("Consulting");
+        if ((window as any).kakaoPixel) {
+          (window as any)
+            .kakaoPixel("4124381110897915848")
+            .participation("Consulting");
         }
       }
 
@@ -293,8 +333,8 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       </div>
 
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-       <button
-         onClick={() => {
+        <button
+          onClick={() => {
             if (typeof window !== "undefined" && window.fbq) {
               window.fbq("track", "Contact", {
                 landing_key: config.key,
@@ -304,9 +344,9 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
             setOpen(true);
           }}
           className="w-full bg-black text-white py-3 rounded"
-       >
+        >
           {config.mobileSubmitLabel ?? config.submitLabel}
-       </button>
+        </button>
       </div>
 
       {open && (
