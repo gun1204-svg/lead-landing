@@ -295,10 +295,11 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                   required
                 />
 
-                <label className="text-sm flex items-center gap-2 text-black">
-                  <input type="checkbox" required />
+                <label className="text-sm flex items-center gap-2 text-black leading-5">
+                  <input type="checkbox" required className="mt-1" />
                   <span>
                     개인정보 수집 및 이용에 동의합니다{" "}
+                    <br />
                     <a
                       href="/privacy"
                       target="_blank"
