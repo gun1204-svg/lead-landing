@@ -74,14 +74,12 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-
-  const META_PIXEL_ID = "1955884414711088";
+  const META_PIXEL_ID = "1564723598157601";
   const KAKAO_PIXEL_ID = "4124381110897915848";
 
   return (
     <html lang="ko">
       <head>
-
         {/* ✅ Meta Pixel */}
         <Script
           id="meta-pixel"
@@ -100,7 +98,7 @@ s=b.getElementsByTagName(e)[0];
 s.parentNode.insertBefore(t,s);
 }(window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
 
-fbq('init', '${META_PIXEL_ID}');
+fbq('init', '1564723598157601');
 fbq('track', 'PageView');
             `,
           }}
@@ -117,20 +115,15 @@ fbq('track', 'PageView');
 
         {/* ✅ Kakao Pixel */}
         <Script
+          id="kakao-pixel"
           src="//t1.daumcdn.net/kas/static/kp.js"
           strategy="afterInteractive"
-        />
-
-        <Script
-          id="kakao-pixel-init"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              kakaoPixel('4124381110897915848}').pageView();
-            `,
+          onLoad={() => {
+            if (typeof window !== "undefined" && (window as any).kakaoPixel) {
+              (window as any).kakaoPixel("4124381110897915848").pageView();
+            }
           }}
         />
-
       </head>
 
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
