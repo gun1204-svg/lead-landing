@@ -12,6 +12,12 @@ declare global {
       params?: Record<string, unknown>,
       options?: Record<string, unknown>
     ) => void;
+    kakaoPixel?: (
+      pixelId: string
+    ) => {
+      pageView: () => void;
+      participation: (tag: string) => void;
+    };
   }
 }
 
@@ -142,18 +148,26 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
         return;
       }
 
-      if (!json?.duplicate && typeof window !== "undefined" && window.fbq) {
-        window.fbq(
-          "track",
-          "Lead",
-          {
-            content_name: `landing_${config.key}`,
-            landing_key: config.key,
-          },
-          {
-            eventID: eventId,
-          }
-        );
+      if (!json?.duplicate && typeof window !== "undefined") {
+        if (window.fbq) {
+          window.fbq(
+            "track",
+            "Lead",
+            {
+              content_name: `landing_${config.key}`,
+              landing_key: config.key,
+            },
+            {
+              eventID: eventId,
+            }
+          );
+        }
+
+        if (window.kakaoPixel) {
+          window
+            .kakaoPixel("4124381110897915848")
+            .participation("Consulting");
+        }
       }
 
       alert(
@@ -330,28 +344,28 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
               />
 
               <label className="text-sm flex items-start gap-2 text-black leading-5">
-              <input type="checkbox" required className="mt-1" />
-              <span>
-                개인정보 수집 및 이용에 동의합니다
-                <br />
-                <a
-                href="/privacy"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline"
-                >
-                  (개인정보처리방침)
-                 </a>{" "}
-                 /{" "}
-                 <a
-                 href="/terms"
-                 target="_blank"
-                 rel="noopener noreferrer"
-                 className="underline"
-                 >
-                 (이용약관)
-                 </a>
-               </span>
+                <input type="checkbox" required className="mt-1" />
+                <span>
+                  개인정보 수집 및 이용에 동의합니다
+                  <br />
+                  <a
+                    href="/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
+                    (개인정보처리방침)
+                  </a>{" "}
+                  /{" "}
+                  <a
+                    href="/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
+                    (이용약관)
+                  </a>
+                </span>
               </label>
 
               <button
