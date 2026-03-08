@@ -163,10 +163,10 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
           );
         }
 
-        if (window.kakaoPixel) {
-          window
-            .kakaoPixel("4124381110897915848")
-            .participation("Consulting");
+        if (typeof window !== "undefined" && (window as any).kakaoPixel) {
+        (window as any)
+        .kakaoPixel("4124381110897915848")
+        .participation("Consulting");
         }
       }
 

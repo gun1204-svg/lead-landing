@@ -126,7 +126,7 @@ fbq('track', 'PageView');
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
-              kakaoPixel('${KAKAO_PIXEL_ID}').pageView();
+              kakaoPixel('4124381110897915848}').pageView();
             `,
           }}
         />
