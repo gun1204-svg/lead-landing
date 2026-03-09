@@ -268,7 +268,6 @@ export async function POST(req: Request) {
 🗂 랜딩: ${lk}
 👤 이름: ${cleanName}
 📞 전화: ${cleanPhone}
-tel:${cleanPhone}
 
 📊 광고 정보
 utm_source: ${utm?.source ?? ""}
