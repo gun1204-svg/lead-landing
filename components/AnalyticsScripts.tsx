@@ -3,7 +3,7 @@
 import Script from "next/script";
 
 export default function AnalyticsScripts() {
-  const META_PIXEL_ID = "1368163988333026";
+  const META_PIXEL_ID = "1955884414711088";
   const KAKAO_PIXEL_ID = "4124381110897915848";
 
   return (
