@@ -18,6 +18,10 @@ declare global {
       pageView: () => void;
       participation: (tag: string) => void;
     };
+    karrotPixel?: {
+      init: (pixelId: string) => void;
+      track: (eventName: string, params?: Record<string, unknown>) => void;
+    };
   }
 }
 
@@ -203,10 +207,13 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
           );
         }
 
-        if ((window as any).kakaoPixel) {
-          (window as any)
-            .kakaoPixel("4124381110897915848")
-            .participation("Consulting");
+        if (window.kakaoPixel) {
+          window.kakaoPixel("4124381110897915848").participation("Consulting");
+        }
+
+        // ✅ 당근 픽셀 전환 이벤트 추가
+        if (window.karrotPixel) {
+          window.karrotPixel.track("CompleteRegistration");
         }
       }
 

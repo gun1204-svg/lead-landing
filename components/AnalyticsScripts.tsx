@@ -5,6 +5,7 @@ import Script from "next/script";
 export default function AnalyticsScripts() {
   const META_PIXEL_ID = "1955884414711088";
   const KAKAO_PIXEL_ID = "4124381110897915848";
+  const KARROT_PIXEL_ID = "1773755788540380001";
 
   return (
     <>
@@ -32,14 +33,12 @@ fbq('track', 'PageView');
         }}
       />
 
-      {/* Kakao Pixel script */}
+      {/* Kakao Pixel */}
       <Script
         id="kakao-pixel-lib"
         src="https://t1.daumcdn.net/kas/static/kp.js"
         strategy="afterInteractive"
       />
-
-      {/* Kakao Pixel init */}
       <Script
         id="kakao-pixel-init"
         strategy="afterInteractive"
@@ -56,6 +55,19 @@ fbq('track', 'PageView');
   tryInit();
 })();
           `,
+        }}
+      />
+
+      {/* Karrot Pixel */}
+      <Script
+        id="karrot-pixel-lib"
+        src="https://karrot-pixel.business.daangn.com/karrot-pixel.js"
+        strategy="afterInteractive"
+        onLoad={() => {
+          if (window.karrotPixel) {
+            window.karrotPixel.init(KARROT_PIXEL_ID);
+            window.karrotPixel.track("ViewPage");
+          }
         }}
       />
     </>
