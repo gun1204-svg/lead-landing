@@ -6,6 +6,7 @@ import { getLandingConfig, normalizeLK } from "@/lib/landing";
 
 declare global {
   interface Window {
+    dataLayer?: Record<string, unknown>[];
     fbq?: (
       command: "track" | "trackCustom",
       eventName: string,
@@ -120,6 +121,13 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       if (scrollPercent >= 50) {
         fired = true;
 
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+          event: "scroll_50",
+          landing_key: config.key,
+          content_name: `landing_${config.key}`,
+        });
+
         if (window.fbq) {
           window.fbq("trackCustom", "Scroll50", {
             content_name: `landing_${config.key}`,
@@ -193,6 +201,23 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       }
 
       if (!json?.duplicate && typeof window !== "undefined") {
+        // ✅ GTM / dataLayer 전환 이벤트
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+          event: "lead_submit",
+          landing_key: config.key,
+          content_name: `landing_${config.key}`,
+          event_id: eventId,
+          page_url: pageUrl,
+          name: trimmedName,
+          phone: normalizedPhone,
+          utm_source: utmFlat.utm_source,
+          utm_campaign: utmFlat.utm_campaign,
+          utm_term: utmFlat.utm_term,
+          utm_content: utmFlat.utm_content,
+        });
+
+        // ✅ Meta Pixel
         if (window.fbq) {
           window.fbq(
             "track",
@@ -207,11 +232,12 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
           );
         }
 
+        // ✅ Kakao Pixel
         if (window.kakaoPixel) {
           window.kakaoPixel("4124381110897915848").participation("Consulting");
         }
 
-        // ✅ 당근 픽셀 전환 이벤트 추가
+        // ✅ Karrot Pixel
         if (window.karrotPixel) {
           window.karrotPixel.track("CompleteRegistration");
         }
@@ -343,10 +369,19 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
         <button
           onClick={() => {
-            if (typeof window !== "undefined" && window.fbq) {
-              window.fbq("track", "Contact", {
+            if (typeof window !== "undefined") {
+              window.dataLayer = window.dataLayer || [];
+              window.dataLayer.push({
+                event: "form_open",
                 landing_key: config.key,
+                content_name: `landing_${config.key}`,
               });
+
+              if (window.fbq) {
+                window.fbq("track", "Contact", {
+                  landing_key: config.key,
+                });
+              }
             }
 
             setOpen(true);

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
 import AnalyticsScripts from "@/components/AnalyticsScripts";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,56 +17,15 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://bienptns.com"),
-
   title: {
     default: "Bienpartners",
     template: "%s | Bienpartners",
   },
-
   description:
     "비엔파트너스 마케팅 상담 랜딩페이지. 네이버 광고, 구글 광고, 퍼포먼스 마케팅 전문.",
-
   icons: {
     icon: "/icon.png",
     apple: "/apple-icon.png",
-  },
-
-  keywords: [
-    "비엔파트너스",
-    "Bienpartners",
-    "마케팅 상담",
-    "네이버 광고",
-    "구글 광고",
-    "퍼포먼스 마케팅",
-    "광고 대행",
-  ],
-
-  alternates: {
-    canonical: "https://bienptns.com",
-  },
-
-  openGraph: {
-    type: "website",
-    url: "https://bienptns.com",
-    siteName: "Bienpartners",
-    title: "Bienpartners",
-    description:
-      "비엔파트너스 마케팅 상담 신청. 이름과 전화번호만 남기면 담당자가 연락드립니다.",
-    images: [
-      {
-        url: "/og.png",
-        width: 1200,
-        height: 630,
-        alt: "Bienpartners",
-      },
-    ],
-  },
-
-  twitter: {
-    card: "summary_large_image",
-    title: "Bienpartners",
-    description: "비엔파트너스 마케팅 상담 신청",
-    images: ["/og.png"],
   },
 };
 
@@ -77,19 +37,34 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
+        {/* ✅ GTM HEAD */}
+        <Script id="gtm-head" strategy="beforeInteractive">
+          {`
+            (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+            'https://www.googletagmanager.com/gtm.js?id=GTM-5TFNS63T'+dl;f.parentNode.insertBefore(j,f);
+            })(window,document,'script','dataLayer','GTM-5TFNS63T');
+          `}
+        </Script>
+
+        {/* 기존 픽셀 */}
         <AnalyticsScripts />
-        <noscript>
-          <img
-            height="1"
-            width="1"
-            style={{ display: "none" }}
-            src="https://www.facebook.com/tr?id=1955884414711088&ev=PageView&noscript=1"
-            alt=""
-          />
-        </noscript>
       </head>
 
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        {/* ✅ GTM BODY */}
+        <noscript>
+          <iframe
+            src="https://www.googletagmanager.com/ns.html?id=GTM-5TFNS63T"
+            height="0"
+            width="0"
+            style={{ display: "none", visibility: "hidden" }}
+          />
+        </noscript>
+
         <Providers>{children}</Providers>
       </body>
     </html>
