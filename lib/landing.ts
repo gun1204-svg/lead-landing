@@ -35,9 +35,9 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
   },
   "02": {
     key: "02",
-    hospitalName: "02병원",
-    title: "치과 상담 신청",
-    description: "병원에서 상담 전화 드립니다",
+    hospitalName: "미호성형외과",
+    title: "미호성형외과 상담 신청",
+    description: "지금 바로 상담 받아보세요",
     introPath: "/intro/02",
     submitLabel: "상담 받기",
     mobileSubmitLabel: "상담 받기",

@@ -259,19 +259,21 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
   return (
     <main className="w-screen h-[100svh] overflow-hidden bg-white">
-      <div
-        className="fixed top-4 left-4 z-50 cursor-pointer"
-        onClick={() => {
-          const scrollArea = document.querySelector(".scroll-area") as HTMLElement | null;
-          if (scrollArea) scrollArea.scrollTo({ top: 0, behavior: "smooth" });
-        }}
-      >
-        <img
-          src="/logo.png"
-          alt="비엔파트너스"
-          className="h-12 lg:h-20 object-contain drop-shadow-lg"
-        />
-      </div>
+      {config.key === "00" && (
+        <div
+          className="fixed top-4 left-4 z-50 cursor-pointer"
+          onClick={() => {
+            const scrollArea = document.querySelector(".scroll-area") as HTMLElement | null;
+            if (scrollArea) scrollArea.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        >
+          <img
+            src="/logo.png"
+            alt="비엔파트너스"
+            className="h-12 lg:h-20 object-contain drop-shadow-lg"
+          />
+        </div>
+      )}
 
       <div className="h-full w-full grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_420px]">
         <div
