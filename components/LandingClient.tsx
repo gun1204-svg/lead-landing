@@ -88,6 +88,8 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
     });
   }, [config.introPath, config.pageCount]);
 
+  const isSingleLongImage = pages.length === 1;
+
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [open, setOpen] = useState(false);
@@ -271,12 +273,12 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
         />
       </div>
 
-      <div className="h-full w-full grid grid-cols-1 lg:grid-cols-[1fr_420px]">
+      <div className="h-full w-full grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_420px]">
         <div
           className={[
             "scroll-area h-full",
-            pages.length === 1
-              ? "overflow-hidden"
+            isSingleLongImage
+              ? "overflow-y-auto"
               : "overflow-y-scroll snap-y snap-mandatory",
             "pb-24 lg:pb-0",
           ].join(" ")}
@@ -288,8 +290,8 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
               <section
                 key={src}
                 className={
-                  pages.length === 1
-                    ? "h-[100svh]"
+                  isSingleLongImage
+                    ? "w-full"
                     : "snap-start snap-always h-[100svh]"
                 }
               >
@@ -300,7 +302,11 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                     e.currentTarget.src = src;
                   }}
                   alt=""
-                  className="w-full h-full object-contain md:object-cover bg-white"
+                  className={
+                    isSingleLongImage
+                      ? "block w-full h-auto bg-white"
+                      : "w-full h-full object-contain md:object-cover bg-white"
+                  }
                   draggable={false}
                 />
               </section>
@@ -308,73 +314,77 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
           })}
         </div>
 
-        <aside className="hidden lg:block h-full border-l bg-gray-50">
-          <div className="sticky top-0 h-[100svh] flex items-center justify-center p-6">
-            <div className="w-full max-w-[380px] bg-white p-8 rounded-xl shadow-md">
-              <h1 className="text-2xl font-bold text-center text-black">
-                {config.title}
-              </h1>
+        <aside className="hidden lg:block h-full border-l border-gray-200 bg-[#f8f8f8]">
+          <div className="sticky top-0 h-[100svh] p-6">
+            <div className="flex h-full items-center justify-center">
+              <div className="w-full max-w-[380px] rounded-2xl border border-gray-200 bg-white p-8 shadow-[0_10px_30px_rgba(0,0,0,0.08)]">
+                <div className="mb-6">
+                  <h1 className="text-2xl font-bold text-center text-black leading-tight">
+                    {config.title}
+                  </h1>
 
-              <p className="text-sm text-gray-600 text-center mt-2 mb-4">
-                {config.description}
-              </p>
+                  <p className="text-sm text-gray-600 text-center mt-2 leading-6">
+                    {config.description}
+                  </p>
+                </div>
 
-              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                <input
-                  className="border p-2 rounded text-black placeholder:text-gray-400"
-                  placeholder="이름"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                  <input
+                    className="h-12 border border-gray-300 px-3 rounded-lg text-black placeholder:text-gray-400 outline-none focus:border-black"
+                    placeholder="이름"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
 
-                <input
-                  className="border p-2 rounded text-black placeholder:text-gray-400"
-                  placeholder="전화번호"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  required
-                />
+                  <input
+                    className="h-12 border border-gray-300 px-3 rounded-lg text-black placeholder:text-gray-400 outline-none focus:border-black"
+                    placeholder="전화번호"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
+                  />
 
-                <label className="text-sm flex items-center gap-2 text-black leading-5">
-                  <input type="checkbox" required className="mt-1" />
-                  <span>
-                    개인정보 수집 및 이용에 동의합니다{" "}
-                    <br />
-                    <a
-                      href="/privacy"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline"
-                    >
-                      (개인정보처리방침)
-                    </a>{" "}
-                    /{" "}
-                    <a
-                      href="/terms"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline"
-                    >
-                      (이용약관)
-                    </a>
-                  </span>
-                </label>
+                  <label className="text-sm flex items-start gap-2 text-black leading-5">
+                    <input type="checkbox" required className="mt-1" />
+                    <span>
+                      개인정보 수집 및 이용에 동의합니다
+                      <br />
+                      <a
+                        href="/privacy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline"
+                      >
+                        (개인정보처리방침)
+                      </a>{" "}
+                      /{" "}
+                      <a
+                        href="/terms"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline"
+                      >
+                        (이용약관)
+                      </a>
+                    </span>
+                  </label>
 
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="bg-black text-white py-2 rounded hover:bg-gray-800 disabled:opacity-60"
-                >
-                  {submitting ? "전송 중..." : config.submitLabel}
-                </button>
-              </form>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="mt-1 h-12 rounded-lg bg-black text-white font-medium hover:bg-gray-800 disabled:opacity-60"
+                  >
+                    {submitting ? "전송 중..." : config.submitLabel}
+                  </button>
+                </form>
+              </div>
             </div>
           </div>
         </aside>
       </div>
 
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
         <button
           onClick={() => {
             if (typeof window !== "undefined") {
@@ -394,7 +404,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
             setOpen(true);
           }}
-          className="w-full bg-black text-white py-3 rounded"
+          className="w-full h-12 rounded-lg bg-black text-white font-medium shadow-md"
         >
           {config.mobileSubmitLabel ?? config.submitLabel}
         </button>
@@ -402,11 +412,11 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
       {open && (
         <div
-          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center lg:items-center p-0 lg:p-4"
           onClick={() => setOpen(false)}
         >
           <div
-            className="bg-white w-full max-w-md p-6 rounded-xl relative"
+            className="bg-white w-full max-w-md p-6 rounded-t-2xl lg:rounded-2xl relative max-h-[85svh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -421,13 +431,13 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
               {config.title}
             </h2>
 
-            <p className="text-sm text-gray-600 text-center mt-2 mb-4">
+            <p className="text-sm text-gray-600 text-center mt-2 mb-4 leading-6">
               {config.description}
             </p>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <input
-                className="border p-3 rounded text-black placeholder:text-gray-400"
+                className="h-12 border border-gray-300 px-3 rounded-lg text-black placeholder:text-gray-400 outline-none focus:border-black"
                 placeholder="이름"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -435,7 +445,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
               />
 
               <input
-                className="border p-3 rounded text-black placeholder:text-gray-400"
+                className="h-12 border border-gray-300 px-3 rounded-lg text-black placeholder:text-gray-400 outline-none focus:border-black"
                 placeholder="전화번호"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
@@ -470,7 +480,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
               <button
                 type="submit"
                 disabled={submitting}
-                className="bg-black text-white py-3 rounded disabled:opacity-60"
+                className="h-12 rounded-lg bg-black text-white font-medium disabled:opacity-60"
               >
                 {submitting ? "전송 중..." : config.mobileSubmitLabel ?? config.submitLabel}
               </button>
