@@ -201,7 +201,6 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       }
 
       if (!json?.duplicate && typeof window !== "undefined") {
-        // ✅ GTM / dataLayer 전환 이벤트
         window.dataLayer = window.dataLayer || [];
         window.dataLayer.push({
           event: "lead_submit",
@@ -217,7 +216,6 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
           utm_content: utmFlat.utm_content,
         });
 
-        // ✅ Meta Pixel
         if (window.fbq) {
           window.fbq(
             "track",
@@ -232,12 +230,10 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
           );
         }
 
-        // ✅ Kakao Pixel
         if (window.kakaoPixel) {
           window.kakaoPixel("4124381110897915848").participation("Consulting");
         }
 
-        // ✅ Karrot Pixel
         if (window.karrotPixel) {
           window.karrotPixel.track("CompleteRegistration");
         }
@@ -285,19 +281,31 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
             "pb-24 lg:pb-0",
           ].join(" ")}
         >
-          {pages.map((src) => (
-            <section
-              key={src}
-              className={pages.length === 1 ? "h-[100svh]" : "snap-start snap-always h-[100svh]"}
-            >
-              <img
-                src={src}
-                alt=""
-                className="w-full h-full object-contain md:object-cover bg-white"
-                draggable={false}
-              />
-            </section>
-          ))}
+          {pages.map((src) => {
+            const jpgSrc = src.replace(".png", ".jpg");
+
+            return (
+              <section
+                key={src}
+                className={
+                  pages.length === 1
+                    ? "h-[100svh]"
+                    : "snap-start snap-always h-[100svh]"
+                }
+              >
+                <img
+                  src={jpgSrc}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = src;
+                  }}
+                  alt=""
+                  className="w-full h-full object-contain md:object-cover bg-white"
+                  draggable={false}
+                />
+              </section>
+            );
+          })}
         </div>
 
         <aside className="hidden lg:block h-full border-l bg-gray-50">
