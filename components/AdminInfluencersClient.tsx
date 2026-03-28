@@ -160,65 +160,69 @@ export default function AdminInfluencersClient({
   }, [queryString, apiBase]);
 
   async function saveItem(id: string) {
-    try {
-      setSavingId(id);
-      setError("");
+  try {
+    setSavingId(id);
+    setError("");
 
-      const res = await fetch(`${apiBase}/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          status: draftStatus[id],
-          notes: draftNotes[id] ?? "",
-        }),
-      });
+    const res = await fetch(`${apiBase}/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        status: draftStatus[id],
+        notes: draftNotes[id] ?? "",
+      }),
+    });
 
-      const json = await res.json();
+    const text = await res.text();
+    const json = text ? JSON.parse(text) : { ok: res.ok };
 
-      if (!res.ok || !json?.ok) {
-        throw new Error(json?.error || "저장 실패");
-      }
+    if (!res.ok || !json?.ok) {
+      throw new Error(json?.error || "저장 실패");
+    }
 
+    if (json?.item) {
       setItems((prev) =>
         prev.map((item) => (item.id === id ? { ...item, ...json.item } : item))
       );
-
-      await fetchItems();
-    } catch (e: any) {
-      setError(e?.message || "저장 실패");
-    } finally {
-      setSavingId(null);
     }
+
+    await fetchItems();
+  } catch (e: any) {
+    setError(e?.message || "저장 실패");
+  } finally {
+    setSavingId(null);
   }
+}
 
-  async function deleteItem(id: string) {
-    const ok = window.confirm("이 데이터를 삭제할까?");
-    if (!ok) return;
+ async function deleteItem(id: string) {
+   const ok = window.confirm("이 데이터를 삭제할까?");
+   if (!ok) return;
 
-    try {
-      setSavingId(id);
-      setError("");
+   try {
+     setSavingId(id);
+     setError("");
 
-      const res = await fetch(`${apiBase}/${id}`, {
-        method: "DELETE",
-      });
+     const res = await fetch(`${apiBase}/${id}`, {
+       method: "DELETE",
+     });
 
-      const json = await res.json();
+     const text = await res.text();
+     const json = text ? JSON.parse(text) : { ok: res.ok };
 
-      if (!res.ok || !json?.ok) {
-        throw new Error(json?.error || "삭제 실패");
-      }
+     if (!res.ok || !json?.ok) {
+       throw new Error(json?.error || "삭제 실패");
+     }
 
-      setItems((prev) => prev.filter((item) => item.id !== id));
-      await fetchItems();
-    } catch (e: any) {
-      setError(e?.message || "삭제 실패");
-    } finally {
-      setSavingId(null);
-    }
-  }
+     setItems((prev) => prev.filter((item) => item.id !== id));
+     await fetchItems();
+   } catch (e: any) {
+     setError(e?.message || "삭제 실패");
+   } finally {
+     setSavingId(null);
+   }
+ }
 
   return (
     <div className="mx-auto max-w-7xl p-4 md:p-6">
