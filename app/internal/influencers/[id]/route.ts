@@ -103,16 +103,38 @@ export async function DELETE(
 
     const { id } = await params;
 
-    const { error } = await supabaseAdmin
+    const { data: existing, error: existingError } = await supabaseAdmin
       .from("influencer_leads")
-      .delete()
-      .eq("id", id);
+      .select("id")
+      .eq("id", id)
+      .maybeSingle();
 
-    if (error) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    if (existingError) {
+      return NextResponse.json(
+        { ok: false, error: existingError.message },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({ ok: true });
+    if (!existing) {
+      return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
+    }
+
+    const { data: deleted, error: deleteError } = await supabaseAdmin
+      .from("influencer_leads")
+      .delete()
+      .eq("id", id)
+      .select("id")
+      .single();
+
+    if (deleteError) {
+      return NextResponse.json(
+        { ok: false, error: deleteError.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ ok: true, deleted });
   } catch (e: any) {
     return NextResponse.json(
       { ok: false, error: e?.message || "UNKNOWN_ERROR" },
