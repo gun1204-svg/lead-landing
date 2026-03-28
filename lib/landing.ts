@@ -22,7 +22,7 @@ export type LandingConfig = {
 export const LANDING_CONFIG: Record<string, LandingConfig> = {
   "00": {
     key: "00",
-    hospitalName: "00병원",
+    hospitalName: "비엔파트너스",
     title: "실제 문의 사례 기반",
     description: "병원 신규 상담 문의를 만드는 방법을 안내드립니다",
     introPath: "/intro/00",
@@ -31,14 +31,14 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     pageCount: 10,
     telegramChatId: process.env.TELEGRAM_CHAT_ID_00,
 
-    businessName: "00병원",
-    address: "서울시 강남구",
-    businessNumber: "000-00-00000",
-    representativeName: "대표자명",
-    phone: "02-1234-5678",
-    privacyManager: "00병원",
-    privacyContact: "02-1234-5678",
-    privacyEmail: "contact@hospital00.com",
+    businessName: "비엔파트너스",
+    address: "서울시 성동구 성수동2가 280 SK V1 CENTER 1-1611",
+    businessNumber: "114-16-48944",
+    representativeName: "최건",
+    phone: "010-3703-1068",
+    privacyManager: "비엔파트너스",
+    privacyContact: "010-3703-1068",
+    privacyEmail: "bienpartner@naver.com",
   },
 
   "01": {
