@@ -87,7 +87,7 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
 
 export function normalizeLK(value?: string) {
   const s = String(value ?? "").trim();
-  if (/^\\d{1,2}$/.test(s)) return s.padStart(2, "0");
+  if (/^\d{1,2}$/.test(s)) return s.padStart(2, "0");
   return "00";
 }
 
