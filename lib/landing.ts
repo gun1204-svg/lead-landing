@@ -8,6 +8,15 @@ export type LandingConfig = {
   mobileSubmitLabel?: string;
   pageCount?: number;
   telegramChatId?: string;
+
+  businessName?: string;
+  address?: string;
+  businessNumber?: string;
+  representativeName?: string;
+  phone?: string;
+  privacyManager?: string;
+  privacyContact?: string;
+  privacyEmail?: string;
 };
 
 export const LANDING_CONFIG: Record<string, LandingConfig> = {
@@ -21,7 +30,17 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     mobileSubmitLabel: "문의 사례 받아보기",
     pageCount: 10,
     telegramChatId: process.env.TELEGRAM_CHAT_ID_00,
+
+    businessName: "00병원",
+    address: "서울시 강남구",
+    businessNumber: "000-00-00000",
+    representativeName: "대표자명",
+    phone: "02-1234-5678",
+    privacyManager: "00병원",
+    privacyContact: "02-1234-5678",
+    privacyEmail: "contact@hospital00.com",
   },
+
   "01": {
     key: "01",
     hospitalName: "01병원",
@@ -32,10 +51,20 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     mobileSubmitLabel: "상담 받기",
     pageCount: 1,
     telegramChatId: process.env.TELEGRAM_CHAT_ID_01,
+
+    businessName: "01병원",
+    address: "서울시 강남구",
+    businessNumber: "111-11-11111",
+    representativeName: "대표자명",
+    phone: "02-1111-2222",
+    privacyManager: "01병원",
+    privacyContact: "02-1111-2222",
+    privacyEmail: "contact@hospital01.com",
   },
+
   "02": {
     key: "02",
-    hospitalName: "미호성형외과",
+    hospitalName: "미호성형외과의원",
     title: "미호성형외과 상담 신청",
     description: "지금 바로 상담 받아보세요",
     introPath: "/intro/02",
@@ -43,12 +72,22 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     mobileSubmitLabel: "상담 받기",
     pageCount: 1,
     telegramChatId: process.env.TELEGRAM_CHAT_ID_02,
+
+    businessName: "미호성형외과의원",
+    address:
+      "서울시 강남구 강남대로 492 HM타워 7,8,9층 (신논현역 3번출구 도보 3분)",
+    businessNumber: "848-79-00072",
+    representativeName: "윤석호",
+    phone: "02-595-5503",
+    privacyManager: "미호성형외과의원",
+    privacyContact: "02-595-5503",
+    privacyEmail: "",
   },
 };
 
 export function normalizeLK(value?: string) {
   const s = String(value ?? "").trim();
-  if (/^\d{1,2}$/.test(s)) return s.padStart(2, "0");
+  if (/^\\d{1,2}$/.test(s)) return s.padStart(2, "0");
   return "00";
 }
 

@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { getLandingConfig, normalizeLK } from "@/lib/landing";
+import LandingFooter from "@/components/LandingFooter";
 
 declare global {
   interface Window {
@@ -314,6 +316,8 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
               </section>
             );
           })}
+
+          <LandingFooter landingKey={config.key} />
         </div>
 
         <aside className="hidden lg:block h-full border-l border-gray-200 bg-[#f8f8f8]">
@@ -352,23 +356,23 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                     <span>
                       개인정보 수집 및 이용에 동의합니다
                       <br />
-                      <a
-                        href="/privacy"
+                      <Link
+                        href={`/${config.key}/privacy`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="underline"
                       >
                         (개인정보처리방침)
-                      </a>{" "}
+                      </Link>{" "}
                       /{" "}
-                      <a
-                        href="/terms"
+                      <Link
+                        href={`/${config.key}/terms`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="underline"
                       >
                         (이용약관)
-                      </a>
+                      </Link>
                     </span>
                   </label>
 
@@ -459,23 +463,23 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                 <span>
                   개인정보 수집 및 이용에 동의합니다
                   <br />
-                  <a
-                    href="/privacy"
+                  <Link
+                    href={`/${config.key}/privacy`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline"
                   >
                     (개인정보처리방침)
-                  </a>{" "}
+                  </Link>{" "}
                   /{" "}
-                  <a
-                    href="/terms"
+                  <Link
+                    href={`/${config.key}/terms`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline"
                   >
                     (이용약관)
-                  </a>
+                  </Link>
                 </span>
               </label>
 
