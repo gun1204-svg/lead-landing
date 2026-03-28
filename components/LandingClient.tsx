@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { getLandingConfig, normalizeLK } from "@/lib/landing";
@@ -30,6 +29,19 @@ declare global {
 
 function normalizePhone(phone: string) {
   return phone.replace(/[^\d]/g, "");
+}
+
+function formatPhoneInput(value: string) {
+  const numbers = value.replace(/\D/g, "").slice(0, 11);
+
+  if (numbers.length < 4) return numbers;
+  if (numbers.length < 8) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+  return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7)}`;
+}
+
+function isValidPhone(phone: string) {
+  const numbers = normalizePhone(phone);
+  return /^01\d{8,9}$/.test(numbers);
 }
 
 function getUtmFromLocation() {
@@ -94,6 +106,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [agreed, setAgreed] = useState(false);
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -160,8 +173,18 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
     const trimmedName = name.trim();
     const normalizedPhone = normalizePhone(phone);
 
-    if (!trimmedName || !normalizedPhone) {
-      alert("이름/전화번호를 확인해주세요.");
+    if (!trimmedName) {
+      alert("이름을 입력해주세요.");
+      return;
+    }
+
+    if (!isValidPhone(phone)) {
+      alert("전화번호를 정확히 입력해주세요.");
+      return;
+    }
+
+    if (!agreed) {
+      alert("개인정보 수집 및 이용 동의가 필요합니다.");
       return;
     }
 
@@ -251,6 +274,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
       setName("");
       setPhone("");
+      setAgreed(false);
       setOpen(false);
     } catch (err: any) {
       alert(`전송 실패 (network)\n${err?.message || String(err)}`);
@@ -347,33 +371,20 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                     className="h-12 border border-gray-300 px-3 rounded-lg text-black placeholder:text-gray-400 outline-none focus:border-black"
                     placeholder="전화번호"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
+                    inputMode="numeric"
+                    maxLength={13}
                     required
                   />
 
-                  <label className="text-sm flex items-start gap-2 text-black leading-5">
-                    <input type="checkbox" required className="mt-1" />
-                    <span>
-                      개인정보 수집 및 이용에 동의합니다
-                      <br />
-                      <Link
-                        href={`/${config.key}/privacy`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline"
-                      >
-                        (개인정보처리방침)
-                      </Link>{" "}
-                      /{" "}
-                      <Link
-                        href={`/${config.key}/terms`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline"
-                      >
-                        (이용약관)
-                      </Link>
-                    </span>
+                  <label className="text-sm flex items-start gap-3 text-black leading-6">
+                    <input
+                      type="checkbox"
+                      checked={agreed}
+                      onChange={(e) => setAgreed(e.target.checked)}
+                      className="mt-0.5 h-5 w-5 shrink-0 accent-black"
+                    />
+                    <span>개인정보 수집 및 이용에 동의합니다</span>
                   </label>
 
                   <button
@@ -454,33 +465,20 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                 className="h-12 border border-gray-300 px-3 rounded-lg text-black placeholder:text-gray-400 outline-none focus:border-black"
                 placeholder="전화번호"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
+                inputMode="numeric"
+                maxLength={13}
                 required
               />
 
-              <label className="text-sm flex items-start gap-2 text-black leading-5">
-                <input type="checkbox" required className="mt-1" />
-                <span>
-                  개인정보 수집 및 이용에 동의합니다
-                  <br />
-                  <Link
-                    href={`/${config.key}/privacy`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline"
-                  >
-                    (개인정보처리방침)
-                  </Link>{" "}
-                  /{" "}
-                  <Link
-                    href={`/${config.key}/terms`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline"
-                  >
-                    (이용약관)
-                  </Link>
-                </span>
+              <label className="text-sm flex items-start gap-3 text-black leading-6">
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  className="mt-0.5 h-5 w-5 shrink-0 accent-black"
+                />
+                <span>개인정보 수집 및 이용에 동의합니다</span>
               </label>
 
               <button
