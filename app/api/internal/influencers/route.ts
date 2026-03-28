@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "UNAUTHORIZED" }, { status: 401 });
     }
 
-    if ((session.user as any).landing_key !== "00") {
+    if ((session.user as any).role !== "internal") {
       return NextResponse.json({ ok: false, error: "FORBIDDEN" }, { status: 403 });
     }
 

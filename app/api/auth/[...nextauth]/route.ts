@@ -7,9 +7,9 @@ type AdminUser = {
   passwordHash: string;
 };
 
-function readAdminUsers(): AdminUser[] {
+function readUsersFromEnv(envKey: string): AdminUser[] {
   try {
-    const raw = process.env.ADMIN_USERS;
+    const raw = process.env[envKey];
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
@@ -21,6 +21,14 @@ function readAdminUsers(): AdminUser[] {
   }
 }
 
+function readAdminUsers(): AdminUser[] {
+  return readUsersFromEnv("ADMIN_USERS");
+}
+
+function readInternalAdminUsers(): AdminUser[] {
+  return readUsersFromEnv("INTERNAL_ADMIN_USERS");
+}
+
 function normalizeLandingKey(v: unknown) {
   const s = String(v ?? "").trim();
   if (!s) return null;
@@ -28,7 +36,7 @@ function normalizeLandingKey(v: unknown) {
   return null;
 }
 
-// ✅ callbackUrl에서 landingKey 뽑기: "/01/admin/..." -> "01"
+// callbackUrl에서 landingKey 뽑기: "/01/admin/..." -> "01"
 function getLandingKeyFromCallbackUrl(cb: unknown) {
   const s = String(cb ?? "");
   if (!s) return null;
@@ -53,15 +61,43 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "ID", type: "text" },
         password: { label: "Password", type: "password" },
-        landingKey: { label: "LandingKey", type: "text" }, // 로그인 폼이 넣어주는 값
+        landingKey: { label: "LandingKey", type: "text" },
+        callbackUrl: { label: "CallbackUrl", type: "text" },
+        mode: { label: "Mode", type: "text" }, // admin | internal
       },
 
       async authorize(creds) {
         const username = normalizeUsername((creds as any)?.email);
         const password = String((creds as any)?.password ?? "");
+        const mode = String((creds as any)?.mode ?? "admin").trim().toLowerCase();
 
         if (!username || !password) return null;
 
+        // =========================
+        // 내부 전용 로그인
+        // =========================
+        if (mode === "internal") {
+          const users = readInternalAdminUsers();
+          if (!users.length) return null;
+
+          const found = users.find((u) => u.username.toLowerCase() === username);
+          if (!found) return null;
+
+          const ok = await bcrypt.compare(password, found.passwordHash);
+          if (!ok) return null;
+
+          return {
+            id: username,
+            name: username,
+            email: username,
+            landing_key: "internal",
+            role: "internal",
+          } as any;
+        }
+
+        // =========================
+        // 기존 병원용 로그인
+        // =========================
         const users = readAdminUsers();
         if (!users.length) return null;
 
@@ -71,12 +107,12 @@ export const authOptions: NextAuthOptions = {
         const ok = await bcrypt.compare(password, found.passwordHash);
         if (!ok) return null;
 
-        // ✅ landing_key 결정: landingKey(폼) > callbackUrl > "00"
+        // landing_key 결정: landingKey(폼) > callbackUrl > "00"
         const lk1 = normalizeLandingKey((creds as any)?.landingKey);
         const lk2 = getLandingKeyFromCallbackUrl((creds as any)?.callbackUrl);
         const landing_key = lk1 ?? lk2 ?? "00";
 
-        // ✅ 규칙 강제
+        // 규칙 강제
         // - /00 에서는 admin만
         // - /01 에서는 admin01만
         if (landing_key === "00") {
@@ -90,6 +126,7 @@ export const authOptions: NextAuthOptions = {
           name: username,
           email: username,
           landing_key,
+          role: "admin",
         } as any;
       },
     }),
@@ -98,9 +135,6 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   secret: process.env.NEXTAUTH_SECRET,
 
-  // ✅ 멀티랜딩이라 pages.signIn은 고정하지 않는 게 맞음
-  // pages: { signIn: "/admin/login" },
-
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -108,8 +142,15 @@ export const authOptions: NextAuthOptions = {
         token.email = (user as any).email;
         token.sub = (user as any).id;
 
-        // ✅ 무조건 2자리 LK로 박기
-        (token as any).landing_key = normalizeLandingKey((user as any).landing_key) ?? "00";
+        const role = (user as any).role ?? "admin";
+        (token as any).role = role;
+
+        if (role === "internal") {
+          (token as any).landing_key = "internal";
+        } else {
+          (token as any).landing_key =
+            normalizeLandingKey((user as any).landing_key) ?? "00";
+        }
       }
       return token;
     },
@@ -118,9 +159,15 @@ export const authOptions: NextAuthOptions = {
       session.user = session.user || ({} as any);
       (session.user as any).name = token.name;
       (session.user as any).email = token.email;
+      (session.user as any).role = (token as any).role ?? "admin";
 
-      // ✅ 세션에도 2자리 LK 강제
-      (session.user as any).landing_key = normalizeLandingKey((token as any).landing_key) ?? "00";
+      if ((token as any).role === "internal") {
+        (session.user as any).landing_key = "internal";
+      } else {
+        (session.user as any).landing_key =
+          normalizeLandingKey((token as any).landing_key) ?? "00";
+      }
+
       return session;
     },
   },

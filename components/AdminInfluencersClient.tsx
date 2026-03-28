@@ -84,7 +84,11 @@ function statusClass(status: InfluencerLead["status"]) {
   }
 }
 
-export default function AdminInfluencersClient() {
+export default function AdminInfluencersClient({
+  apiBase = "/api/internal/influencers",
+}: {
+  apiBase?: string;
+}) {
   const [items, setItems] = useState<InfluencerLead[]>([]);
   const [stats, setStats] = useState<Stats>({
     total: 0,
@@ -122,7 +126,7 @@ export default function AdminInfluencersClient() {
       setLoading(true);
       setError("");
 
-      const res = await fetch(`/api/admin/influencers?${queryString}`, {
+      const res = await fetch(`${apiBase}?${queryString}`, {
         cache: "no-store",
       });
       const json = await res.json();
@@ -153,14 +157,14 @@ export default function AdminInfluencersClient() {
 
   useEffect(() => {
     fetchItems();
-  }, [queryString]);
+  }, [queryString, apiBase]);
 
   async function saveItem(id: string) {
     try {
       setSavingId(id);
       setError("");
 
-      const res = await fetch(`/api/admin/influencers/${id}`, {
+      const res = await fetch(`${apiBase}/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -194,7 +198,7 @@ export default function AdminInfluencersClient() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold">인플루언서 관리</h1>
         <p className="mt-1 text-sm text-zinc-500">
-          인스타그램 인플루언서 수집 / DM / 답장 / 팔로우업 관리
+          내부 전용 인플루언서 / DM / 팔로우업 관리
         </p>
       </div>
 
@@ -226,7 +230,7 @@ export default function AdminInfluencersClient() {
       </div>
 
       <div className="mb-4 rounded-2xl border bg-white p-4">
-        <div className="grid gap-3 md:grid-cols-[160px_1fr_auto_auto_auto_auto]">
+        <div className="grid gap-3 md:grid-cols-[160px_1fr_auto_auto_auto]">
           <select
             className="rounded-xl border px-3 py-2 text-sm"
             value={statusFilter}
@@ -331,9 +335,7 @@ export default function AdminInfluencersClient() {
                       </td>
 
                       <td className="px-4 py-4">
-                        <div className="font-medium">
-                          {item.followers_text || "-"}
-                        </div>
+                        <div className="font-medium">{item.followers_text || "-"}</div>
                         <div className="mt-1 text-xs text-zinc-500">
                           변환값: {formatNum(item.followers_count)}
                         </div>
