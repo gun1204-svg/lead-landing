@@ -1,10 +1,10 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function InternalLoginPage() {
+function InternalLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -99,5 +99,21 @@ export default function InternalLoginPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function InternalLoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-zinc-100 px-4 py-10">
+          <div className="mx-auto max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+            <div className="text-sm text-zinc-500">불러오는 중...</div>
+          </div>
+        </div>
+      }
+    >
+      <InternalLoginForm />
+    </Suspense>
   );
 }
