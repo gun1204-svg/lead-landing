@@ -193,6 +193,33 @@ export default function AdminInfluencersClient({
     }
   }
 
+  async function deleteItem(id: string) {
+    const ok = window.confirm("이 데이터를 삭제할까?");
+    if (!ok) return;
+
+    try {
+      setSavingId(id);
+      setError("");
+
+      const res = await fetch(`${apiBase}/${id}`, {
+        method: "DELETE",
+      });
+
+      const json = await res.json();
+
+      if (!res.ok || !json?.ok) {
+        throw new Error(json?.error || "삭제 실패");
+      }
+
+      setItems((prev) => prev.filter((item) => item.id !== id));
+      await fetchItems();
+    } catch (e: any) {
+      setError(e?.message || "삭제 실패");
+    } finally {
+      setSavingId(null);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-7xl p-4 md:p-6">
       <div className="mb-6">
@@ -418,13 +445,23 @@ export default function AdminInfluencersClient({
                       </td>
 
                       <td className="px-4 py-4">
-                        <button
-                          className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-                          onClick={() => saveItem(item.id)}
-                          disabled={savingId === item.id}
-                        >
-                          {savingId === item.id ? "저장중..." : "저장"}
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                            onClick={() => saveItem(item.id)}
+                            disabled={savingId === item.id}
+                          >
+                            {savingId === item.id ? "처리중..." : "저장"}
+                          </button>
+
+                          <button
+                            className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                            onClick={() => deleteItem(item.id)}
+                            disabled={savingId === item.id}
+                          >
+                            삭제
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
