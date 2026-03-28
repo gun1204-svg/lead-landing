@@ -84,6 +84,20 @@ function statusClass(status: InfluencerLead["status"]) {
   }
 }
 
+async function readApiJson(res: Response) {
+  const text = await res.text();
+
+  if (!text) {
+    return { ok: res.ok };
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { ok: res.ok, raw: text };
+  }
+}
+
 export default function AdminInfluencersClient({
   apiBase = "/api/internal/influencers",
 }: {
@@ -129,14 +143,22 @@ export default function AdminInfluencersClient({
       const res = await fetch(`${apiBase}?${queryString}`, {
         cache: "no-store",
       });
-      const json = await res.json();
+      const json = await readApiJson(res);
 
       if (!res.ok || !json?.ok) {
         throw new Error(json?.error || "조회 실패");
       }
 
       setItems(json.items || []);
-      setStats(json.stats || stats);
+      setStats(json.stats || {
+        total: 0,
+        newCount: 0,
+        dmSentCount: 0,
+        repliedCount: 0,
+        closedCount: 0,
+        followUpCount: 0,
+        qualifiedCount: 0,
+      });
 
       const nextStatus: Record<string, InfluencerLead["status"]> = {};
       const nextNotes: Record<string, string> = {};
@@ -160,69 +182,67 @@ export default function AdminInfluencersClient({
   }, [queryString, apiBase]);
 
   async function saveItem(id: string) {
-  try {
-    setSavingId(id);
-    setError("");
+    try {
+      setSavingId(id);
+      setError("");
 
-    const res = await fetch(`${apiBase}/${id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        status: draftStatus[id],
-        notes: draftNotes[id] ?? "",
-      }),
-    });
+      const res = await fetch(`${apiBase}/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: draftStatus[id],
+          notes: draftNotes[id] ?? "",
+        }),
+      });
 
-    const text = await res.text();
-    const json = text ? JSON.parse(text) : { ok: res.ok };
+      const json = await readApiJson(res);
 
-    if (!res.ok || !json?.ok) {
-      throw new Error(json?.error || "저장 실패");
+      if (!res.ok || !json?.ok) {
+        throw new Error(json?.error || "저장 실패");
+      }
+
+      if (json?.item) {
+        setItems((prev) =>
+          prev.map((item) => (item.id === id ? { ...item, ...json.item } : item))
+        );
+      }
+
+      await fetchItems();
+    } catch (e: any) {
+      setError(e?.message || "저장 실패");
+    } finally {
+      setSavingId(null);
     }
-
-    if (json?.item) {
-      setItems((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, ...json.item } : item))
-      );
-    }
-
-    await fetchItems();
-  } catch (e: any) {
-    setError(e?.message || "저장 실패");
-  } finally {
-    setSavingId(null);
   }
-}
 
- async function deleteItem(id: string) {
-   const ok = window.confirm("이 데이터를 삭제할까?");
-   if (!ok) return;
+  async function deleteItem(id: string) {
+    const ok = window.confirm("이 데이터를 삭제할까?");
+    if (!ok) return;
 
-   try {
-     setSavingId(id);
-     setError("");
+    try {
+      setSavingId(id);
+      setError("");
 
-     const res = await fetch(`${apiBase}/${id}`, {
-       method: "DELETE",
-     });
+      const res = await fetch(`${apiBase}/${id}`, {
+        method: "DELETE",
+      });
 
-     const text = await res.text();
-     const json = text ? JSON.parse(text) : { ok: res.ok };
+      const json = await readApiJson(res);
 
-     if (!res.ok || !json?.ok) {
-       throw new Error(json?.error || "삭제 실패");
-     }
+      if (!res.ok || !json?.ok) {
+        throw new Error(json?.error || "삭제 실패");
+      }
 
-     setItems((prev) => prev.filter((item) => item.id !== id));
-     await fetchItems();
-   } catch (e: any) {
-     setError(e?.message || "삭제 실패");
-   } finally {
-     setSavingId(null);
-   }
- }
+      setItems((prev) => prev.filter((item) => item.id !== id));
+      await fetchItems();
+    } catch (e: any) {
+      setError(e?.message || "삭제 실패");
+    } finally {
+      setSavingId(null);
+    }
+  }
 
   return (
     <div className="mx-auto max-w-7xl p-4 md:p-6">
