@@ -55,6 +55,19 @@ function getDefaultPageUrl(req: Request, landingKey: string) {
   return `${proto}://${host}/${landingKey}`;
 }
 
+function normalizeConcerns(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((v) => String(v ?? "").trim())
+    .filter(Boolean)
+    .slice(0, 10);
+}
+
+function buildConcernMemo(concerns: string[]) {
+  if (!concerns.length) return "";
+  return `[상담 체크 항목]\n${concerns.map((v) => `- ${v}`).join("\n")}`;
+}
+
 async function sendTelegram(text: string, chatId?: string) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -160,6 +173,7 @@ export async function POST(req: Request) {
     const page_url = body?.page_url;
     const fbp = body?.fbp;
     const fbc = body?.fbc;
+    const concerns = normalizeConcerns(body?.concerns);
 
     const utm = body?.utm ?? {
       source: body?.utm_source ?? null,
@@ -235,6 +249,31 @@ export async function POST(req: Request) {
 
     const leadId = data?.lead_id ? String(data.lead_id) : undefined;
 
+    // concerns를 memo에 추가 저장
+    if (leadId && concerns.length > 0) {
+      const concernMemo = buildConcernMemo(concerns);
+
+      const { data: leadRow } = await supabaseAdmin
+        .from("leads")
+        .select("memo")
+        .eq("id", leadId)
+        .maybeSingle();
+
+      const prevMemo = String(leadRow?.memo ?? "").trim();
+      const nextMemo = prevMemo
+        ? `${prevMemo}\n\n${concernMemo}`
+        : concernMemo;
+
+      const { error: memoUpdateError } = await supabaseAdmin
+        .from("leads")
+        .update({ memo: nextMemo })
+        .eq("id", leadId);
+
+      if (memoUpdateError) {
+        console.error("memo update error:", memoUpdateError);
+      }
+    }
+
     // Meta Conversion API 전송
     try {
       if (eventId) {
@@ -261,14 +300,18 @@ export async function POST(req: Request) {
         timeZone: "Asia/Seoul",
       });
 
+      const concernText =
+        concerns.length > 0
+          ? `\n📝 체크한 고민\n${concerns.map((v) => `- ${v}`).join("\n")}\n`
+          : "\n";
+
       await sendTelegram(
 `🔥 새 상담 리드 접수
 
 🏥 병원: ${landingConfig.hospitalName}
 🗂 랜딩: ${lk}
 👤 이름: ${cleanName}
-📞 전화: ${cleanPhone}
-
+📞 전화: ${cleanPhone}${concernText}
 📊 광고 정보
 utm_source: ${utm?.source ?? ""}
 utm_campaign: ${utm?.campaign ?? ""}

@@ -5,28 +5,6 @@ import { usePathname } from "next/navigation";
 import { getLandingConfig, normalizeLK } from "@/lib/landing";
 import LandingFooter from "@/components/LandingFooter";
 
-declare global {
-  interface Window {
-    dataLayer?: Record<string, unknown>[];
-    fbq?: (
-      command: "track" | "trackCustom",
-      eventName: string,
-      params?: Record<string, unknown>,
-      options?: Record<string, unknown>
-    ) => void;
-    kakaoPixel?: (
-      pixelId: string
-    ) => {
-      pageView: () => void;
-      participation: (tag: string) => void;
-    };
-    karrotPixel?: {
-      init: (pixelId: string) => void;
-      track: (eventName: string, params?: Record<string, unknown>) => void;
-    };
-  }
-}
-
 function normalizePhone(phone: string) {
   return phone.replace(/[^\d]/g, "");
 }
@@ -54,55 +32,91 @@ function getUtmFromLocation() {
   };
 }
 
-function getCookie(name: string) {
-  if (typeof document === "undefined") return undefined;
-
-  const match = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith(`${name}=`));
-
-  return match ? decodeURIComponent(match.split("=")[1]) : undefined;
-}
-
-function getFbc() {
-  const existing = getCookie("_fbc");
-  if (existing) return existing;
-
-  if (typeof window === "undefined") return undefined;
-
-  const fbclid = new URLSearchParams(window.location.search).get("fbclid");
-  if (!fbclid) return undefined;
-
-  return `fb.1.${Date.now()}.${fbclid}`;
-}
-
 function generateEventId() {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-
   return `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+}
+
+const concernOptions02 = [
+  "불룩한 눈 밑 지방",
+  "다크서클로 인해 피곤해 보이는 인상",
+  "눈 밑이 꺼져 피곤하고 나이들어 보이는 인상",
+  "눈 밑 지방이 불룩하고 피부 처짐과 눈가 주름",
+];
+
+function Landing02Content({
+  concerns,
+  toggleConcern,
+}: {
+  concerns: string[];
+  toggleConcern: (item: string) => void;
+}) {
+  return (
+    <>
+      {/* ✅ 이미지 1장 */}
+      <section>
+        <img
+          src="/intro/02/01.jpg"
+          alt="02 랜딩"
+          className="w-full"
+        />
+      </section>
+
+      {/* ✅ 유튜브 */}
+      <section className="px-4 py-8">
+        <h2 className="text-center text-xl font-bold mb-4">
+          영상으로 먼저 확인하세요
+        </h2>
+
+        <div className="aspect-video rounded-xl overflow-hidden shadow">
+          <iframe
+            src="https://www.youtube.com/embed/iFRJ31FEWgs"
+            allowFullScreen
+            className="w-full h-full"
+          />
+        </div>
+      </section>
+
+      {/* ✅ 체크박스 */}
+      <section className="px-4 py-8 bg-[#eef8f4]">
+        <h3 className="text-center text-xl font-bold mb-4">
+          눈 밑 고민이 무엇인가요?
+        </h3>
+
+        <div className="bg-white p-4 rounded-xl space-y-3">
+          {concernOptions02.map((item) => {
+            const selected = concerns.includes(item);
+
+            return (
+              <button
+                key={item}
+                type="button"
+                onClick={() => toggleConcern(item)}
+                className="flex items-start gap-3 w-full text-left"
+              >
+                <div
+                  className={`w-5 h-5 border rounded ${
+                    selected ? "bg-green-500 border-green-500" : "border-gray-300"
+                  }`}
+                />
+
+                <span className="text-sm">{item}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+    </>
+  );
 }
 
 export default function LandingClient({ landingKey }: { landingKey: string }) {
   const pathname = usePathname();
   const seg1 = pathname?.split("/")[1] || "";
 
-  const lk = useMemo(() => {
-    return normalizeLK(seg1 || landingKey || "00");
-  }, [seg1, landingKey]);
-
+  const lk = useMemo(() => normalizeLK(seg1 || landingKey || "00"), [seg1, landingKey]);
   const config = useMemo(() => getLandingConfig(lk), [lk]);
 
-  const pages = useMemo(() => {
-    const count = config.pageCount ?? 10;
-    return Array.from({ length: count }, (_, i) => {
-      const n = String(i + 1).padStart(2, "0");
-      return `${config.introPath}/${n}.png`;
-    });
-  }, [config.introPath, config.pageCount]);
-
-  const isSingleLongImage = pages.length === 1;
+  const isLanding02 = config.key === "02";
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -111,174 +125,48 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
 
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.fbq) {
-      window.fbq("track", "ViewContent", {
-        content_name: `landing_${config.key}`,
-        landing_key: config.key,
-      });
-    }
-  }, [config.key]);
+  const [concerns02, setConcerns02] = useState<string[]>([]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    let fired = false;
-
-    const handleScroll = () => {
-      if (fired) return;
-
-      const scrollArea = document.querySelector(".scroll-area") as HTMLElement | null;
-      if (!scrollArea) return;
-
-      const maxScroll = scrollArea.scrollHeight - scrollArea.clientHeight;
-      if (maxScroll <= 0) return;
-
-      const scrollPercent = (scrollArea.scrollTop / maxScroll) * 100;
-
-      if (scrollPercent >= 50) {
-        fired = true;
-
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({
-          event: "scroll_50",
-          landing_key: config.key,
-          content_name: `landing_${config.key}`,
-        });
-
-        if (window.fbq) {
-          window.fbq("trackCustom", "Scroll50", {
-            content_name: `landing_${config.key}`,
-            landing_key: config.key,
-          });
-        }
-
-        scrollArea.removeEventListener("scroll", handleScroll);
-      }
-    };
-
-    const scrollArea = document.querySelector(".scroll-area") as HTMLElement | null;
-    if (!scrollArea) return;
-
-    scrollArea.addEventListener("scroll", handleScroll);
-
-    return () => {
-      scrollArea.removeEventListener("scroll", handleScroll);
-    };
-  }, [config.key, pages.length]);
+  function toggleConcern02(item: string) {
+    setConcerns02((prev) =>
+      prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item]
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (submitting) return;
 
-    const trimmedName = name.trim();
-    const normalizedPhone = normalizePhone(phone);
-
-    if (!trimmedName) {
-      alert("이름을 입력해주세요.");
-      return;
-    }
-
-    if (!isValidPhone(phone)) {
-      alert("전화번호를 정확히 입력해주세요.");
-      return;
-    }
-
-    if (!agreed) {
-      alert("개인정보 수집 및 이용 동의가 필요합니다.");
-      return;
-    }
-
-    const utmFlat = getUtmFromLocation();
-    const eventId = generateEventId();
-    const pageUrl = window.location.href;
-    const fbp = getCookie("_fbp");
-    const fbc = getFbc();
+    if (!name.trim()) return alert("이름 입력");
+    if (!isValidPhone(phone)) return alert("전화번호 확인");
+    if (!agreed) return alert("동의 필요");
 
     setSubmitting(true);
 
     try {
-      const payload = {
-        name: trimmedName,
-        phone: normalizedPhone,
-        landing_key: config.key,
-        event_id: eventId,
-        page_url: pageUrl,
-        fbp,
-        fbc,
-        ...utmFlat,
-        utm: {
-          source: utmFlat.utm_source,
-          campaign: utmFlat.utm_campaign,
-          term: utmFlat.utm_term,
-          content: utmFlat.utm_content,
-        },
-      };
-
       const res = await fetch("/api/leads", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          name,
+          phone: normalizePhone(phone),
+          landing_key: config.key,
+          concerns: concerns02,
+          utm: getUtmFromLocation(),
+          event_id: generateEventId(),
+        }),
       });
 
-      const json = await res.json().catch(() => null);
+      const json = await res.json();
 
-      if (!res.ok) {
-        alert(`전송 실패 (${res.status})\n${json?.error || "(no body)"}`);
-        return;
-      }
+      if (!res.ok) throw new Error(json?.error);
 
-      if (!json?.duplicate && typeof window !== "undefined") {
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({
-          event: "lead_submit",
-          landing_key: config.key,
-          content_name: `landing_${config.key}`,
-          event_id: eventId,
-          page_url: pageUrl,
-          name: trimmedName,
-          phone: normalizedPhone,
-          utm_source: utmFlat.utm_source,
-          utm_campaign: utmFlat.utm_campaign,
-          utm_term: utmFlat.utm_term,
-          utm_content: utmFlat.utm_content,
-        });
-
-        if (window.fbq) {
-          window.fbq(
-            "track",
-            "Lead",
-            {
-              content_name: `landing_${config.key}`,
-              landing_key: config.key,
-            },
-            {
-              eventID: eventId,
-            }
-          );
-        }
-
-        if (window.kakaoPixel) {
-          window.kakaoPixel("4124381110897915848").participation("Consulting");
-        }
-
-        if (window.karrotPixel) {
-          window.karrotPixel.track("CompleteRegistration");
-        }
-      }
-
-      if (json?.duplicate) {
-        alert("이미 접수된 상담 정보입니다.");
-        return;
-      }
-
+      setSuccessOpen(true);
       setName("");
       setPhone("");
       setAgreed(false);
+      setConcerns02([]);
       setOpen(false);
-      setSuccessOpen(true);
-    } catch (err: any) {
-      alert(`전송 실패 (network)\n${err?.message || String(err)}`);
+    } catch (e) {
+      alert("전송 실패");
     } finally {
       setSubmitting(false);
     }
@@ -286,209 +174,56 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
   return (
     <>
-      <main className="w-screen h-[100svh] overflow-hidden bg-white">
-        {config.key === "00" && (
-          <div
-            className="fixed top-4 left-4 z-50 cursor-pointer"
-            onClick={() => {
-              const scrollArea = document.querySelector(".scroll-area") as HTMLElement | null;
-              if (scrollArea) scrollArea.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-          >
-            <img
-              src="/logo.png"
-              alt="비엔파트너스"
-              className="h-12 lg:h-20 object-contain drop-shadow-lg"
-            />
-          </div>
-        )}
+      <main className="w-full h-screen overflow-y-auto bg-white">
+        {isLanding02 ? (
+          <Landing02Content
+            concerns={concerns02}
+            toggleConcern={toggleConcern02}
+          />
+        ) : null}
 
-        <div className="h-full w-full grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_420px]">
-          <div
-            className={[
-              "scroll-area h-full",
-              isSingleLongImage
-                ? "overflow-y-auto"
-                : "overflow-y-scroll snap-y snap-mandatory",
-              "pb-24 lg:pb-0",
-            ].join(" ")}
-          >
-            {pages.map((src) => {
-              const jpgSrc = src.replace(".png", ".jpg");
+        <LandingFooter landingKey={config.key} />
 
-              return (
-                <section
-                  key={src}
-                  className={
-                    isSingleLongImage
-                      ? "w-full"
-                      : "snap-start snap-always h-[100svh]"
-                  }
-                >
-                  <img
-                    src={jpgSrc}
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = src;
-                    }}
-                    alt=""
-                    className={
-                      isSingleLongImage
-                        ? "block w-full h-auto bg-white"
-                        : "w-full h-full object-contain md:object-cover bg-white"
-                    }
-                    draggable={false}
-                  />
-                </section>
-              );
-            })}
-
-            <LandingFooter landingKey={config.key} />
-          </div>
-
-          <aside className="hidden lg:block h-full border-l border-gray-200 bg-[#f8f8f8]">
-            <div className="sticky top-0 h-[100svh] p-6">
-              <div className="flex h-full items-center justify-center">
-                <div className="w-full max-w-[380px] rounded-2xl border border-gray-200 bg-white p-8 shadow-[0_10px_30px_rgba(0,0,0,0.08)]">
-                  <div className="mb-6">
-                    <h1 className="text-2xl font-bold text-center text-black leading-tight">
-                      {config.title}
-                    </h1>
-
-                    <p className="text-sm text-gray-600 text-center mt-2 leading-6">
-                      {config.description}
-                    </p>
-                  </div>
-
-                  <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                    <input
-                      className="h-12 border border-gray-300 px-3 rounded-lg text-black placeholder:text-gray-400 outline-none focus:border-black"
-                      placeholder="이름"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
-                    />
-
-                    <input
-                      className="h-12 border border-gray-300 px-3 rounded-lg text-black placeholder:text-gray-400 outline-none focus:border-black"
-                      placeholder="전화번호"
-                      value={phone}
-                      onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
-                      inputMode="numeric"
-                      maxLength={13}
-                      required
-                    />
-
-                    <label className="text-sm flex items-start gap-3 text-black leading-6">
-                      <input
-                        type="checkbox"
-                        checked={agreed}
-                        onChange={(e) => setAgreed(e.target.checked)}
-                        className="mt-0.5 h-5 w-5 shrink-0 accent-black"
-                      />
-                      <span>개인정보 수집 및 이용에 동의합니다</span>
-                    </label>
-
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="mt-1 h-12 rounded-lg bg-black text-white font-medium hover:bg-gray-800 disabled:opacity-60"
-                    >
-                      {submitting ? "전송 중..." : config.submitLabel}
-                    </button>
-                  </form>
-                </div>
-              </div>
-            </div>
-          </aside>
-        </div>
-
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+        {/* 하단 버튼 */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white p-3 border-t">
           <button
-            onClick={() => {
-              if (typeof window !== "undefined") {
-                window.dataLayer = window.dataLayer || [];
-                window.dataLayer.push({
-                  event: "form_open",
-                  landing_key: config.key,
-                  content_name: `landing_${config.key}`,
-                });
-
-                if (window.fbq) {
-                  window.fbq("track", "Contact", {
-                    landing_key: config.key,
-                  });
-                }
-              }
-
-              setOpen(true);
-            }}
-            className="w-full h-12 rounded-lg bg-black text-white font-medium shadow-md"
+            onClick={() => setOpen(true)}
+            className="w-full h-12 bg-black text-white rounded-lg"
           >
-            {config.mobileSubmitLabel ?? config.submitLabel}
+            무료 상담 신청
           </button>
         </div>
 
+        {/* 모달 */}
         {open && (
-          <div
-            className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center lg:items-center p-0 lg:p-4"
-            onClick={() => setOpen(false)}
-          >
-            <div
-              className="bg-white w-full max-w-md p-6 rounded-t-2xl lg:rounded-2xl relative max-h-[85svh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                onClick={() => setOpen(false)}
-                className="absolute top-3 right-3 text-black/70 text-xl"
-                aria-label="닫기"
-              >
-                ✕
-              </button>
-
-              <h2 className="text-xl font-bold text-center text-black">
-                {config.title}
-              </h2>
-
-              <p className="text-sm text-gray-600 text-center mt-2 mb-4 leading-6">
-                {config.description}
-              </p>
-
-              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="fixed inset-0 bg-black/60 flex items-end">
+            <div className="bg-white w-full p-6 rounded-t-xl">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <input
-                  className="h-12 border border-gray-300 px-3 rounded-lg text-black placeholder:text-gray-400 outline-none focus:border-black"
                   placeholder="이름"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  required
+                  className="w-full h-12 border px-3"
                 />
 
                 <input
-                  className="h-12 border border-gray-300 px-3 rounded-lg text-black placeholder:text-gray-400 outline-none focus:border-black"
                   placeholder="전화번호"
                   value={phone}
                   onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
-                  inputMode="numeric"
-                  maxLength={13}
-                  required
+                  className="w-full h-12 border px-3"
                 />
 
-                <label className="text-sm flex items-start gap-3 text-black leading-6">
+                <label className="flex gap-2 text-sm">
                   <input
                     type="checkbox"
                     checked={agreed}
                     onChange={(e) => setAgreed(e.target.checked)}
-                    className="mt-0.5 h-5 w-5 shrink-0 accent-black"
                   />
-                  <span>개인정보 수집 및 이용에 동의합니다</span>
+                  개인정보 동의
                 </label>
 
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="h-12 rounded-lg bg-black text-white font-medium disabled:opacity-60"
-                >
-                  {submitting ? "전송 중..." : config.mobileSubmitLabel ?? config.submitLabel}
+                <button className="w-full h-12 bg-black text-white rounded-lg">
+                  {submitting ? "전송중..." : "신청하기"}
                 </button>
               </form>
             </div>
@@ -496,26 +231,14 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
         )}
       </main>
 
+      {/* 완료 팝업 */}
       {successOpen && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4"
-          onClick={() => setSuccessOpen(false)}
-        >
-          <div
-            className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-xl font-bold text-black">상담 신청 완료</h3>
-
-            <p className="mt-3 text-sm leading-6 text-gray-600">
-              상담 신청이 정상적으로 접수되었습니다.
-              <br />
-              확인 후 빠르게 연락드리겠습니다.
-            </p>
-
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-xl text-center">
+            <p>신청 완료!</p>
             <button
               onClick={() => setSuccessOpen(false)}
-              className="mt-5 h-11 w-full rounded-lg bg-black text-white font-medium"
+              className="mt-3 bg-black text-white px-4 py-2 rounded"
             >
               확인
             </button>
