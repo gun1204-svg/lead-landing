@@ -2,6 +2,27 @@
 
 import Script from "next/script";
 
+declare global {
+  interface Window {
+    fbq?: (
+      command: "track" | "trackCustom" | "init",
+      eventName: string,
+      params?: Record<string, unknown>,
+      options?: Record<string, unknown>
+    ) => void;
+    kakaoPixel?: (
+      pixelId: string
+    ) => {
+      pageView: () => void;
+      participation: (tag: string) => void;
+    };
+    karrotPixel?: {
+      init: (pixelId: string) => void;
+      track: (eventName: string, params?: Record<string, unknown>) => void;
+    };
+  }
+}
+
 export default function AnalyticsScripts() {
   const META_PIXEL_ID = "1955884414711088";
   const KAKAO_PIXEL_ID = "4124381110897915848";
