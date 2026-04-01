@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { getLandingConfig, normalizeLK } from "@/lib/landing";
 import LandingFooter from "@/components/LandingFooter";
@@ -52,58 +52,79 @@ function Landing02Content({
 }) {
   return (
     <>
-      {/* ✅ 이미지 1장 */}
+      {/* 상단 이미지 */}
       <section>
         <img
           src="/intro/02/01.jpg"
-          alt="02 랜딩"
-          className="w-full"
+          alt="02 랜딩 상단"
+          className="block w-full"
+          draggable={false}
         />
       </section>
 
-      {/* ✅ 유튜브 */}
-      <section className="px-4 py-8">
-        <h2 className="text-center text-xl font-bold mb-4">
-          영상으로 먼저 확인하세요
-        </h2>
+      {/* 유튜브 */}
+      <section className="px-4 py-8 bg-white">
+        <div className="mx-auto w-full max-w-[760px]">
+          <h2 className="mb-4 text-center text-xl font-bold text-black">
+            영상으로 먼저 확인하세요
+          </h2>
 
-        <div className="aspect-video rounded-xl overflow-hidden shadow">
-          <iframe
-            src="https://www.youtube.com/embed/iFRJ31FEWgs"
-            allowFullScreen
-            className="w-full h-full"
-          />
+          <div className="aspect-video overflow-hidden rounded-xl shadow">
+            <iframe
+              src="https://www.youtube.com/embed/iFRJ31FEWgs"
+              title="눈밑지방재배치 영상"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="h-full w-full"
+            />
+          </div>
         </div>
       </section>
 
-      {/* ✅ 체크박스 */}
-      <section className="px-4 py-8 bg-[#eef8f4]">
-        <h3 className="text-center text-xl font-bold mb-4">
-          눈 밑 고민이 무엇인가요?
-        </h3>
+      {/* 체크박스 */}
+      <section className="bg-[#eef8f4] px-4 py-8">
+        <div className="mx-auto w-full max-w-[760px]">
+          <h3 className="mb-4 text-center text-xl font-bold text-black">
+            눈 밑 고민이 무엇인가요?
+          </h3>
 
-        <div className="bg-white p-4 rounded-xl space-y-3">
-          {concernOptions02.map((item) => {
-            const selected = concerns.includes(item);
+          <div className="space-y-3 rounded-xl bg-white p-4">
+            {concernOptions02.map((item) => {
+              const selected = concerns.includes(item);
 
-            return (
-              <button
-                key={item}
-                type="button"
-                onClick={() => toggleConcern(item)}
-                className="flex items-start gap-3 w-full text-left"
-              >
-                <div
-                  className={`w-5 h-5 border rounded ${
-                    selected ? "bg-green-500 border-green-500" : "border-gray-300"
-                  }`}
-                />
+              return (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => toggleConcern(item)}
+                  className="flex w-full items-start gap-3 text-left"
+                >
+                  <div
+                    className={`mt-[2px] flex h-5 w-5 shrink-0 items-center justify-center rounded border text-[12px] ${
+                      selected
+                        ? "border-green-500 bg-green-500 text-white"
+                        : "border-gray-300 bg-white text-transparent"
+                    }`}
+                  >
+                    ✓
+                  </div>
 
-                <span className="text-sm">{item}</span>
-              </button>
-            );
-          })}
+                  <span className="text-sm leading-6 text-black">{item}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
+      </section>
+
+      {/* 하단 이미지 */}
+      <section>
+        <img
+          src="/intro/02/02.jpg"
+          alt="02 랜딩 하단"
+          className="block w-full"
+          draggable={false}
+        />
       </section>
     </>
   );
@@ -124,7 +145,6 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
-
   const [concerns02, setConcerns02] = useState<string[]>([]);
 
   function toggleConcern02(item: string) {
@@ -136,17 +156,31 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!name.trim()) return alert("이름 입력");
-    if (!isValidPhone(phone)) return alert("전화번호 확인");
-    if (!agreed) return alert("동의 필요");
+    if (!name.trim()) {
+      alert("이름 입력");
+      return;
+    }
+
+    if (!isValidPhone(phone)) {
+      alert("전화번호 확인");
+      return;
+    }
+
+    if (!agreed) {
+      alert("동의 필요");
+      return;
+    }
 
     setSubmitting(true);
 
     try {
       const res = await fetch("/api/leads", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          name,
+          name: name.trim(),
           phone: normalizePhone(phone),
           landing_key: config.key,
           concerns: concerns02,
@@ -155,9 +189,16 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
         }),
       });
 
-      const json = await res.json();
+      const json = await res.json().catch(() => null);
 
-      if (!res.ok) throw new Error(json?.error);
+      if (!res.ok) {
+        throw new Error(json?.error || "전송 실패");
+      }
+
+      if (json?.duplicate) {
+        alert("이미 접수된 상담 정보입니다.");
+        return;
+      }
 
       setSuccessOpen(true);
       setName("");
@@ -184,33 +225,45 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
         <LandingFooter landingKey={config.key} />
 
-        {/* 하단 버튼 */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white p-3 border-t">
+        <div className="fixed bottom-0 left-0 right-0 border-t bg-white p-3">
           <button
             onClick={() => setOpen(true)}
-            className="w-full h-12 bg-black text-white rounded-lg"
+            className="h-12 w-full rounded-lg bg-black text-white"
           >
             무료 상담 신청
           </button>
         </div>
 
-        {/* 모달 */}
         {open && (
-          <div className="fixed inset-0 bg-black/60 flex items-end">
-            <div className="bg-white w-full p-6 rounded-t-xl">
+          <div
+            className="fixed inset-0 flex items-end bg-black/60"
+            onClick={() => setOpen(false)}
+          >
+            <div
+              className="w-full rounded-t-xl bg-white p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
               <form onSubmit={handleSubmit} className="space-y-4">
+                {concerns02.length > 0 && (
+                  <div className="rounded-lg bg-[#f2fffa] px-4 py-3 text-sm text-[#0f766e]">
+                    선택한 고민: {concerns02.join(", ")}
+                  </div>
+                )}
+
                 <input
                   placeholder="이름"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full h-12 border px-3"
+                  className="h-12 w-full border px-3"
                 />
 
                 <input
                   placeholder="전화번호"
                   value={phone}
                   onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
-                  className="w-full h-12 border px-3"
+                  inputMode="numeric"
+                  maxLength={13}
+                  className="h-12 w-full border px-3"
                 />
 
                 <label className="flex gap-2 text-sm">
@@ -222,7 +275,11 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                   개인정보 동의
                 </label>
 
-                <button className="w-full h-12 bg-black text-white rounded-lg">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="h-12 w-full rounded-lg bg-black text-white disabled:opacity-60"
+                >
                   {submitting ? "전송중..." : "신청하기"}
                 </button>
               </form>
@@ -231,14 +288,19 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
         )}
       </main>
 
-      {/* 완료 팝업 */}
       {successOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-xl text-center">
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black/60"
+          onClick={() => setSuccessOpen(false)}
+        >
+          <div
+            className="rounded-xl bg-white p-6 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
             <p>신청 완료!</p>
             <button
               onClick={() => setSuccessOpen(false)}
-              className="mt-3 bg-black text-white px-4 py-2 rounded"
+              className="mt-3 rounded bg-black px-4 py-2 text-white"
             >
               확인
             </button>
