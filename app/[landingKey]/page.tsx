@@ -4,7 +4,7 @@ import LandingClient from "@/components/LandingClient";
 export const dynamic = "force-dynamic";
 
 type PageProps = {
-  params: { landingKey: string };
+  params: Promise<{ landingKey: string }>;
 };
 
 function normalizeLandingKey(v: string) {
@@ -21,7 +21,7 @@ function getLandingSeo(lk: string) {
 
   if (lk === "02") {
     return {
-      title: "눈밑지방재배치 상담 | 무료 상담 진행 중",
+      title: "눈밑지방재배치 상담",
       description:
         "눈밑지방, 다크서클, 처짐 고민 있으신가요? 지금 무료 상담 신청하고 개선 가능 여부를 확인해보세요.",
       keywords: [
@@ -42,10 +42,10 @@ function getLandingSeo(lk: string) {
 
   if (lk === "01") {
     return {
-      title: "상담 신청 | 비엔파트너스",
+      title: "상담 신청",
       description: "상담 신청 후 빠르게 안내드립니다.",
       keywords: ["상담 신청", "비엔파트너스"],
-      ogTitle: "상담 신청 | 비엔파트너스",
+      ogTitle: "상담 신청",
       ogDescription: "상담 신청 후 빠르게 안내드립니다.",
       image: ogImage,
       fallbackImage,
@@ -72,7 +72,8 @@ function getLandingSeo(lk: string) {
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const lk = normalizeLandingKey(params.landingKey);
+  const { landingKey } = await params;
+  const lk = normalizeLandingKey(landingKey);
   const seo = getLandingSeo(lk);
   const url = `https://bienptns.com/${lk}`;
 
@@ -122,6 +123,7 @@ export async function generateMetadata({
   };
 }
 
-export default function Page({ params }: PageProps) {
-  return <LandingClient landingKey={params.landingKey} />;
+export default async function Page({ params }: PageProps) {
+  const { landingKey } = await params;
+  return <LandingClient landingKey={landingKey} />;
 }

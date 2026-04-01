@@ -17,17 +17,14 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://bienptns.com"),
-  title: {
-    default: "Bienpartners",
-    template: "%s",
-  },
-  description: "Bienpartners",
+  title: "비엔파트너스",
+  description: "비엔파트너스",
   icons: {
     icon: "/icon.png",
     apple: "/apple-icon.png",
   },
   openGraph: {
-    siteName: "Bienpartners",
+    siteName: "비엔파트너스",
     locale: "ko_KR",
     type: "website",
   },
