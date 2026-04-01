@@ -19,13 +19,20 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://bienptns.com"),
   title: {
     default: "Bienpartners",
-    template: "%s | Bienpartners",
+    template: "%s",
   },
-  description:
-    "비엔파트너스 마케팅 상담 랜딩페이지. 네이버 광고, 구글 광고, 퍼포먼스 마케팅 전문.",
+  description: "Bienpartners",
   icons: {
     icon: "/icon.png",
     apple: "/apple-icon.png",
+  },
+  openGraph: {
+    siteName: "Bienpartners",
+    locale: "ko_KR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
   },
 };
 
@@ -37,7 +44,6 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
-        {/* ✅ GTM HEAD */}
         <Script id="gtm-head" strategy="beforeInteractive">
           {`
             (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -48,14 +54,12 @@ export default function RootLayout({
           `}
         </Script>
 
-        {/* 기존 픽셀 */}
         <AnalyticsScripts />
       </head>
 
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {/* ✅ GTM BODY */}
         <noscript>
           <iframe
             src="https://www.googletagmanager.com/ns.html?id=GTM-5TFNS63T"
