@@ -115,17 +115,14 @@ export default function AdminLeadsClient() {
 
   const pageLK = useMemo(() => extractLKFromPath(pathname), [pathname]);
 
-  // ✅ 00을 메인 admin으로 사용
   const isMainAdmin = pageLK === "00";
-
-  // 선택 LK: 쿼리 있으면 그걸, 없으면 현재 페이지 LK
   const selectedLK = normalizeLK(sp.get("landing_key") ?? pageLK);
 
   const userLK = normalizeLK((session?.user as any)?.landing_key ?? "");
   const canSwitchAny = userLK === "00";
 
   const [rows, setRows] = useState<Lead[]>([]);
-  const [allRows, setAllRows] = useState<Lead[]>([]); // ✅ 00용 전체 랜딩 합산 계산용
+  const [allRows, setAllRows] = useState<Lead[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [loadingRows, setLoadingRows] = useState(false);
 
@@ -253,7 +250,6 @@ export default function AdminLeadsClient() {
     }
   }
 
-  // ✅ 선택된 landing_key의 리드 / stats / account
   useEffect(() => {
     if (authStatus === "unauthenticated") {
       router.replace(`/${pageLK}/admin/login`);
@@ -313,7 +309,6 @@ export default function AdminLeadsClient() {
     return () => ac.abort();
   }, [authStatus, router, selectedLK, pageLK]);
 
-  // ✅ 00 메인 admin용 전체 랜딩 리드 목록
   useEffect(() => {
     if (authStatus !== "authenticated") return;
     if (!isMainAdmin) return;
@@ -344,7 +339,6 @@ export default function AdminLeadsClient() {
     return () => ac.abort();
   }, [authStatus, isMainAdmin]);
 
-  // ✅ 루트(00)일 때 계정 전체 리스트 로드
   useEffect(() => {
     if (authStatus !== "authenticated") return;
     if (userLK !== "00") return;
@@ -678,11 +672,11 @@ export default function AdminLeadsClient() {
 
               return (
                 <tr key={l.id}>
-                  <td style={td}>{new Date(l.created_at).toLocaleString("ko-KR")}</td>
-                  <td style={td}>{l.name ?? "-"}</td>
-                  <td style={td}>{l.phone ?? "-"}</td>
+                  <td style={tdTop}>{new Date(l.created_at).toLocaleString("ko-KR")}</td>
+                  <td style={tdTop}>{l.name ?? "-"}</td>
+                  <td style={tdTop}>{l.phone ?? "-"}</td>
 
-                  <td style={td}>
+                  <td style={tdTop}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <StatusBadge status={curStatus} />
                       <select
@@ -703,8 +697,8 @@ export default function AdminLeadsClient() {
                     </div>
                   </td>
 
-                  <td style={td}>
-                    <input
+                  <td style={{ ...tdTop, minWidth: 320 }}>
+                    <textarea
                       value={curMemo}
                       onChange={(e) =>
                         setDraft((prev) => ({
@@ -713,11 +707,23 @@ export default function AdminLeadsClient() {
                         }))
                       }
                       placeholder="메모"
-                      style={{ width: "100%" }}
+                      rows={4}
+                      style={{
+                        width: "100%",
+                        minHeight: 96,
+                        resize: "vertical",
+                        padding: "10px 12px",
+                        borderRadius: 10,
+                        border: "1px solid #ddd",
+                        fontSize: 14,
+                        lineHeight: 1.6,
+                        whiteSpace: "pre-wrap",
+                        overflowWrap: "break-word",
+                      }}
                     />
                   </td>
 
-                  <td style={td}>
+                  <td style={tdTop}>
                     <button
                       onClick={() => saveLead(l.id)}
                       disabled={!changed || !!saving[l.id]}
@@ -735,7 +741,7 @@ export default function AdminLeadsClient() {
                   </td>
 
                   {isMainAdmin && (
-                    <td style={td}>
+                    <td style={tdTop}>
                       <button
                         onClick={() => deleteLead(l.id)}
                         disabled={!!deleting[l.id]}
@@ -858,4 +864,11 @@ const td: React.CSSProperties = {
   padding: 12,
   borderBottom: "1px solid #f3f3f3",
   fontSize: 14,
+};
+
+const tdTop: React.CSSProperties = {
+  padding: 12,
+  borderBottom: "1px solid #f3f3f3",
+  fontSize: 14,
+  verticalAlign: "top",
 };
