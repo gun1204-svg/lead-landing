@@ -343,9 +343,6 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
               <div className="flex h-full items-center justify-center">
                 <div className="w-full max-w-[380px] rounded-3xl border border-gray-200 bg-white p-8 shadow-[0_16px_40px_rgba(0,0,0,0.10)]">
                   <div className="mb-6 text-center">
-                    <p className="text-[13px] font-semibold tracking-[0.14em] text-[#0f766e]">
-                      FREE CONSULTING
-                    </p>
                     <h1 className="mt-2 text-2xl font-bold leading-tight text-black">
                       {config.title}
                     </h1>
@@ -442,9 +439,6 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mb-5 text-center">
-                <p className="text-[13px] font-semibold tracking-[0.14em] text-[#0f766e]">
-                  FREE CONSULTING
-                </p>
                 <h2 className="mt-2 text-[22px] font-bold text-black">
                   무료 상담 신청
                 </h2>
