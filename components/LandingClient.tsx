@@ -26,6 +26,7 @@ function getUtmFromLocation() {
   const sp = new URLSearchParams(window.location.search);
   return {
     utm_source: sp.get("utm_source") || "",
+    utm_medium: sp.get("utm_medium") || "",
     utm_campaign: sp.get("utm_campaign") || "",
     utm_term: sp.get("utm_term") || "",
     utm_content: sp.get("utm_content") || "",
@@ -229,6 +230,8 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
     setSubmitting(true);
 
     try {
+      const utm = getUtmFromLocation();
+
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: {
@@ -239,7 +242,17 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
           phone: normalizePhone(phone),
           landing_key: config.key,
           concerns: isLanding02 ? concerns02 : [],
-          utm: getUtmFromLocation(),
+
+          // 평면 필드
+          utm_source: utm.utm_source,
+          utm_medium: utm.utm_medium,
+          utm_campaign: utm.utm_campaign,
+          utm_term: utm.utm_term,
+          utm_content: utm.utm_content,
+
+          // 기존 호환용
+          utm,
+
           event_id: generateEventId(),
         }),
       });

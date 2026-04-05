@@ -68,6 +68,14 @@ function buildConcernMemo(concerns: string[]) {
   return `[상담 체크 항목]\n${concerns.map((v) => `- ${v}`).join("\n")}`;
 }
 
+function pickUtmValue(...values: unknown[]) {
+  for (const value of values) {
+    const s = String(value ?? "").trim();
+    if (s) return s;
+  }
+  return "";
+}
+
 async function sendTelegram(text: string, chatId?: string) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -175,12 +183,33 @@ export async function POST(req: Request) {
     const fbc = body?.fbc;
     const concerns = normalizeConcerns(body?.concerns);
 
-    const utm = body?.utm ?? {
-      source: body?.utm_source ?? null,
-      campaign: body?.utm_campaign ?? null,
-      term: body?.utm_term ?? null,
-      content: body?.utm_content ?? null,
-    };
+    const utmObj = body?.utm ?? {};
+
+    const utmSource = pickUtmValue(
+      body?.utm_source,
+      utmObj?.utm_source,
+      utmObj?.source
+    );
+    const utmMedium = pickUtmValue(
+      body?.utm_medium,
+      utmObj?.utm_medium,
+      utmObj?.medium
+    );
+    const utmCampaign = pickUtmValue(
+      body?.utm_campaign,
+      utmObj?.utm_campaign,
+      utmObj?.campaign
+    );
+    const utmTerm = pickUtmValue(
+      body?.utm_term,
+      utmObj?.utm_term,
+      utmObj?.term
+    );
+    const utmContent = pickUtmValue(
+      body?.utm_content,
+      utmObj?.utm_content,
+      utmObj?.content
+    );
 
     const cleanName = name;
     const cleanPhone = normalizePhone(phone);
@@ -228,11 +257,11 @@ export async function POST(req: Request) {
       p_name: cleanName,
       p_phone: cleanPhone,
       p_landing_key: lk,
-      p_source: utm?.source ?? null,
-      p_utm_source: utm?.source ?? null,
-      p_utm_campaign: utm?.campaign ?? null,
-      p_utm_term: utm?.term ?? null,
-      p_utm_content: utm?.content ?? null,
+      p_source: utmSource || null,
+      p_utm_source: utmSource || null,
+      p_utm_campaign: utmCampaign || null,
+      p_utm_term: utmTerm || null,
+      p_utm_content: utmContent || null,
     });
 
     if (error) {
@@ -313,10 +342,11 @@ export async function POST(req: Request) {
 👤 이름: ${cleanName}
 📞 전화: ${cleanPhone}${concernText}
 📊 광고 정보
-utm_source: ${utm?.source ?? ""}
-utm_campaign: ${utm?.campaign ?? ""}
-utm_term: ${utm?.term ?? ""}
-utm_content: ${utm?.content ?? ""}
+utm_source: ${utmSource}
+utm_medium: ${utmMedium}
+utm_campaign: ${utmCampaign}
+utm_term: ${utmTerm}
+utm_content: ${utmContent}
 
 🕒 접수시간
 ${now}`,
