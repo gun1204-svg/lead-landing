@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
@@ -450,20 +451,50 @@ export default function AdminLeadsClient() {
 
   return (
     <div style={{ padding: 20, maxWidth: 1200, margin: "0 auto" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+        }}
+      >
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>Admin Leads</h1>
           <p style={{ opacity: 0.7, marginTop: 6, marginBottom: 0 }}>
-            user: {(session?.user as any)?.email} / my_landing_key: {userLK || "-"} / page_lk: {pageLK}
+            user: {(session?.user as any)?.email} / my_landing_key: {userLK || "-"} / page_lk:{" "}
+            {pageLK}
           </p>
         </div>
 
-        <button
-          onClick={() => signOut({ callbackUrl: `/${pageLK}/admin/login` })}
-          style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #ddd", background: "#fff" }}
-        >
-          로그아웃
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Link
+            href="/admin/analytics"
+            style={{
+              padding: "8px 12px",
+              borderRadius: 10,
+              border: "1px solid #ddd",
+              background: "#fff",
+              fontWeight: 700,
+              textDecoration: "none",
+              color: "#111",
+            }}
+          >
+            광고분석
+          </Link>
+
+          <button
+            onClick={() => signOut({ callbackUrl: `/${pageLK}/admin/login` })}
+            style={{
+              padding: "8px 12px",
+              borderRadius: 10,
+              border: "1px solid #ddd",
+              background: "#fff",
+            }}
+          >
+            로그아웃
+          </button>
+        </div>
       </div>
 
       <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
