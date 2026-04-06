@@ -56,12 +56,164 @@ const concernOptions02 = [
   },
 ];
 
+function InlineCTA({
+  text = "지금 내 상태 확인하기",
+  onClick,
+}: {
+  text?: string;
+  onClick: () => void;
+}) {
+  return (
+    <div className="bg-white px-4 py-5">
+      <div className="mx-auto w-full max-w-[760px]">
+        <button
+          type="button"
+          onClick={onClick}
+          className="h-13 w-full rounded-2xl bg-black px-5 text-[15px] font-semibold text-white shadow-[0_12px_28px_rgba(0,0,0,0.12)] transition hover:bg-gray-800"
+        >
+          {text}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TopLeadForm({
+  name,
+  phone,
+  agreed,
+  submitting,
+  setName,
+  setPhone,
+  setAgreed,
+  handleSubmit,
+  concernsText,
+}: {
+  name: string;
+  phone: string;
+  agreed: boolean;
+  submitting: boolean;
+  setName: (v: string) => void;
+  setPhone: (v: string) => void;
+  setAgreed: (v: boolean) => void;
+  handleSubmit: (e: React.FormEvent) => Promise<void>;
+  concernsText?: string;
+}) {
+  return (
+    <section className="bg-white px-4 py-6">
+      <div className="mx-auto w-full max-w-[760px]">
+        <div className="overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-[0_16px_40px_rgba(0,0,0,0.08)]">
+          <div className="bg-[#f7faf9] px-5 py-6 text-center">
+            <p className="text-[13px] font-semibold tracking-[0.08em] text-[#0f766e]">
+              QUICK CHECK
+            </p>
+            <h2 className="mt-2 text-[28px] font-bold leading-tight text-black">
+              눈밑 고민,
+              <br />
+              먼저 간단하게 확인해보세요
+            </h2>
+            <p className="mt-3 text-[14px] leading-6 text-gray-600">
+              이름과 연락처만 남겨주시면
+              <br className="sm:hidden" /> 상담 가능 여부를 빠르게 안내드립니다.
+            </p>
+          </div>
+
+          <div className="px-5 py-5">
+            <div className="mb-4 grid gap-2 rounded-2xl bg-[#f8faf9] px-4 py-4 text-[14px] leading-6 text-gray-700">
+              <div>✔ 피곤해 보인다는 말을 자주 듣는 경우</div>
+              <div>✔ 다크서클처럼 인상이 어두워 보이는 경우</div>
+              <div>✔ 사진에서 눈밑이 더 도드라져 보이는 경우</div>
+            </div>
+
+            {concernsText ? (
+              <div className="mb-4 rounded-2xl border border-[#bfe7d6] bg-[#f2fffa] px-4 py-4">
+                <p className="text-[12px] font-semibold tracking-[0.08em] text-[#0f766e]">
+                  선택한 고민
+                </p>
+                <p className="mt-2 text-[14px] leading-6 text-[#115e59]">
+                  {concernsText}
+                </p>
+              </div>
+            ) : null}
+
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <input
+                className="h-13 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] font-medium text-black placeholder:text-gray-400 outline-none transition focus:border-black focus:ring-2 focus:ring-black/5"
+                placeholder="이름을 입력해주세요"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+
+              <input
+                className="h-13 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] font-medium text-black placeholder:text-gray-400 outline-none transition focus:border-black focus:ring-2 focus:ring-black/5"
+                placeholder="010-1234-5678"
+                value={phone}
+                onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
+                inputMode="numeric"
+                maxLength={13}
+                required
+              />
+
+              <label className="flex items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm leading-6 text-black">
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  className="mt-1 h-5 w-5 shrink-0 accent-black"
+                />
+                <span className="font-medium text-gray-800">
+                  개인정보 수집 및 이용에 동의합니다
+                </span>
+              </label>
+
+              <div className="rounded-xl bg-[#f8faf9] px-4 py-3 text-center text-[13px] leading-5 text-gray-600">
+                입력해주신 정보는 상담 안내 외 다른 용도로 사용되지 않습니다.
+              </div>
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="mt-1 h-13 rounded-xl bg-black text-[15px] font-semibold text-white shadow-sm transition hover:bg-gray-800 disabled:opacity-60"
+              >
+                {submitting ? "전송 중..." : "지금 내 상태 확인하기"}
+              </button>
+
+              <p className="text-center text-[12px] leading-5 text-gray-500">
+                간단 신청 후 순차적으로 연락드립니다
+              </p>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function Landing02Content({
   concerns,
   toggleConcern,
+  onOpenForm,
+  name,
+  phone,
+  agreed,
+  submitting,
+  setName,
+  setPhone,
+  setAgreed,
+  handleSubmit,
 }: {
   concerns: string[];
   toggleConcern: (item: string) => void;
+  onOpenForm: () => void;
+  name: string;
+  phone: string;
+  agreed: boolean;
+  submitting: boolean;
+  setName: (v: string) => void;
+  setPhone: (v: string) => void;
+  setAgreed: (v: boolean) => void;
+  handleSubmit: (e: React.FormEvent) => Promise<void>;
 }) {
   return (
     <>
@@ -73,6 +225,20 @@ function Landing02Content({
           draggable={false}
         />
       </section>
+
+      <TopLeadForm
+        name={name}
+        phone={phone}
+        agreed={agreed}
+        submitting={submitting}
+        setName={setName}
+        setPhone={setPhone}
+        setAgreed={setAgreed}
+        handleSubmit={handleSubmit}
+        concernsText={concerns.length > 0 ? concerns.join(", ") : ""}
+      />
+
+      <InlineCTA text="간단 상담 받아보기" onClick={onOpenForm} />
 
       <section className="bg-white px-4 py-8">
         <div className="mx-auto w-full max-w-[760px]">
@@ -101,6 +267,8 @@ function Landing02Content({
           </div>
         </div>
       </section>
+
+      <InlineCTA text="영상 보고 바로 상담 남기기" onClick={onOpenForm} />
 
       <section className="bg-[#f4fbf8] px-4 py-9">
         <div className="mx-auto w-full max-w-[760px]">
@@ -165,6 +333,8 @@ function Landing02Content({
         </div>
       </section>
 
+      <InlineCTA text="선택 내용으로 상담 받아보기" onClick={onOpenForm} />
+
       <section>
         <img
           src="/intro/02/02.jpg"
@@ -173,6 +343,8 @@ function Landing02Content({
           draggable={false}
         />
       </section>
+
+      <InlineCTA text="지금 내 상태 확인하기" onClick={onOpenForm} />
     </>
   );
 }
@@ -243,14 +415,12 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
           landing_key: config.key,
           concerns: isLanding02 ? concerns02 : [],
 
-          // 평면 필드
           utm_source: utm.utm_source,
           utm_medium: utm.utm_medium,
           utm_campaign: utm.utm_campaign,
           utm_term: utm.utm_term,
           utm_content: utm.utm_content,
 
-          // 기존 호환용
           utm,
 
           event_id: generateEventId(),
@@ -313,6 +483,15 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
               <Landing02Content
                 concerns={concerns02}
                 toggleConcern={toggleConcern02}
+                onOpenForm={() => setOpen(true)}
+                name={name}
+                phone={phone}
+                agreed={agreed}
+                submitting={submitting}
+                setName={setName}
+                setPhone={setPhone}
+                setAgreed={setAgreed}
+                handleSubmit={handleSubmit}
               />
             ) : (
               <>
@@ -420,7 +599,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                       disabled={submitting}
                       className="mt-1 h-12 rounded-xl bg-black text-[15px] font-semibold text-white shadow-sm transition hover:bg-gray-800 disabled:opacity-60"
                     >
-                      {submitting ? "전송 중..." : config.submitLabel}
+                      {submitting ? "전송 중..." : "지금 내 상태 확인하기"}
                     </button>
 
                     <p className="text-center text-[12px] leading-5 text-gray-500">
@@ -438,7 +617,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
             onClick={() => setOpen(true)}
             className="h-12 w-full rounded-xl bg-black text-[15px] font-semibold text-white shadow-sm"
           >
-            {config.mobileSubmitLabel ?? config.submitLabel ?? "무료 상담 신청"}
+            3초만에 상담 신청하기
           </button>
         </div>
 
@@ -453,7 +632,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
             >
               <div className="mb-5 text-center">
                 <h2 className="mt-2 text-[22px] font-bold text-black">
-                  무료 상담 신청
+                  지금 내 상태 확인하기
                 </h2>
                 <p className="mt-2 text-[14px] leading-6 text-gray-600">
                   정보를 남겨주시면 확인 후 빠르게 연락드립니다.
@@ -509,7 +688,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                   disabled={submitting}
                   className="h-12 w-full rounded-xl bg-black text-[15px] font-semibold text-white shadow-sm transition disabled:opacity-60"
                 >
-                  {submitting ? "전송중..." : "신청하기"}
+                  {submitting ? "전송중..." : "지금 내 상태 확인하기"}
                 </button>
 
                 <p className="text-center text-[12px] leading-5 text-gray-500">
