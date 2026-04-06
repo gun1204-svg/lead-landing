@@ -189,7 +189,7 @@ function TopLeadForm({
                 disabled={submitting}
                 className="mt-1 h-13 rounded-xl bg-black text-[15px] font-semibold text-white shadow-sm transition hover:bg-gray-800 disabled:opacity-60"
               >
-                {submitting ? "전송 중..." : "지금 내 상태 확인하기"}
+                {submitting ? "전송 중..." : "간단 상담 받아보기"}
               </button>
 
               <p className="text-center text-[12px] leading-5 text-gray-500">
@@ -253,8 +253,6 @@ function Landing02Content({
         handleFormStarted={handleFormStarted}
         concernsText={concerns.length > 0 ? concerns.join(", ") : ""}
       />
-
-      <InlineCTA text="간단 상담 받아보기" onClick={onOpenForm} />
 
       <section className="bg-white px-4 py-8">
         <div className="mx-auto w-full max-w-[760px]">
@@ -360,7 +358,7 @@ function Landing02Content({
         />
       </section>
 
-      <InlineCTA text="지금 내 상태 확인하기" onClick={onOpenForm} />
+      <InlineCTA text="간단 상담 받아보기" onClick={onOpenForm} />
     </>
   );
 }
@@ -711,7 +709,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                       disabled={submitting}
                       className="mt-1 h-12 rounded-xl bg-black text-[15px] font-semibold text-white shadow-sm transition hover:bg-gray-800 disabled:opacity-60"
                     >
-                      {submitting ? "전송 중..." : "지금 내 상태 확인하기"}
+                      {submitting ? "전송 중..." : "간단 상담 받아보기"}
                     </button>
 
                     <p className="text-center text-[12px] leading-5 text-gray-500">
@@ -729,7 +727,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
             onClick={() => openFormWithTracking("mobile_sticky")}
             className="h-12 w-full rounded-xl bg-black text-[15px] font-semibold text-white shadow-sm"
           >
-            3초만에 상담 신청하기
+            간단 상담 받아보기
           </button>
         </div>
 
@@ -744,7 +742,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
             >
               <div className="mb-5 text-center">
                 <h2 className="mt-2 text-[22px] font-bold text-black">
-                  지금 내 상태 확인하기
+                  간단 상담 받아보기
                 </h2>
                 <p className="mt-2 text-[14px] leading-6 text-gray-600">
                   정보를 남겨주시면 확인 후 빠르게 연락드립니다.
@@ -802,7 +800,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                   disabled={submitting}
                   className="h-12 w-full rounded-xl bg-black text-[15px] font-semibold text-white shadow-sm transition disabled:opacity-60"
                 >
-                  {submitting ? "전송중..." : "지금 내 상태 확인하기"}
+                  {submitting ? "전송중..." : "간단 상담 받아보기"}
                 </button>
 
                 <p className="text-center text-[12px] leading-5 text-gray-500">
