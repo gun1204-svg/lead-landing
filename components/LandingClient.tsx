@@ -1,9 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { getLandingConfig, normalizeLK } from "@/lib/landing";
 import LandingFooter from "@/components/LandingFooter";
+import {
+  trackCTA,
+  trackDuplicateLead,
+  trackFormStart,
+  trackFormSubmit,
+  trackFormSuccess,
+  trackLandingView,
+  trackScrollDepth,
+} from "@/lib/tracking";
 
 function normalizePhone(phone: string) {
   return phone.replace(/[^\d]/g, "");
@@ -87,6 +96,7 @@ function TopLeadForm({
   setPhone,
   setAgreed,
   handleSubmit,
+  handleFormStarted,
   concernsText,
 }: {
   name: string;
@@ -97,10 +107,11 @@ function TopLeadForm({
   setPhone: (v: string) => void;
   setAgreed: (v: boolean) => void;
   handleSubmit: (e: React.FormEvent) => Promise<void>;
+  handleFormStarted: () => void;
   concernsText?: string;
 }) {
   return (
-    <section className="bg-white px-4 py-6">
+    <section id="lead-form-top" className="bg-white px-4 py-6">
       <div className="mx-auto w-full max-w-[760px]">
         <div className="overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-[0_16px_40px_rgba(0,0,0,0.08)]">
           <div className="bg-[#f7faf9] px-5 py-6 text-center">
@@ -142,6 +153,7 @@ function TopLeadForm({
                 placeholder="이름을 입력해주세요"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onFocus={handleFormStarted}
                 required
               />
 
@@ -150,6 +162,7 @@ function TopLeadForm({
                 placeholder="010-1234-5678"
                 value={phone}
                 onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
+                onFocus={handleFormStarted}
                 inputMode="numeric"
                 maxLength={13}
                 required
@@ -202,6 +215,7 @@ function Landing02Content({
   setPhone,
   setAgreed,
   handleSubmit,
+  handleFormStarted,
 }: {
   concerns: string[];
   toggleConcern: (item: string) => void;
@@ -214,6 +228,7 @@ function Landing02Content({
   setPhone: (v: string) => void;
   setAgreed: (v: boolean) => void;
   handleSubmit: (e: React.FormEvent) => Promise<void>;
+  handleFormStarted: () => void;
 }) {
   return (
     <>
@@ -235,6 +250,7 @@ function Landing02Content({
         setPhone={setPhone}
         setAgreed={setAgreed}
         handleSubmit={handleSubmit}
+        handleFormStarted={handleFormStarted}
         concernsText={concerns.length > 0 ? concerns.join(", ") : ""}
       />
 
@@ -375,11 +391,73 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
   const [successOpen, setSuccessOpen] = useState(false);
   const [concerns02, setConcerns02] = useState<string[]>([]);
 
+  const trackedDepths = useRef<Set<number>>(new Set());
+  const formStartedRef = useRef(false);
+
   function toggleConcern02(item: string) {
     setConcerns02((prev) =>
       prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item]
     );
   }
+
+  function getTrackingPayload() {
+    const utm = getUtmFromLocation();
+
+    return {
+      landing_key: config.key,
+      hospital_name: config.hospitalName,
+      utm_source: utm.utm_source,
+      utm_medium: utm.utm_medium,
+      utm_campaign: utm.utm_campaign,
+      utm_term: utm.utm_term,
+      utm_content: utm.utm_content,
+    };
+  }
+
+  function handleFormStarted() {
+    if (formStartedRef.current) return;
+    formStartedRef.current = true;
+    trackFormStart(getTrackingPayload());
+  }
+
+  function openFormWithTracking(location: string) {
+    trackCTA(location, getTrackingPayload());
+    setOpen(true);
+  }
+
+  useEffect(() => {
+    const scrollArea = document.querySelector(".scroll-area") as HTMLElement | null;
+
+    trackLandingView(getTrackingPayload());
+
+    const onScroll = () => {
+      const currentTop = scrollArea ? scrollArea.scrollTop : window.scrollY;
+      const viewportHeight = scrollArea ? scrollArea.clientHeight : window.innerHeight;
+      const scrollHeight = scrollArea
+        ? scrollArea.scrollHeight
+        : document.documentElement.scrollHeight;
+
+      const docHeight = scrollHeight - viewportHeight;
+      if (docHeight <= 0) return;
+
+      const percent = Math.round((currentTop / docHeight) * 100);
+
+      for (const depth of [25, 50, 75, 100] as const) {
+        if (percent >= depth && !trackedDepths.current.has(depth)) {
+          trackedDepths.current.add(depth);
+          trackScrollDepth(depth, { landing_key: config.key });
+        }
+      }
+    };
+
+    const target = scrollArea || window;
+    target.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+
+    return () => {
+      target.removeEventListener("scroll", onScroll);
+    };
+  }, [config.key, config.hospitalName, pathname]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -403,6 +481,16 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
     try {
       const utm = getUtmFromLocation();
+
+      trackFormSubmit({
+        landing_key: config.key,
+        hospital_name: config.hospitalName,
+        utm_source: utm.utm_source,
+        utm_medium: utm.utm_medium,
+        utm_campaign: utm.utm_campaign,
+        utm_term: utm.utm_term,
+        utm_content: utm.utm_content,
+      });
 
       const res = await fetch("/api/leads", {
         method: "POST",
@@ -434,9 +522,29 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       }
 
       if (json?.duplicate) {
+        trackDuplicateLead({
+          landing_key: config.key,
+          hospital_name: config.hospitalName,
+          utm_source: utm.utm_source,
+          utm_medium: utm.utm_medium,
+          utm_campaign: utm.utm_campaign,
+          utm_term: utm.utm_term,
+          utm_content: utm.utm_content,
+        });
+
         alert("이미 접수된 상담 정보입니다.");
         return;
       }
+
+      trackFormSuccess({
+        landing_key: config.key,
+        hospital_name: config.hospitalName,
+        utm_source: utm.utm_source,
+        utm_medium: utm.utm_medium,
+        utm_campaign: utm.utm_campaign,
+        utm_term: utm.utm_term,
+        utm_content: utm.utm_content,
+      });
 
       setSuccessOpen(true);
       setName("");
@@ -444,6 +552,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       setAgreed(false);
       setConcerns02([]);
       setOpen(false);
+      formStartedRef.current = false;
     } catch (e) {
       alert("전송 실패");
     } finally {
@@ -483,7 +592,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
               <Landing02Content
                 concerns={concerns02}
                 toggleConcern={toggleConcern02}
-                onOpenForm={() => setOpen(true)}
+                onOpenForm={() => openFormWithTracking("inline_cta")}
                 name={name}
                 phone={phone}
                 agreed={agreed}
@@ -492,6 +601,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                 setPhone={setPhone}
                 setAgreed={setAgreed}
                 handleSubmit={handleSubmit}
+                handleFormStarted={handleFormStarted}
               />
             ) : (
               <>
@@ -565,6 +675,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                       placeholder="이름을 입력해주세요"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
+                      onFocus={handleFormStarted}
                       required
                     />
 
@@ -573,6 +684,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                       placeholder="010-1234-5678"
                       value={phone}
                       onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
+                      onFocus={handleFormStarted}
                       inputMode="numeric"
                       maxLength={13}
                       required
@@ -614,7 +726,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
         <div className="fixed bottom-0 left-0 right-0 border-t bg-white p-3 lg:hidden">
           <button
-            onClick={() => setOpen(true)}
+            onClick={() => openFormWithTracking("mobile_sticky")}
             className="h-12 w-full rounded-xl bg-black text-[15px] font-semibold text-white shadow-sm"
           >
             3초만에 상담 신청하기
@@ -655,6 +767,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                   placeholder="이름을 입력해주세요"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  onFocus={handleFormStarted}
                   className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] font-medium text-black placeholder:text-gray-400 outline-none transition focus:border-black focus:ring-2 focus:ring-black/5"
                 />
 
@@ -662,6 +775,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                   placeholder="010-1234-5678"
                   value={phone}
                   onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
+                  onFocus={handleFormStarted}
                   inputMode="numeric"
                   maxLength={13}
                   className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] font-medium text-black placeholder:text-gray-400 outline-none transition focus:border-black focus:ring-2 focus:ring-black/5"
