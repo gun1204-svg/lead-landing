@@ -66,7 +66,7 @@ const concernOptions02 = [
 ];
 
 function InlineCTA({
-  text = "지금 내 상태 확인하기",
+  text = "지금 상담 신청하기",
   onClick,
 }: {
   text?: string;
