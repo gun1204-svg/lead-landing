@@ -10,7 +10,8 @@ declare global {
       options?: Record<string, unknown>
     ) => void;
     karrotPixel?: {
-      track?: (eventName: string, params?: Record<string, unknown>) => void;
+      init: (pixelId: string) => void;
+      track: (eventName: string, params?: Record<string, unknown>) => void;
     };
   }
 }
