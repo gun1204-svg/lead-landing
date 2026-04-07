@@ -270,9 +270,20 @@ function Landing02Content({
 
           {concerns.length > 0 && (
             <>
-              <div className="mt-5">
-                <div className="mb-3 text-center text-[14px] leading-6 text-gray-600">
+              <div className="mt-5 rounded-2xl border border-[#dfeee7] bg-[#f8faf9] px-4 py-4">
+                <div className="text-center text-[14px] font-medium leading-6 text-gray-700">
                   선택하신 내용으로 상담 안내가 진행됩니다.
+                </div>
+
+                <div className="mt-3 flex flex-wrap justify-center gap-2">
+                  {concerns.map((item) => (
+                    <span
+                      key={item}
+                      className="rounded-full border border-[#10b981] bg-white px-3 py-1.5 text-[13px] font-semibold text-[#047857]"
+                    >
+                      {item}
+                    </span>
+                  ))}
                 </div>
               </div>
 
