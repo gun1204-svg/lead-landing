@@ -97,7 +97,6 @@ function TopLeadForm({
   setAgreed,
   handleSubmit,
   handleFormStarted,
-  concernsText,
 }: {
   name: string;
   phone: string;
@@ -108,38 +107,12 @@ function TopLeadForm({
   setAgreed: (v: boolean) => void;
   handleSubmit: (e: React.FormEvent) => Promise<void>;
   handleFormStarted: () => void;
-  concernsText?: string;
 }) {
   return (
     <section id="lead-form-top" className="bg-white px-4 py-6">
       <div className="mx-auto w-full max-w-[760px]">
         <div className="overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-[0_16px_40px_rgba(0,0,0,0.08)]">
-          <div className="bg-[#f7faf9] px-5 py-6 text-center">
-            <h2 className="text-[26px] font-bold leading-tight text-black">
-              간단 상담 받아보기
-            </h2>
-            <p className="mt-3 text-[14px] leading-6 text-gray-600">
-              이름과 연락처만 남겨주시면
-              <br className="sm:hidden" /> 확인 후 빠르게 안내드립니다.
-            </p>
-          </div>
-
           <div className="px-5 py-5">
-            {concernsText ? (
-              <div className="mb-4 rounded-2xl border border-[#bfe7d6] bg-[#f2fffa] px-4 py-4">
-                <p className="text-[12px] font-semibold tracking-[0.08em] text-[#0f766e]">
-                  선택한 고민
-                </p>
-                <p className="mt-2 text-[14px] leading-6 text-[#115e59]">
-                  {concernsText}
-                </p>
-              </div>
-            ) : null}
-
-            <div className="mb-4 rounded-2xl bg-[#f8faf9] px-4 py-4 text-center text-[13px] leading-5 text-gray-600">
-              선택하신 고민을 바탕으로 상담 안내가 진행됩니다.
-            </div>
-
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <input
                 className="h-13 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] font-medium text-black placeholder:text-gray-400 outline-none transition focus:border-black focus:ring-2 focus:ring-black/5"
@@ -321,7 +294,6 @@ function Landing02Content({
         setAgreed={setAgreed}
         handleSubmit={handleSubmit}
         handleFormStarted={handleFormStarted}
-        concernsText={concerns.length > 0 ? concerns.join(", ") : ""}
       />
 
       <section className="bg-white px-4 py-8">
@@ -661,21 +633,6 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                     </p>
                   </div>
 
-                  {isLanding02 && concerns02.length > 0 && (
-                    <div className="mb-4 rounded-2xl border border-[#bfe7d6] bg-[#f2fffa] px-4 py-4">
-                      <p className="text-[12px] font-semibold tracking-[0.08em] text-[#0f766e]">
-                        선택한 고민
-                      </p>
-                      <p className="mt-2 text-[14px] leading-6 text-[#115e59]">
-                        {concerns02.join(", ")}
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="mb-4 rounded-2xl bg-[#f8faf9] px-4 py-4 text-center text-[13px] leading-5 text-gray-600">
-                    선택하신 고민을 바탕으로 상담 안내가 진행됩니다.
-                  </div>
-
                   <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     <input
                       className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] font-medium text-black placeholder:text-gray-400 outline-none transition focus:border-black focus:ring-2 focus:ring-black/5"
@@ -749,30 +706,6 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
               className="w-full rounded-t-2xl bg-white p-6 shadow-2xl lg:max-w-md lg:rounded-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="mb-5 text-center">
-                <h2 className="mt-2 text-[22px] font-bold text-black">
-                  간단 상담 받아보기
-                </h2>
-                <p className="mt-2 text-[14px] leading-6 text-gray-600">
-                  정보를 남겨주시면 확인 후 빠르게 연락드립니다.
-                </p>
-              </div>
-
-              {isLanding02 && concerns02.length > 0 && (
-                <div className="mb-4 rounded-2xl border border-[#bfe7d6] bg-[#f2fffa] px-4 py-4">
-                  <p className="text-[12px] font-semibold tracking-[0.08em] text-[#0f766e]">
-                    선택한 고민
-                  </p>
-                  <p className="mt-2 text-[14px] leading-6 text-[#115e59]">
-                    {concerns02.join(", ")}
-                  </p>
-                </div>
-              )}
-
-              <div className="mb-4 rounded-2xl bg-[#f8faf9] px-4 py-4 text-center text-[13px] leading-5 text-gray-600">
-                선택하신 고민을 바탕으로 상담 안내가 진행됩니다.
-              </div>
-
               <form onSubmit={handleSubmit} className="space-y-4">
                 <input
                   placeholder="이름을 입력해주세요"
