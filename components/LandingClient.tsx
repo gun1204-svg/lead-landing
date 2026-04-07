@@ -66,7 +66,7 @@ const concernOptions02 = [
 ];
 
 function InlineCTA({
-  text = "지금 신청하기",
+  text = "상담 신청하기",
   onClick,
 }: {
   text?: string;
@@ -87,14 +87,110 @@ function InlineCTA({
   );
 }
 
+function TopLeadForm({
+  name,
+  phone,
+  agreed,
+  submitting,
+  setName,
+  setPhone,
+  setAgreed,
+  handleSubmit,
+  handleFormStarted,
+}: {
+  name: string;
+  phone: string;
+  agreed: boolean;
+  submitting: boolean;
+  setName: (v: string) => void;
+  setPhone: (v: string) => void;
+  setAgreed: (v: boolean) => void;
+  handleSubmit: (e: React.FormEvent) => Promise<void>;
+  handleFormStarted: () => void;
+}) {
+  return (
+    <section id="lead-form-top" className="bg-white px-4 py-6">
+      <div className="mx-auto w-full max-w-[760px]">
+        <div className="overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-[0_16px_40px_rgba(0,0,0,0.08)]">
+          <div className="px-5 py-5">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <input
+                className="h-13 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] font-medium text-black placeholder:text-gray-400 outline-none transition focus:border-black focus:ring-2 focus:ring-black/5"
+                placeholder="이름을 입력해주세요"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onFocus={handleFormStarted}
+                required
+              />
+
+              <input
+                className="h-13 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] font-medium text-black placeholder:text-gray-400 outline-none transition focus:border-black focus:ring-2 focus:ring-black/5"
+                placeholder="010-1234-5678"
+                value={phone}
+                onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
+                onFocus={handleFormStarted}
+                inputMode="numeric"
+                maxLength={13}
+                required
+              />
+
+              <label className="flex items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm leading-6 text-black">
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  className="mt-1 h-5 w-5 shrink-0 accent-black"
+                />
+                <span className="font-medium text-gray-800">
+                  개인정보 수집 및 이용에 동의합니다
+                </span>
+              </label>
+
+              <div className="rounded-xl bg-[#f8faf9] px-4 py-3 text-center text-[13px] leading-5 text-gray-600">
+                입력해주신 정보는 상담 안내 외 다른 용도로 사용되지 않습니다.
+              </div>
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="mt-1 h-13 rounded-xl bg-black text-[15px] font-semibold text-white shadow-sm transition hover:bg-gray-800 disabled:opacity-60"
+              >
+                {submitting ? "전송 중..." : "상담 신청하기"}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function Landing02Content({
   concerns,
   toggleConcern,
   onOpenForm,
+  name,
+  phone,
+  agreed,
+  submitting,
+  setName,
+  setPhone,
+  setAgreed,
+  handleSubmit,
+  handleFormStarted,
 }: {
   concerns: string[];
   toggleConcern: (item: string) => void;
   onOpenForm: () => void;
+  name: string;
+  phone: string;
+  agreed: boolean;
+  submitting: boolean;
+  setName: (v: string) => void;
+  setPhone: (v: string) => void;
+  setAgreed: (v: boolean) => void;
+  handleSubmit: (e: React.FormEvent) => Promise<void>;
+  handleFormStarted: () => void;
 }) {
   return (
     <>
@@ -118,12 +214,14 @@ function Landing02Content({
             <h3 className="mt-2 text-[24px] font-bold leading-tight text-black">
               현재 가장 신경 쓰이는 눈밑 고민은 무엇인가요?
             </h3>
-            <p className="mt-2 text-[14px] leading-6 text-gray-600">
-              해당되는 항목을 선택해주세요. 복수 선택도 가능합니다.
+            <p className="mt-2 text-[15px] leading-6 text-gray-700">
+              아래 항목을 터치해서 선택해주세요.
+              <br />
+              여러 개 선택하셔도 됩니다.
             </p>
           </div>
 
-          <div className="mt-6 grid gap-3">
+          <div className="mt-6 grid gap-4">
             {concernOptions02.map((item) => {
               const selected = concerns.includes(item.title);
 
@@ -132,17 +230,17 @@ function Landing02Content({
                   key={item.title}
                   type="button"
                   onClick={() => toggleConcern(item.title)}
-                  className={`group w-full rounded-2xl border px-4 py-4 text-left transition ${
+                  className={`group w-full rounded-2xl border px-5 py-5 text-left transition active:scale-[0.99] ${
                     selected
-                      ? "border-[#10b981] bg-white shadow-[0_10px_24px_rgba(16,185,129,0.12)]"
+                      ? "border-[#10b981] bg-[#f6fffb] shadow-[0_12px_28px_rgba(16,185,129,0.14)]"
                       : "border-[#d9e7e1] bg-white hover:border-[#9fd5c1] hover:shadow-[0_8px_20px_rgba(0,0,0,0.06)]"
                   }`}
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-4">
                     <div
-                      className={`mt-[2px] flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[12px] font-bold transition ${
+                      className={`mt-[1px] flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-[15px] font-bold transition ${
                         selected
-                          ? "border-[#10b981] bg-[#10b981] text-white"
+                          ? "border-[#10b981] bg-[#10b981] text-white shadow-[0_6px_16px_rgba(16,185,129,0.22)]"
                           : "border-gray-300 bg-white text-transparent"
                       }`}
                     >
@@ -150,10 +248,10 @@ function Landing02Content({
                     </div>
 
                     <div className="min-w-0">
-                      <div className="text-[15px] font-semibold leading-6 text-black">
+                      <div className="text-[16px] font-semibold leading-6 text-black">
                         {item.title}
                       </div>
-                      <div className="mt-1 text-[13px] leading-5 text-gray-500">
+                      <div className="mt-1.5 text-[14px] leading-6 text-gray-500">
                         {item.desc}
                       </div>
                     </div>
@@ -169,6 +267,28 @@ function Landing02Content({
               <br className="sm:hidden" /> 무리한 권유 없이 상태에 맞게 안내드립니다.
             </p>
           </div>
+
+          {concerns.length > 0 && (
+            <>
+              <div className="mt-5">
+                <div className="mb-3 text-center text-[14px] leading-6 text-gray-600">
+                  선택하신 내용으로 상담 안내가 진행됩니다.
+                </div>
+              </div>
+
+              <TopLeadForm
+                name={name}
+                phone={phone}
+                agreed={agreed}
+                submitting={submitting}
+                setName={setName}
+                setPhone={setPhone}
+                setAgreed={setAgreed}
+                handleSubmit={handleSubmit}
+                handleFormStarted={handleFormStarted}
+              />
+            </>
+          )}
         </div>
       </section>
 
@@ -200,7 +320,7 @@ function Landing02Content({
         </div>
       </section>
 
-      <InlineCTA text="영상 보고 신청하기" onClick={onOpenForm} />
+      <InlineCTA text="상담 신청하기" onClick={onOpenForm} />
 
       <section>
         <img
@@ -211,7 +331,7 @@ function Landing02Content({
         />
       </section>
 
-      <InlineCTA text="지금 신청하기" onClick={onOpenForm} />
+      <InlineCTA text="상담 신청하기" onClick={onOpenForm} />
     </>
   );
 }
@@ -444,6 +564,15 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                 concerns={concerns02}
                 toggleConcern={toggleConcern02}
                 onOpenForm={() => openFormWithTracking("inline_cta")}
+                name={name}
+                phone={phone}
+                agreed={agreed}
+                submitting={submitting}
+                setName={setName}
+                setPhone={setPhone}
+                setAgreed={setAgreed}
+                handleSubmit={handleSubmit}
+                handleFormStarted={handleFormStarted}
               />
             ) : (
               <>
@@ -623,7 +752,6 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
             </div>
           </div>
         )}
-
       </main>
 
       {successOpen && (
