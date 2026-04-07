@@ -408,16 +408,12 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
   }
 
   useEffect(() => {
-    const scrollArea = document.querySelector(".scroll-area") as HTMLElement | null;
-
     trackLandingView(getTrackingPayload());
 
     const onScroll = () => {
-      const currentTop = scrollArea ? scrollArea.scrollTop : window.scrollY;
-      const viewportHeight = scrollArea ? scrollArea.clientHeight : window.innerHeight;
-      const scrollHeight = scrollArea
-        ? scrollArea.scrollHeight
-        : document.documentElement.scrollHeight;
+      const currentTop = window.scrollY;
+      const viewportHeight = window.innerHeight;
+      const scrollHeight = document.documentElement.scrollHeight;
 
       const docHeight = scrollHeight - viewportHeight;
       if (docHeight <= 0) return;
@@ -432,12 +428,11 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       }
     };
 
-    const target = scrollArea || window;
-    target.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
 
     return () => {
-      target.removeEventListener("scroll", onScroll);
+      window.removeEventListener("scroll", onScroll);
     };
   }, [config.key, config.hospitalName, pathname]);
 
@@ -544,14 +539,11 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
   return (
     <>
-      <main className="w-screen h-[100svh] overflow-hidden bg-white">
+      <main className="min-h-[100dvh] bg-white">
         {config.key === "00" && (
           <div
-            className="fixed top-4 left-4 z-50 cursor-pointer"
-            onClick={() => {
-              const scrollArea = document.querySelector(".scroll-area") as HTMLElement | null;
-              if (scrollArea) scrollArea.scrollTo({ top: 0, behavior: "smooth" });
-            }}
+            className="fixed left-4 top-4 z-40 cursor-pointer"
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           >
             <img
               src="/logo.png"
@@ -561,15 +553,8 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
           </div>
         )}
 
-        <div className="grid h-full w-full grid-cols-1 lg:grid-cols-[minmax(0,1fr)_420px]">
-          <div
-            className={[
-              "scroll-area h-full pb-24 lg:pb-0",
-              isLanding02 || isSingleLongImage
-                ? "overflow-y-auto"
-                : "overflow-y-scroll snap-y snap-mandatory",
-            ].join(" ")}
-          >
+        <div className="grid min-h-[100dvh] w-full grid-cols-1 lg:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="min-w-0 pb-24 lg:pb-0">
             {isLanding02 ? (
               <Landing02Content
                 concerns={concerns02}
@@ -593,11 +578,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                   return (
                     <section
                       key={src}
-                      className={
-                        isSingleLongImage
-                          ? "w-full"
-                          : "snap-start snap-always h-[100svh]"
-                      }
+                      className={isSingleLongImage ? "w-full" : "min-h-[100dvh] w-full"}
                     >
                       <img
                         src={jpgSrc}
@@ -609,7 +590,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                         className={
                           isSingleLongImage
                             ? "block h-auto w-full bg-white"
-                            : "h-full w-full bg-white object-contain md:object-cover"
+                            : "block min-h-[100dvh] w-full bg-white object-contain"
                         }
                         draggable={false}
                       />
@@ -622,8 +603,8 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
             <LandingFooter landingKey={config.key} />
           </div>
 
-          <aside className="hidden h-full border-l border-gray-200 bg-[#f8f8f8] lg:block">
-            <div className="sticky top-0 h-[100svh] p-6">
+          <aside className="hidden border-l border-gray-200 bg-[#f8f8f8] lg:block">
+            <div className="sticky top-0 h-[100dvh] p-6">
               <div className="flex h-full items-center justify-center">
                 <div className="w-full max-w-[380px] rounded-3xl border border-gray-200 bg-white p-8 shadow-[0_16px_40px_rgba(0,0,0,0.10)]">
                   <div className="mb-6 text-center">
@@ -695,7 +676,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
           </aside>
         </div>
 
-        <div className="fixed bottom-0 left-0 right-0 border-t bg-white p-3 lg:hidden">
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-white p-3 lg:hidden">
           <button
             onClick={() => openFormWithTracking("mobile_sticky")}
             className="h-12 w-full rounded-xl bg-black text-[15px] font-semibold text-white shadow-sm"
@@ -706,7 +687,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
         {open && (
           <div
-            className="fixed inset-0 flex items-end bg-black/60 lg:items-center lg:justify-center lg:p-4"
+            className="fixed inset-0 z-50 flex items-end bg-black/60 lg:items-center lg:justify-center lg:p-4"
             onClick={() => setOpen(false)}
           >
             <div
@@ -767,7 +748,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
       {successOpen && (
         <div
-          className="fixed inset-0 flex items-center justify-center bg-black/60 p-4"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4"
           onClick={() => setSuccessOpen(false)}
         >
           <div
