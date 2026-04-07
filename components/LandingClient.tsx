@@ -115,27 +115,16 @@ function TopLeadForm({
       <div className="mx-auto w-full max-w-[760px]">
         <div className="overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-[0_16px_40px_rgba(0,0,0,0.08)]">
           <div className="bg-[#f7faf9] px-5 py-6 text-center">
-            <p className="text-[13px] font-semibold tracking-[0.08em] text-[#0f766e]">
-              QUICK CHECK
-            </p>
-            <h2 className="mt-2 text-[28px] font-bold leading-tight text-black">
-              눈밑 고민,
-              <br />
-              먼저 간단하게 확인해보세요
+            <h2 className="text-[26px] font-bold leading-tight text-black">
+              간단 상담 받아보기
             </h2>
             <p className="mt-3 text-[14px] leading-6 text-gray-600">
               이름과 연락처만 남겨주시면
-              <br className="sm:hidden" /> 상담 가능 여부를 빠르게 안내드립니다.
+              <br className="sm:hidden" /> 확인 후 빠르게 안내드립니다.
             </p>
           </div>
 
           <div className="px-5 py-5">
-            <div className="mb-4 grid gap-2 rounded-2xl bg-[#f8faf9] px-4 py-4 text-[14px] leading-6 text-gray-700">
-              <div>✔ 피곤해 보인다는 말을 자주 듣는 경우</div>
-              <div>✔ 다크서클처럼 인상이 어두워 보이는 경우</div>
-              <div>✔ 사진에서 눈밑이 더 도드라져 보이는 경우</div>
-            </div>
-
             {concernsText ? (
               <div className="mb-4 rounded-2xl border border-[#bfe7d6] bg-[#f2fffa] px-4 py-4">
                 <p className="text-[12px] font-semibold tracking-[0.08em] text-[#0f766e]">
@@ -146,6 +135,10 @@ function TopLeadForm({
                 </p>
               </div>
             ) : null}
+
+            <div className="mb-4 rounded-2xl bg-[#f8faf9] px-4 py-4 text-center text-[13px] leading-5 text-gray-600">
+              선택하신 고민을 바탕으로 상담 안내가 진행됩니다.
+            </div>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <input
@@ -232,73 +225,32 @@ function Landing02Content({
 }) {
   return (
     <>
-      <section>
-        <img
-          src="/intro/02/01.jpg"
-          alt="02 랜딩 상단"
-          className="block w-full"
-          draggable={false}
-        />
-      </section>
-
-      <TopLeadForm
-        name={name}
-        phone={phone}
-        agreed={agreed}
-        submitting={submitting}
-        setName={setName}
-        setPhone={setPhone}
-        setAgreed={setAgreed}
-        handleSubmit={handleSubmit}
-        handleFormStarted={handleFormStarted}
-        concernsText={concerns.length > 0 ? concerns.join(", ") : ""}
-      />
-
       <section className="bg-white px-4 py-8">
         <div className="mx-auto w-full max-w-[760px]">
-          <div className="mb-4 text-center">
-            <p className="text-[13px] font-semibold tracking-[0.12em] text-[#0f766e]">
-              QUICK VIDEO
-            </p>
-            <h2 className="mt-2 text-[24px] font-bold leading-tight text-black">
-              영상으로 먼저 확인하세요
-            </h2>
-            <p className="mt-2 text-[14px] leading-6 text-gray-600">
-              눈밑 고민 유형과 개선 방향을 짧게 확인할 수 있습니다.
+          <div className="text-center">
+            <h1 className="text-[28px] font-bold leading-tight text-black">
+              눈밑 때문에
+              <br />
+              피곤해 보인다는 말 자주 들으시나요?
+            </h1>
+            <p className="mt-3 text-[15px] leading-6 text-gray-600">
+              지금 상태를 간단히 확인해보세요
             </p>
           </div>
 
-          <div className="overflow-hidden rounded-2xl shadow-[0_12px_30px_rgba(0,0,0,0.12)]">
-            <div className="aspect-video w-full">
-              <iframe
-                src="https://www.youtube.com/embed/iFRJ31FEWgs"
-                title="눈밑지방재배치 영상"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="h-full w-full"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <InlineCTA text="영상 보고 바로 상담 남기기" onClick={onOpenForm} />
-
-      <section className="bg-[#f4fbf8] px-4 py-9">
-        <div className="mx-auto w-full max-w-[760px]">
-          <div className="mb-6 text-center">
+          <div className="mt-8 text-center">
             <p className="text-[13px] font-semibold tracking-[0.12em] text-[#0f766e]">
               SELF CHECK
             </p>
             <h3 className="mt-2 text-[24px] font-bold leading-tight text-black">
-              눈 밑 고민이 무엇인가요?
+              현재 가장 신경 쓰이는 눈밑 고민은 무엇인가요?
             </h3>
             <p className="mt-2 text-[14px] leading-6 text-gray-600">
-              해당되는 항목을 선택해주시면 상담 시 더 정확하게 안내드릴 수 있습니다.
+              해당되는 항목을 선택해주세요. 복수 선택도 가능합니다.
             </p>
           </div>
 
-          <div className="grid gap-3">
+          <div className="mt-6 grid gap-3">
             {concernOptions02.map((item) => {
               const selected = concerns.includes(item.title);
 
@@ -344,10 +296,63 @@ function Landing02Content({
               <br className="sm:hidden" /> 무리한 권유 없이 상태에 맞게 안내드립니다.
             </p>
           </div>
+
+          {concerns.length > 0 && (
+            <div className="mt-5">
+              <div className="mb-3 text-center text-[14px] leading-6 text-gray-600">
+                선택하신 내용으로 상담 안내가 진행됩니다.
+              </div>
+              <InlineCTA
+                text="선택 내용으로 상담 받아보기"
+                onClick={onOpenForm}
+              />
+            </div>
+          )}
         </div>
       </section>
 
-      <InlineCTA text="선택 내용으로 상담 받아보기" onClick={onOpenForm} />
+      <TopLeadForm
+        name={name}
+        phone={phone}
+        agreed={agreed}
+        submitting={submitting}
+        setName={setName}
+        setPhone={setPhone}
+        setAgreed={setAgreed}
+        handleSubmit={handleSubmit}
+        handleFormStarted={handleFormStarted}
+        concernsText={concerns.length > 0 ? concerns.join(", ") : ""}
+      />
+
+      <section className="bg-white px-4 py-8">
+        <div className="mx-auto w-full max-w-[760px]">
+          <div className="mb-4 text-center">
+            <p className="text-[13px] font-semibold tracking-[0.12em] text-[#0f766e]">
+              QUICK VIDEO
+            </p>
+            <h2 className="mt-2 text-[24px] font-bold leading-tight text-black">
+              같은 고민이라면 영상으로 먼저 확인해보세요
+            </h2>
+            <p className="mt-2 text-[14px] leading-6 text-gray-600">
+              눈밑 고민 유형과 개선 방향을 짧게 확인할 수 있습니다.
+            </p>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl shadow-[0_12px_30px_rgba(0,0,0,0.12)]">
+            <div className="aspect-video w-full">
+              <iframe
+                src="https://www.youtube.com/embed/iFRJ31FEWgs"
+                title="눈밑지방재배치 영상"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="h-full w-full"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <InlineCTA text="영상 보고 상담 남기기" onClick={onOpenForm} />
 
       <section>
         <img
@@ -358,7 +363,7 @@ function Landing02Content({
         />
       </section>
 
-      <InlineCTA text="간단 상담 받아보기" onClick={onOpenForm} />
+      <InlineCTA text="지금 상담 신청하기" onClick={onOpenForm} />
     </>
   );
 }
@@ -667,6 +672,10 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                     </div>
                   )}
 
+                  <div className="mb-4 rounded-2xl bg-[#f8faf9] px-4 py-4 text-center text-[13px] leading-5 text-gray-600">
+                    선택하신 고민을 바탕으로 상담 안내가 진행됩니다.
+                  </div>
+
                   <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     <input
                       className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] font-medium text-black placeholder:text-gray-400 outline-none transition focus:border-black focus:ring-2 focus:ring-black/5"
@@ -759,6 +768,10 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                   </p>
                 </div>
               )}
+
+              <div className="mb-4 rounded-2xl bg-[#f8faf9] px-4 py-4 text-center text-[13px] leading-5 text-gray-600">
+                선택하신 고민을 바탕으로 상담 안내가 진행됩니다.
+              </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <input
