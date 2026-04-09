@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { getLandingConfig, normalizeLK } from "@/lib/landing";
 import LandingFooter from "@/components/LandingFooter";
+import { trackLeadComplete } from "@/components/AnalyticsScripts";
 import {
   trackCTA,
   trackDuplicateLead,
@@ -519,6 +520,8 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       controller.abort();
     }, 10000);
 
+    const eventId = generateEventId();
+
     try {
       const utm = getUtmFromLocation();
 
@@ -551,7 +554,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
           utm_content: utm.utm_content,
 
           utm,
-          event_id: generateEventId(),
+          event_id: eventId,
         }),
       });
 
@@ -584,6 +587,14 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
         utm_campaign: utm.utm_campaign,
         utm_term: utm.utm_term,
         utm_content: utm.utm_content,
+      });
+
+      trackLeadComplete({
+        landing_key: config.key,
+        content_name: `landing_${config.key}`,
+        eventID: eventId,
+        name: cleanName,
+        phone: cleanPhone,
       });
 
       clearFormMessages();

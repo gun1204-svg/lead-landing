@@ -21,6 +21,74 @@ declare global {
       track: (eventName: string, params?: Record<string, unknown>) => void;
     };
     clarity?: (...args: unknown[]) => void;
+    wcs?: {
+      inflow: () => void;
+      trans: (conv: Record<string, unknown>) => void;
+    };
+    wcs_do?: () => void;
+    wcs_add?: {
+      wa?: string;
+    };
+    _nasa?: Record<string, unknown>;
+  }
+}
+
+export function trackLeadComplete(params?: {
+  landing_key?: string;
+  content_name?: string;
+  eventID?: string;
+  name?: string;
+  phone?: string;
+}) {
+  if (typeof window === "undefined") return;
+
+  const META_PIXEL_ID = "1955884414711088";
+  const KAKAO_PIXEL_ID = "4124381110897915848";
+  const NAVER_WA = "s_ce4f9169350";
+
+  const safeParams: Record<string, unknown> = {
+    landing_key: params?.landing_key ?? "",
+    content_name: params?.content_name ?? "",
+  };
+
+  try {
+    if (window.fbq) {
+      window.fbq(
+        "track",
+        "Lead",
+        safeParams,
+        params?.eventID ? { eventID: params.eventID } : undefined
+      );
+    }
+  } catch (e) {
+    console.error("Meta Lead track error:", e);
+  }
+
+  try {
+    if (window.kakaoPixel) {
+      window.kakaoPixel(KAKAO_PIXEL_ID).participation("Lead");
+    }
+  } catch (e) {
+    console.error("Kakao Lead track error:", e);
+  }
+
+  try {
+    if (window.karrotPixel) {
+      window.karrotPixel.track("Lead", safeParams);
+    }
+  } catch (e) {
+    console.error("Karrot Lead track error:", e);
+  }
+
+  try {
+    if (!window.wcs_add) window.wcs_add = {};
+    window.wcs_add.wa = NAVER_WA;
+
+    if (window.wcs?.trans) {
+      window.wcs.trans({ type: "lead" });
+    }
+  } catch (e) {
+    console.error("Naver Lead track error:", e);
   }
 }
 
@@ -29,6 +97,7 @@ export default function AnalyticsScripts() {
   const KAKAO_PIXEL_ID = "4124381110897915848";
   const KARROT_PIXEL_ID = "1773755788540380001";
   const CLARITY_PROJECT_ID = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID;
+  const NAVER_WA = "s_ce4f9169350";
 
   return (
     <>
@@ -108,6 +177,28 @@ fbq('track', 'PageView');
             window.karrotPixel.init(KARROT_PIXEL_ID);
             window.karrotPixel.track("ViewPage");
           }
+        }}
+      />
+
+      {/* Naver Analytics */}
+      <Script
+        id="naver-analytics-lib"
+        src="//wcs.naver.net/wcslog.js"
+        strategy="afterInteractive"
+      />
+      <Script
+        id="naver-analytics-init"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `
+if (!window.wcs_add) window.wcs_add = {};
+window.wcs_add["wa"] = "${NAVER_WA}";
+if (!window._nasa) window._nasa = {};
+if (window.wcs) {
+  window.wcs.inflow();
+  if (window.wcs_do) window.wcs_do();
+}
+          `,
         }}
       />
     </>
