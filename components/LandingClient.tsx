@@ -87,11 +87,39 @@ function InlineCTA({
   );
 }
 
+function FormMessage({
+  submitError,
+  submitInfo,
+}: {
+  submitError: string;
+  submitInfo: string;
+}) {
+  if (!submitError && !submitInfo) return null;
+
+  return (
+    <div className="space-y-2">
+      {submitError ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] font-medium leading-5 text-red-600">
+          {submitError}
+        </div>
+      ) : null}
+
+      {submitInfo ? (
+        <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-[13px] font-medium leading-5 text-gray-600">
+          {submitInfo}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function TopLeadForm({
   name,
   phone,
   agreed,
   submitting,
+  submitError,
+  submitInfo,
   setName,
   setPhone,
   setAgreed,
@@ -102,6 +130,8 @@ function TopLeadForm({
   phone: string;
   agreed: boolean;
   submitting: boolean;
+  submitError: string;
+  submitInfo: string;
   setName: (v: string) => void;
   setPhone: (v: string) => void;
   setAgreed: (v: boolean) => void;
@@ -113,13 +143,14 @@ function TopLeadForm({
       <div className="mx-auto w-full max-w-[760px]">
         <div className="overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-[0_16px_40px_rgba(0,0,0,0.08)]">
           <div className="px-5 py-5">
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
               <input
                 className="h-13 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] font-medium text-black placeholder:text-gray-400 outline-none transition focus:border-black focus:ring-2 focus:ring-black/5"
                 placeholder="이름을 입력해주세요"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 onFocus={handleFormStarted}
+                disabled={submitting}
                 required
               />
 
@@ -131,6 +162,7 @@ function TopLeadForm({
                 onFocus={handleFormStarted}
                 inputMode="numeric"
                 maxLength={13}
+                disabled={submitting}
                 required
               />
 
@@ -140,6 +172,7 @@ function TopLeadForm({
                   checked={agreed}
                   onChange={(e) => setAgreed(e.target.checked)}
                   className="mt-1 h-5 w-5 shrink-0 accent-black"
+                  disabled={submitting}
                 />
                 <span className="font-medium text-gray-800">
                   개인정보 수집 및 이용에 동의합니다
@@ -150,10 +183,13 @@ function TopLeadForm({
                 입력해주신 정보는 상담 안내 외 다른 용도로 사용되지 않습니다.
               </div>
 
+              <FormMessage submitError={submitError} submitInfo={submitInfo} />
+
               <button
                 type="submit"
                 disabled={submitting}
-                className="mt-1 h-13 rounded-xl bg-black text-[15px] font-semibold text-white shadow-sm transition hover:bg-gray-800 disabled:opacity-60"
+                aria-busy={submitting}
+                className="mt-1 h-13 rounded-xl bg-black text-[15px] font-semibold text-white shadow-sm transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? "전송 중..." : "상담 신청하기"}
               </button>
@@ -173,6 +209,8 @@ function Landing02Content({
   phone,
   agreed,
   submitting,
+  submitError,
+  submitInfo,
   setName,
   setPhone,
   setAgreed,
@@ -186,6 +224,8 @@ function Landing02Content({
   phone: string;
   agreed: boolean;
   submitting: boolean;
+  submitError: string;
+  submitInfo: string;
   setName: (v: string) => void;
   setPhone: (v: string) => void;
   setAgreed: (v: boolean) => void;
@@ -292,6 +332,8 @@ function Landing02Content({
                 phone={phone}
                 agreed={agreed}
                 submitting={submitting}
+                submitError={submitError}
+                submitInfo={submitInfo}
                 setName={setName}
                 setPhone={setPhone}
                 setAgreed={setAgreed}
@@ -372,6 +414,8 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const [concerns02, setConcerns02] = useState<string[]>([]);
+  const [submitError, setSubmitError] = useState("");
+  const [submitInfo, setSubmitInfo] = useState("");
 
   const trackedDepths = useRef<Set<number>>(new Set());
   const formStartedRef = useRef(false);
@@ -396,6 +440,11 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
     };
   }
 
+  function clearFormMessages() {
+    setSubmitError("");
+    setSubmitInfo("");
+  }
+
   function handleFormStarted() {
     if (formStartedRef.current) return;
     formStartedRef.current = true;
@@ -404,6 +453,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
   function openFormWithTracking(location: string) {
     trackCTA(location, getTrackingPayload());
+    clearFormMessages();
     setOpen(true);
   }
 
@@ -439,22 +489,35 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!name.trim()) {
-      alert("이름을 입력해주세요.");
+    if (submitting) return;
+
+    clearFormMessages();
+
+    const cleanName = name.trim();
+    const cleanPhone = normalizePhone(phone);
+
+    if (!cleanName) {
+      setSubmitError("이름을 입력해주세요.");
       return;
     }
 
     if (!isValidPhone(phone)) {
-      alert("전화번호를 정확히 입력해주세요.");
+      setSubmitError("전화번호를 정확히 입력해주세요.");
       return;
     }
 
     if (!agreed) {
-      alert("개인정보 수집 및 이용 동의가 필요합니다.");
+      setSubmitError("개인정보 수집 및 이용 동의가 필요합니다.");
       return;
     }
 
     setSubmitting(true);
+    setSubmitInfo("상담 신청을 접수하고 있습니다.");
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      controller.abort();
+    }, 10000);
 
     try {
       const utm = getUtmFromLocation();
@@ -474,9 +537,10 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
         headers: {
           "Content-Type": "application/json",
         },
+        signal: controller.signal,
         body: JSON.stringify({
-          name: name.trim(),
-          phone: normalizePhone(phone),
+          name: cleanName,
+          phone: cleanPhone,
           landing_key: config.key,
           concerns: isLanding02 ? concerns02 : [],
 
@@ -487,15 +551,14 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
           utm_content: utm.utm_content,
 
           utm,
-
           event_id: generateEventId(),
         }),
       });
 
       const json = await res.json().catch(() => null);
 
-      if (!res.ok) {
-        throw new Error(json?.error || "전송 실패");
+      if (!res.ok || !json?.ok) {
+        throw new Error(json?.error || "상담 신청 중 오류가 발생했습니다.");
       }
 
       if (json?.duplicate) {
@@ -509,7 +572,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
           utm_content: utm.utm_content,
         });
 
-        alert("이미 접수된 상담 정보입니다.");
+        setSubmitError("이미 접수된 상담 정보입니다.");
         return;
       }
 
@@ -523,6 +586,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
         utm_content: utm.utm_content,
       });
 
+      clearFormMessages();
       setSuccessOpen(true);
       setName("");
       setPhone("");
@@ -530,9 +594,15 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       setConcerns02([]);
       setOpen(false);
       formStartedRef.current = false;
-    } catch (e) {
-      alert("전송 실패");
+    } catch (error: any) {
+      if (error?.name === "AbortError") {
+        setSubmitError("응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.");
+      } else {
+        setSubmitError(error?.message || "전송 실패. 잠시 후 다시 시도해주세요.");
+      }
     } finally {
+      window.clearTimeout(timeoutId);
+      setSubmitInfo("");
       setSubmitting(false);
     }
   }
@@ -564,6 +634,8 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                 phone={phone}
                 agreed={agreed}
                 submitting={submitting}
+                submitError={submitError}
+                submitInfo={submitInfo}
                 setName={setName}
                 setPhone={setPhone}
                 setAgreed={setAgreed}
@@ -621,13 +693,14 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                     </p>
                   </div>
 
-                  <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                  <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
                     <input
                       className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] font-medium text-black placeholder:text-gray-400 outline-none transition focus:border-black focus:ring-2 focus:ring-black/5"
                       placeholder="이름을 입력해주세요"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       onFocus={handleFormStarted}
+                      disabled={submitting}
                       required
                     />
 
@@ -639,6 +712,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                       onFocus={handleFormStarted}
                       inputMode="numeric"
                       maxLength={13}
+                      disabled={submitting}
                       required
                     />
 
@@ -648,6 +722,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                         checked={agreed}
                         onChange={(e) => setAgreed(e.target.checked)}
                         className="mt-1 h-5 w-5 shrink-0 accent-black"
+                        disabled={submitting}
                       />
                       <span className="font-medium text-gray-800">
                         개인정보 수집 및 이용에 동의합니다
@@ -658,10 +733,13 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                       입력해주신 정보는 상담 안내 외 다른 용도로 사용되지 않습니다.
                     </div>
 
+                    <FormMessage submitError={submitError} submitInfo={submitInfo} />
+
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="mt-1 h-12 rounded-xl bg-black text-[15px] font-semibold text-white shadow-sm transition hover:bg-gray-800 disabled:opacity-60"
+                      aria-busy={submitting}
+                      className="mt-1 h-12 rounded-xl bg-black text-[15px] font-semibold text-white shadow-sm transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {submitting ? "전송 중..." : "상담 신청하기"}
                     </button>
@@ -678,6 +756,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
         <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-white p-3 lg:hidden">
           <button
+            type="button"
             onClick={() => openFormWithTracking("mobile_sticky")}
             className="h-12 w-full rounded-xl bg-black text-[15px] font-semibold text-white shadow-sm"
           >
@@ -688,18 +767,19 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
         {open && (
           <div
             className="fixed inset-0 z-50 flex items-end bg-black/60 lg:items-center lg:justify-center lg:p-4"
-            onClick={() => setOpen(false)}
+            onClick={() => !submitting && setOpen(false)}
           >
             <div
               className="w-full rounded-t-2xl bg-white p-6 shadow-2xl lg:max-w-md lg:rounded-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4" noValidate>
                 <input
                   placeholder="이름을 입력해주세요"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   onFocus={handleFormStarted}
+                  disabled={submitting}
                   className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] font-medium text-black placeholder:text-gray-400 outline-none transition focus:border-black focus:ring-2 focus:ring-black/5"
                 />
 
@@ -710,6 +790,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                   onFocus={handleFormStarted}
                   inputMode="numeric"
                   maxLength={13}
+                  disabled={submitting}
                   className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] font-medium text-black placeholder:text-gray-400 outline-none transition focus:border-black focus:ring-2 focus:ring-black/5"
                 />
 
@@ -719,6 +800,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                     checked={agreed}
                     onChange={(e) => setAgreed(e.target.checked)}
                     className="mt-1 h-5 w-5 shrink-0 accent-black"
+                    disabled={submitting}
                   />
                   <span className="font-medium text-gray-800">
                     개인정보 수집 및 이용에 동의합니다
@@ -729,12 +811,15 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                   상담 안내 외 다른 용도로 사용되지 않습니다.
                 </div>
 
+                <FormMessage submitError={submitError} submitInfo={submitInfo} />
+
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="h-12 w-full rounded-xl bg-black text-[15px] font-semibold text-white shadow-sm transition disabled:opacity-60"
+                  aria-busy={submitting}
+                  className="h-12 w-full rounded-xl bg-black text-[15px] font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {submitting ? "전송중..." : "상담 신청하기"}
+                  {submitting ? "전송 중..." : "상담 신청하기"}
                 </button>
 
                 <p className="text-center text-[12px] leading-5 text-gray-500">
