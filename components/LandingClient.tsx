@@ -387,7 +387,7 @@ function Landing02Content({
               <div className="px-4 pb-4 pt-3">
                 <div className="mx-auto aspect-[9/16] w-full max-w-[420px] overflow-hidden rounded-2xl bg-black">
                   <iframe
-                    src="https://www.youtube.com/embed/-qNI_oVCev4?rel=0"
+                    src="https://www.youtube.com/embed/-qNI_oVCev4?autoplay=1&mute=1&playsinline=1&rel=0"
                     title="눈밑지방재배치 쇼츠 1"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
@@ -410,7 +410,7 @@ function Landing02Content({
               <div className="px-4 pb-4 pt-3">
                 <div className="mx-auto aspect-[9/16] w-full max-w-[420px] overflow-hidden rounded-2xl bg-black">
                   <iframe
-                    src="https://www.youtube.com/embed/g5TzGxqmEvc?rel=0"
+                    src="https://www.youtube.com/embed/g5TzGxqmEvc?autoplay=1&mute=1&playsinline=1&rel=0"
                     title="눈밑지방재배치 쇼츠 2"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
