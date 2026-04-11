@@ -233,30 +233,39 @@ function Landing02Content({
   handleSubmit: (e: React.FormEvent) => Promise<void>;
   handleFormStarted: () => void;
 }) {
+  const leadFormRef = useRef<HTMLDivElement | null>(null);
+
+  function handleConcernClick(item: string) {
+    const wasSelected = concerns.includes(item);
+    toggleConcern(item);
+
+    if (!wasSelected) {
+      window.setTimeout(() => {
+        leadFormRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 180);
+    }
+  }
+
   return (
     <>
-      <section className="bg-white px-4 py-8">
+      <section className="bg-[#f7faf8] px-4 py-10">
         <div className="mx-auto w-full max-w-[760px]">
-          <div className="text-center">
-            <h1 className="text-[28px] font-bold leading-tight text-black">
-              눈밑 때문에
-              <br />
-              피곤해 보인다는 말 자주 들으시나요?
-            </h1>
-            <p className="mt-3 text-[15px] leading-6 text-gray-600">
-              지금 상태를 간단히 확인해보세요
-            </p>
-          </div>
-
-          <div className="mt-8 text-center">
-            <p className="text-[13px] font-semibold tracking-[0.12em] text-[#0f766e]">
+          <div className="rounded-[28px] border border-[#dce9e3] bg-white px-6 py-8 text-center shadow-[0_12px_32px_rgba(0,0,0,0.05)]">
+            <p className="text-[12px] font-semibold tracking-[0.18em] text-[#0f766e]">
               SELF CHECK
             </p>
-            <h3 className="mt-2 text-[24px] font-bold leading-tight text-black">
-              현재 가장 신경 쓰이는 눈밑 고민은 무엇인가요?
-            </h3>
-            <p className="mt-2 text-[15px] leading-6 text-gray-700">
-              아래 항목을 터치해서 선택해주세요.
+
+            <h1 className="mt-3 text-[29px] font-bold leading-[1.35] text-black sm:text-[32px]">
+              눈밑 고민,
+              <br />
+              어떤 유형에 가까우신가요?
+            </h1>
+
+            <p className="mt-3 text-[15px] leading-6 text-gray-600">
+              현재 가장 신경 쓰이는 고민을 선택해 주세요.
               <br />
               여러 개 선택하셔도 됩니다.
             </p>
@@ -270,7 +279,7 @@ function Landing02Content({
                 <button
                   key={item.title}
                   type="button"
-                  onClick={() => toggleConcern(item.title)}
+                  onClick={() => handleConcernClick(item.title)}
                   className={`group w-full rounded-2xl border px-5 py-5 text-left transition active:scale-[0.99] ${
                     selected
                       ? "border-[#10b981] bg-[#f6fffb] shadow-[0_12px_28px_rgba(16,185,129,0.14)]"
@@ -309,66 +318,106 @@ function Landing02Content({
             </p>
           </div>
 
-          {concerns.length > 0 && (
-            <>
-              <div className="mt-5 rounded-2xl border border-[#dfeee7] bg-[#f8faf9] px-4 py-4">
-                <div className="text-center text-[14px] font-medium leading-6 text-gray-700">
-                  선택하신 내용으로 상담 안내가 진행됩니다.
+          <div ref={leadFormRef}>
+            {concerns.length > 0 && (
+              <>
+                <div className="mt-5 rounded-2xl border border-[#dfeee7] bg-[#f8faf9] px-4 py-4">
+                  <div className="text-center text-[14px] font-medium leading-6 text-gray-700">
+                    선택하신 내용으로 상담 안내가 진행됩니다.
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap justify-center gap-2">
+                    {concerns.map((item) => (
+                      <span
+                        key={item}
+                        className="rounded-full border border-[#10b981] bg-white px-3 py-1.5 text-[13px] font-semibold text-[#047857]"
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="mt-3 flex flex-wrap justify-center gap-2">
-                  {concerns.map((item) => (
-                    <span
-                      key={item}
-                      className="rounded-full border border-[#10b981] bg-white px-3 py-1.5 text-[13px] font-semibold text-[#047857]"
-                    >
-                      {item}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <TopLeadForm
-                name={name}
-                phone={phone}
-                agreed={agreed}
-                submitting={submitting}
-                submitError={submitError}
-                submitInfo={submitInfo}
-                setName={setName}
-                setPhone={setPhone}
-                setAgreed={setAgreed}
-                handleSubmit={handleSubmit}
-                handleFormStarted={handleFormStarted}
-              />
-            </>
-          )}
+                <TopLeadForm
+                  name={name}
+                  phone={phone}
+                  agreed={agreed}
+                  submitting={submitting}
+                  submitError={submitError}
+                  submitInfo={submitInfo}
+                  setName={setName}
+                  setPhone={setPhone}
+                  setAgreed={setAgreed}
+                  handleSubmit={handleSubmit}
+                  handleFormStarted={handleFormStarted}
+                />
+              </>
+            )}
+          </div>
         </div>
       </section>
 
       <section className="bg-white px-4 py-8">
         <div className="mx-auto w-full max-w-[760px]">
-          <div className="mb-4 text-center">
+          <div className="mb-6 text-center">
             <p className="text-[13px] font-semibold tracking-[0.12em] text-[#0f766e]">
-              QUICK VIDEO
+              BEFORE & AFTER SHORTS
             </p>
             <h2 className="mt-2 text-[24px] font-bold leading-tight text-black">
-              같은 고민이라면 영상으로 먼저 확인해보세요
+              같은 고민 사례를
+              <br />
+              짧은 영상으로 먼저 확인해보세요
             </h2>
             <p className="mt-2 text-[14px] leading-6 text-gray-600">
-              눈밑 고민 유형과 개선 방향을 짧게 확인할 수 있습니다.
+              실제 전후 느낌을 빠르게 보고 상담 여부를 결정하실 수 있습니다.
             </p>
           </div>
 
-          <div className="overflow-hidden rounded-2xl shadow-[0_12px_30px_rgba(0,0,0,0.12)]">
-            <div className="aspect-video w-full">
-              <iframe
-                src="https://www.youtube.com/embed/iFRJ31FEWgs"
-                title="눈밑지방재배치 영상"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="h-full w-full"
-              />
+          <div className="grid gap-6">
+            <div className="overflow-hidden rounded-[24px] border border-gray-200 bg-white shadow-[0_12px_30px_rgba(0,0,0,0.10)]">
+              <div className="px-4 pt-4">
+                <p className="text-[14px] font-semibold text-black">
+                  눈밑지방재배치 사례 1
+                </p>
+                <p className="mt-1 text-[13px] leading-5 text-gray-600">
+                  첫 번째 쇼츠 사례를 확인해보세요.
+                </p>
+              </div>
+
+              <div className="px-4 pb-4 pt-3">
+                <div className="mx-auto aspect-[9/16] w-full max-w-[420px] overflow-hidden rounded-2xl bg-black">
+                  <iframe
+                    src="https://www.youtube.com/embed/-qNI_oVCev4?rel=0"
+                    title="눈밑지방재배치 쇼츠 1"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    className="h-full w-full"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-[24px] border border-gray-200 bg-white shadow-[0_12px_30px_rgba(0,0,0,0.10)]">
+              <div className="px-4 pt-4">
+                <p className="text-[14px] font-semibold text-black">
+                  눈밑지방재배치 사례 2
+                </p>
+                <p className="mt-1 text-[13px] leading-5 text-gray-600">
+                  두 번째 쇼츠 사례도 함께 비교해보세요.
+                </p>
+              </div>
+
+              <div className="px-4 pb-4 pt-3">
+                <div className="mx-auto aspect-[9/16] w-full max-w-[420px] overflow-hidden rounded-2xl bg-black">
+                  <iframe
+                    src="https://www.youtube.com/embed/g5TzGxqmEvc?rel=0"
+                    title="눈밑지방재배치 쇼츠 2"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    className="h-full w-full"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -546,13 +595,11 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
           phone: cleanPhone,
           landing_key: config.key,
           concerns: isLanding02 ? concerns02 : [],
-
           utm_source: utm.utm_source,
           utm_medium: utm.utm_medium,
           utm_campaign: utm.utm_campaign,
           utm_term: utm.utm_term,
           utm_content: utm.utm_content,
-
           utm,
           event_id: eventId,
         }),
