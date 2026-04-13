@@ -631,11 +631,19 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
       const json = await res.json().catch(() => null);
 
+      console.log("[Lead Submit] response json:", json);
+      console.log("[Lead Submit] response ok:", res.ok);
+      console.log("[Lead Submit] duplicate?:", json?.duplicate);
+      console.log("[Lead Submit] landing_key:", config.key);
+      console.log("[Lead Submit] phone:", cleanPhone);
+      console.log("[Lead Submit] event_id:", eventId);
+
       if (!res.ok || !json?.ok) {
         throw new Error(json?.error || "상담 신청 중 오류가 발생했습니다.");
       }
 
       if (json?.duplicate) {
+        console.warn("[Lead Submit] duplicate lead blocked before trackLeadComplete");
         trackDuplicateLead({
           landing_key: config.key,
           hospital_name: config.hospitalName,
@@ -660,6 +668,14 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
         utm_content: utm.utm_content,
       });
 
+      console.log("[Lead Submit] calling trackLeadComplete", {
+        landing_key: config.key,
+        content_name: `landing_${config.key}`,
+        eventID: eventId,
+        name: cleanName,
+        phone: cleanPhone,
+      });
+
       trackLeadComplete({
         landing_key: config.key,
         content_name: `landing_${config.key}`,
@@ -677,6 +693,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       setOpen(false);
       formStartedRef.current = false;
     } catch (error: any) {
+      console.error("[Lead Submit] submit error:", error);
       if (error?.name === "AbortError") {
         setSubmitError("응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.");
       } else {
