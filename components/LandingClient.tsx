@@ -114,6 +114,28 @@ function FormMessage({
   );
 }
 
+function RequiredVisitNotice({ compact = false }: { compact?: boolean }) {
+  return (
+    <div
+      className={
+        compact
+          ? "rounded-2xl border border-[#dce9e3] bg-[#f0f7f4] px-4 py-4 text-center"
+          : "rounded-2xl border border-[#dce9e3] bg-[#f0f7f4] px-5 py-5 text-center"
+      }
+    >
+      <p className="text-[15px] font-semibold text-[#0f766e]">! 필독 !</p>
+      <p className="mt-2 text-[14px] leading-6 text-gray-800">
+        이벤트 신청 후{" "}
+        <span className="font-semibold text-[#0f766e]">2주 이내 내원상담</span>이 가능하신
+        분들만 신청해주세요.
+      </p>
+      <p className="mt-1 text-[13px] leading-5 text-gray-600">
+        ※ 빠른 상담 진행을 위해 일정 가능하신 분만 접수 부탁드립니다.
+      </p>
+    </div>
+  );
+}
+
 function TopLeadForm({
   name,
   phone,
@@ -145,6 +167,8 @@ function TopLeadForm({
         <div className="overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-[0_16px_40px_rgba(0,0,0,0.08)]">
           <div className="px-5 py-5">
             <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+              <RequiredVisitNotice />
+
               <input
                 className="h-13 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] font-medium text-black placeholder:text-gray-400 outline-none transition focus:border-black focus:ring-2 focus:ring-black/5"
                 placeholder="이름을 입력해주세요"
@@ -336,18 +360,6 @@ function Landing02Content({
                       </span>
                     ))}
                   </div>
-                </div>
-
-                <div className="mt-5 rounded-2xl border border-[#dce9e3] bg-[#f0f7f4] px-5 py-5 text-center">
-                  <p className="text-[15px] font-semibold text-[#0f766e]">! 필독 !</p>
-                  <p className="mt-2 text-[14px] leading-6 text-gray-800">
-                    이벤트 신청 후{" "}
-                    <span className="font-semibold text-[#0f766e]">2주 이내 내원상담</span>이
-                    가능하신 분들만 신청해주세요.
-                  </p>
-                  <p className="mt-1 text-[13px] leading-5 text-gray-600">
-                    ※ 빠른 상담 진행을 위해 일정 가능하신 분만 접수 부탁드립니다.
-                  </p>
                 </div>
 
                 <TopLeadForm
@@ -764,6 +776,8 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                   </div>
 
                   <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+                    {isLanding02 && <RequiredVisitNotice compact />}
+
                     <input
                       className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] font-medium text-black placeholder:text-gray-400 outline-none transition focus:border-black focus:ring-2 focus:ring-black/5"
                       placeholder="이름을 입력해주세요"
@@ -844,6 +858,8 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
               onClick={(e) => e.stopPropagation()}
             >
               <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+                {isLanding02 && <RequiredVisitNotice compact />}
+
                 <input
                   placeholder="이름을 입력해주세요"
                   value={name}
