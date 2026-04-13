@@ -40,6 +40,8 @@ export function trackLeadComplete(params?: {
   landing_key?: string;
   content_name?: string;
   eventID?: string;
+  name?: string;
+  phone?: string;
 }) {
   if (typeof window === "undefined") return;
 
