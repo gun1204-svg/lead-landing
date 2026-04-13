@@ -30,6 +30,9 @@ declare global {
       wa?: string;
     };
     _nasa?: Record<string, unknown>;
+    ttq?: {
+      track: (eventName: string, params?: Record<string, unknown>) => void;
+    };
   }
 }
 
@@ -37,8 +40,6 @@ export function trackLeadComplete(params?: {
   landing_key?: string;
   content_name?: string;
   eventID?: string;
-  name?: string;
-  phone?: string;
 }) {
   if (typeof window === "undefined") return;
 
@@ -51,6 +52,7 @@ export function trackLeadComplete(params?: {
     content_name: params?.content_name ?? "",
   };
 
+  // ✅ Meta
   try {
     if (window.fbq) {
       window.fbq(
@@ -64,6 +66,7 @@ export function trackLeadComplete(params?: {
     console.error("Meta Lead track error:", e);
   }
 
+  // ✅ Kakao
   try {
     if (window.kakaoPixel) {
       window.kakaoPixel(KAKAO_PIXEL_ID).participation("Lead");
@@ -72,6 +75,7 @@ export function trackLeadComplete(params?: {
     console.error("Kakao Lead track error:", e);
   }
 
+  // ✅ Karrot
   try {
     if (window.karrotPixel) {
       window.karrotPixel.track("Lead", safeParams);
@@ -80,6 +84,7 @@ export function trackLeadComplete(params?: {
     console.error("Karrot Lead track error:", e);
   }
 
+  // ✅ Naver
   try {
     if (!window.wcs_add) window.wcs_add = {};
     window.wcs_add.wa = NAVER_WA;
@@ -90,12 +95,22 @@ export function trackLeadComplete(params?: {
   } catch (e) {
     console.error("Naver Lead track error:", e);
   }
+
+  // ✅ TikTok (🔥 핵심)
+  try {
+    if (window.ttq) {
+      window.ttq.track("Lead", safeParams);
+    }
+  } catch (e) {
+    console.error("TikTok Lead track error:", e);
+  }
 }
 
 export default function AnalyticsScripts() {
   const META_PIXEL_ID = "1955884414711088";
   const KAKAO_PIXEL_ID = "4124381110897915848";
   const KARROT_PIXEL_ID = "1773755788540380001";
+  const TIKTOK_PIXEL_ID = "D7EKLTRC77UFN8265M4G";
   const CLARITY_PROJECT_ID = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID;
   const NAVER_WA = "s_ce4f9169350";
 
@@ -138,6 +153,31 @@ s.parentNode.insertBefore(t,s);
 
 fbq('init', '${META_PIXEL_ID}');
 fbq('track', 'PageView');
+          `,
+        }}
+      />
+
+      {/* TikTok Pixel */}
+      <Script
+        id="tiktok-pixel"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `
+!function (w, d, t) {
+  w.TiktokAnalyticsObject=t;
+  var ttq=w[t]=w[t]||[];
+  ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group"];
+  ttq.setAndDefer=function(t,e){
+    t[e]=function(){
+      t.push([e].concat(Array.prototype.slice.call(arguments,0)));
+    };
+  };
+  for(var i=0;i<ttq.methods.length;i++){
+    ttq.setAndDefer(ttq,ttq.methods[i]);
+  }
+  ttq.load('${TIKTOK_PIXEL_ID}');
+  ttq.page();
+}(window, document, 'ttq');
           `,
         }}
       />
