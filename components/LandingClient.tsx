@@ -338,6 +338,18 @@ function Landing02Content({
                   </div>
                 </div>
 
+                <div className="mt-5 rounded-2xl border border-[#dce9e3] bg-[#f0f7f4] px-5 py-5 text-center">
+                  <p className="text-[15px] font-semibold text-[#0f766e]">! 필독 !</p>
+                  <p className="mt-2 text-[14px] leading-6 text-gray-800">
+                    이벤트 신청 후{" "}
+                    <span className="font-semibold text-[#0f766e]">2주 이내 내원상담</span>이
+                    가능하신 분들만 신청해주세요.
+                  </p>
+                  <p className="mt-1 text-[13px] leading-5 text-gray-600">
+                    ※ 빠른 상담 진행을 위해 일정 가능하신 분만 접수 부탁드립니다.
+                  </p>
+                </div>
+
                 <TopLeadForm
                   name={name}
                   phone={phone}
