@@ -39,6 +39,27 @@ declare global {
   }
 }
 
+function sendTikTokLead(params: Record<string, unknown>, retry = 0) {
+  if (typeof window === "undefined") return;
+
+  if (window.ttq) {
+    try {
+      window.ttq.track("Lead", params);
+    } catch (e) {
+      console.error("TikTok Lead track error:", e);
+    }
+    return;
+  }
+
+  if (retry < 5) {
+    window.setTimeout(() => {
+      sendTikTokLead(params, retry + 1);
+    }, 300);
+  } else {
+    console.error("TikTok Lead failed: ttq not loaded");
+  }
+}
+
 export function trackLeadComplete(params?: {
   landing_key?: string;
   content_name?: string;
@@ -103,24 +124,18 @@ export function trackLeadComplete(params?: {
     console.error("Naver Lead track error:", e);
   }
 
-  // ✅ TikTok Lead
-  try {
-    if (window.ttq) {
-      window.ttq.track("Lead", {
-        landing_key: landingKey,
-        content_name: contentName,
-        contents: [
-          {
-            content_id: contentName || `landing_${landingKey}`,
-            content_type: "product",
-            content_name: contentName || `landing_${landingKey}`,
-          },
-        ],
-      });
-    }
-  } catch (e) {
-    console.error("TikTok Lead track error:", e);
-  }
+  // ✅ TikTok Lead (재시도 포함)
+  sendTikTokLead({
+    landing_key: landingKey,
+    content_name: contentName,
+    contents: [
+      {
+        content_id: contentName || `landing_${landingKey}`,
+        content_type: "product",
+        content_name: contentName || `landing_${landingKey}`,
+      },
+    ],
+  });
 }
 
 export default function AnalyticsScripts() {
