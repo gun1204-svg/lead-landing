@@ -52,9 +52,11 @@ export function trackLeadComplete(params?: {
   const KAKAO_PIXEL_ID = "4124381110897915848";
   const NAVER_WA = "s_ce4f9169350";
 
+  const landingKey = params?.landing_key ?? "";
+  const contentName = params?.content_name ?? "";
   const safeParams: Record<string, unknown> = {
-    landing_key: params?.landing_key ?? "",
-    content_name: params?.content_name ?? "",
+    landing_key: landingKey,
+    content_name: contentName,
   };
 
   // ✅ Meta
@@ -101,10 +103,20 @@ export function trackLeadComplete(params?: {
     console.error("Naver Lead track error:", e);
   }
 
-  // ✅ TikTok
+  // ✅ TikTok Lead
   try {
     if (window.ttq) {
-      window.ttq.track("Lead", safeParams);
+      window.ttq.track("Lead", {
+        landing_key: landingKey,
+        content_name: contentName,
+        contents: [
+          {
+            content_id: contentName || `landing_${landingKey}`,
+            content_type: "product",
+            content_name: contentName || `landing_${landingKey}`,
+          },
+        ],
+      });
     }
   } catch (e) {
     console.error("TikTok Lead track error:", e);
@@ -175,6 +187,13 @@ n.type="text/javascript",n.async=!0,n.src=r+"?sdkid="+e+"&lib="+t;e=document.get
 
   ttq.load('${TIKTOK_PIXEL_ID}');
   ttq.page();
+  ttq.track('ViewContent', {
+    contents: [{
+      content_id: window.location.pathname || '/',
+      content_type: 'product',
+      content_name: window.location.pathname || 'landing_page'
+    }]
+  });
 }(window, document, 'ttq');
           `,
         }}
