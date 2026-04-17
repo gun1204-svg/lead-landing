@@ -52,34 +52,42 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           `}
         </Script>
 
-        {/* NAVER PV SCRIPT - 호출 순서 고정 */}
+        {/* NAVER PV SCRIPT */}
         <Script
           id="naver-wcs-lib"
           src="//wcs.naver.net/wcslog.js"
           strategy="beforeInteractive"
         />
+
         <Script id="naver-wcs-init" strategy="beforeInteractive">
           {`
-document.addEventListener('DOMContentLoaded', function () {
+(function initNaverWcs(retry) {
   window.wcs_add = window.wcs_add || {};
-  if (!window.wcs_add.wa) window.wcs_add.wa = "s_ce4f9169350";
+  if (!window.wcs_add.wa) {
+    window.wcs_add.wa = "s_ce4f9169350";
+  }
 
   window._nasa = window._nasa || {};
 
-  if (window.wcs) {
-    wcs.inflow("bienptns.com");
-    if (window.wcs_do) {
-      wcs_do(window._nasa);
-    }
+  if (window.wcs && window.wcs_do) {
+    window.wcs.inflow("bienptns.com");
+    window.wcs_do(window._nasa);
     window._nasa = {};
+    return;
   }
-});
+
+  if ((retry || 0) < 20) {
+    setTimeout(function () {
+      initNaverWcs((retry || 0) + 1);
+    }, 200);
+  }
+})(0);
           `}
         </Script>
       </head>
 
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={\`\${geistSans.variable} \${geistMono.variable} antialiased\`}
       >
         {/* GTM NOSCRIPT */}
         <noscript>
