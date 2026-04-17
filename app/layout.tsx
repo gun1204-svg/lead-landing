@@ -51,6 +51,31 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 })(window,document,'script','dataLayer','GTM-5TFNS63T');
           `}
         </Script>
+
+        {/* NAVER PV SCRIPT - 호출 순서 고정 */}
+        <Script
+          id="naver-wcs-lib"
+          src="//wcs.naver.net/wcslog.js"
+          strategy="beforeInteractive"
+        />
+        <Script id="naver-wcs-init" strategy="beforeInteractive">
+          {`
+document.addEventListener('DOMContentLoaded', function () {
+  window.wcs_add = window.wcs_add || {};
+  if (!window.wcs_add.wa) window.wcs_add.wa = "s_ce4f9169350";
+
+  window._nasa = window._nasa || {};
+
+  if (window.wcs) {
+    wcs.inflow("bienptns.com");
+    if (window.wcs_do) {
+      wcs_do(window._nasa);
+    }
+    window._nasa = {};
+  }
+});
+          `}
+        </Script>
       </head>
 
       <body
@@ -66,7 +91,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           />
         </noscript>
 
-        {/* 🔥 핵심: 모든 픽셀 / 추적 스크립트 */}
+        {/* 모든 픽셀 / 추적 스크립트 */}
         <AnalyticsScripts />
 
         {/* 앱 */}
