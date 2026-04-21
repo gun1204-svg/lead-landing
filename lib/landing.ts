@@ -90,8 +90,8 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     title: "미호성형외과 코수술 상담 신청",
     description: "코 라인과 분위기 변화를 상담해보세요",
     introPath: "/intro/03",
-    submitLabel: "상담 가능 여부 확인하기",
-    mobileSubmitLabel: "상담 가능 여부 확인하기",
+    submitLabel: "상담 신청하기",
+    mobileSubmitLabel: "상담 신청하기",
     pageCount: 1,
     telegramChatId: process.env.TELEGRAM_CHAT_ID_02,
 

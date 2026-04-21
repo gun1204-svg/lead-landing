@@ -23,7 +23,7 @@ function getLandingSeo(lk: string) {
     return {
       title: "코수술 상담",
       description:
-        "낮은 콧대, 퍼진 코, 휜 코, 옆라인 고민이 있으신가요? 지금 상담 신청하고 상담 가능 여부를 확인해보세요.",
+        "낮은 콧대, 퍼진 코, 휜 코, 옆라인 고민이 있으신가요?",
       keywords: [
         "코수술 상담",
         "코성형 상담",
@@ -33,7 +33,7 @@ function getLandingSeo(lk: string) {
       ],
       ogTitle: "코수술 상담",
       ogDescription:
-        "코 라인, 콧대, 비대칭 고민이 있다면 지금 상담 신청하고 상담 가능 여부를 확인해보세요.",
+        "코 라인, 콧대, 비대칭 고민이 있다면 지금 상담 신청",
       image: ogImage,
       fallbackImage,
     };
