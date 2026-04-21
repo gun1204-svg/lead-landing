@@ -66,6 +66,33 @@ const concernOptions02 = [
   },
 ];
 
+const concernOptions03 = [
+  {
+    title: "낮은 콧대",
+    desc: "전체적으로 코가 낮아 보이고 입체감이 부족하다고 느끼는 경우",
+  },
+  {
+    title: "퍼져 보이는 코",
+    desc: "정면에서 봤을 때 코가 넓고 둔해 보이는 느낌이 신경 쓰이는 경우",
+  },
+  {
+    title: "콧볼이 넓은 편",
+    desc: "웃거나 정면 사진에서 콧볼 퍼짐이 도드라져 보이는 경우",
+  },
+  {
+    title: "휜 코 / 비대칭",
+    desc: "코 중심선이 틀어져 보이거나 좌우 균형이 아쉬운 경우",
+  },
+  {
+    title: "옆라인이 아쉬움",
+    desc: "옆모습에서 코끝, 콧대 라인이 밋밋하거나 부족하다고 느끼는 경우",
+  },
+  {
+    title: "사진 찍을 때 코가 신경 쓰임",
+    desc: "셀카나 타인 카메라에서 코 모양이 유독 신경 쓰이는 경우",
+  },
+];
+
 function InlineCTA({
   text = "상담 신청하기",
   onClick,
@@ -148,6 +175,7 @@ function TopLeadForm({
   setAgreed,
   handleSubmit,
   handleFormStarted,
+  submitButtonText = "상담 신청하기",
 }: {
   name: string;
   phone: string;
@@ -160,6 +188,7 @@ function TopLeadForm({
   setAgreed: (v: boolean) => void;
   handleSubmit: (e: React.FormEvent) => Promise<void>;
   handleFormStarted: () => void;
+  submitButtonText?: string;
 }) {
   return (
     <section id="lead-form-top" className="bg-white px-4 py-6">
@@ -216,7 +245,7 @@ function TopLeadForm({
                 aria-busy={submitting}
                 className="mt-1 h-13 rounded-xl bg-black text-[15px] font-semibold text-white shadow-sm transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {submitting ? "전송 중..." : "상담 신청하기"}
+                {submitting ? "전송 중..." : submitButtonText}
               </button>
             </form>
           </div>
@@ -226,7 +255,41 @@ function TopLeadForm({
   );
 }
 
-function Landing02Content({
+function ShortsCard({
+  title,
+  desc,
+  src,
+  iframeTitle,
+}: {
+  title: string;
+  desc: string;
+  src: string;
+  iframeTitle: string;
+}) {
+  return (
+    <div className="overflow-hidden rounded-[24px] border border-gray-200 bg-white shadow-[0_12px_30px_rgba(0,0,0,0.10)]">
+      <div className="px-4 pt-4">
+        <p className="text-[14px] font-semibold text-black">{title}</p>
+        <p className="mt-1 text-[13px] leading-5 text-gray-600">{desc}</p>
+      </div>
+
+      <div className="px-4 pb-4 pt-3">
+        <div className="mx-auto aspect-[9/16] w-full max-w-[420px] overflow-hidden rounded-2xl bg-black">
+          <iframe
+            src={src}
+            title={iframeTitle}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            className="h-full w-full"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LandingSpecialContent({
+  landingKey,
   concerns,
   toggleConcern,
   onOpenForm,
@@ -242,6 +305,7 @@ function Landing02Content({
   handleSubmit,
   handleFormStarted,
 }: {
+  landingKey: "02" | "03";
   concerns: string[];
   toggleConcern: (item: string) => void;
   onOpenForm: () => void;
@@ -258,6 +322,25 @@ function Landing02Content({
   handleFormStarted: () => void;
 }) {
   const leadFormRef = useRef<HTMLDivElement | null>(null);
+
+  const isLanding02 = landingKey === "02";
+  const options = isLanding02 ? concernOptions02 : concernOptions03;
+
+  const heading = isLanding02 ? "눈밑 고민," : "코 고민,";
+  const headingSub = isLanding02
+    ? "어떤 유형에 가까우신가요?"
+    : "어떤 유형에 가까우신가요?";
+  const helperText = isLanding02
+    ? "현재 가장 신경 쓰이는 고민을 선택해 주세요."
+    : "현재 가장 신경 쓰이는 코 고민을 선택해 주세요.";
+
+  const selectedBoxText = isLanding02
+    ? "선택하신 내용으로 상담 안내가 진행됩니다."
+    : "선택하신 코 고민 기준으로 상담 안내가 진행됩니다.";
+
+  const submitButtonText = isLanding02
+    ? "상담 신청하기"
+    : "상담 가능 여부 확인하기";
 
   function handleConcernClick(item: string) {
     const wasSelected = concerns.includes(item);
@@ -283,20 +366,20 @@ function Landing02Content({
             </p>
 
             <h1 className="mt-3 text-[29px] font-bold leading-[1.35] text-black sm:text-[32px]">
-              눈밑 고민,
+              {heading}
               <br />
-              어떤 유형에 가까우신가요?
+              {headingSub}
             </h1>
 
             <p className="mt-3 text-[15px] leading-6 text-gray-600">
-              현재 가장 신경 쓰이는 고민을 선택해 주세요.
+              {helperText}
               <br />
               여러 개 선택하셔도 됩니다.
             </p>
           </div>
 
           <div className="mt-6 grid gap-4">
-            {concernOptions02.map((item) => {
+            {options.map((item) => {
               const selected = concerns.includes(item.title);
 
               return (
@@ -347,7 +430,7 @@ function Landing02Content({
               <>
                 <div className="mt-5 rounded-2xl border border-[#dfeee7] bg-[#f8faf9] px-4 py-4">
                   <div className="text-center text-[14px] font-medium leading-6 text-gray-700">
-                    선택하신 내용으로 상담 안내가 진행됩니다.
+                    {selectedBoxText}
                   </div>
 
                   <div className="mt-3 flex flex-wrap justify-center gap-2">
@@ -374,6 +457,7 @@ function Landing02Content({
                   setAgreed={setAgreed}
                   handleSubmit={handleSubmit}
                   handleFormStarted={handleFormStarted}
+                  submitButtonText={submitButtonText}
                 />
               </>
             )}
@@ -388,77 +472,81 @@ function Landing02Content({
               BEFORE & AFTER SHORTS
             </p>
             <h2 className="mt-2 text-[24px] font-bold leading-tight text-black">
-              같은 고민 사례를
-              <br />
-              짧은 영상으로 먼저 확인해보세요
+              {isLanding02 ? (
+                <>
+                  같은 고민 사례를
+                  <br />
+                  짧은 영상으로 먼저 확인해보세요
+                </>
+              ) : (
+                <>
+                  코 라인과 분위기 변화를
+                  <br />
+                  짧은 영상으로 먼저 확인해보세요
+                </>
+              )}
             </h2>
             <p className="mt-2 text-[14px] leading-6 text-gray-600">
-              실제 전후 느낌을 빠르게 보고 상담 여부를 결정하실 수 있습니다.
+              {isLanding02
+                ? "실제 전후 느낌을 빠르게 보고 상담 여부를 결정하실 수 있습니다."
+                : "실제 사례 느낌을 먼저 보고 상담 여부를 편하게 결정하실 수 있습니다."}
             </p>
           </div>
 
           <div className="grid gap-6">
-            <div className="overflow-hidden rounded-[24px] border border-gray-200 bg-white shadow-[0_12px_30px_rgba(0,0,0,0.10)]">
-              <div className="px-4 pt-4">
-                <p className="text-[14px] font-semibold text-black">
-                  눈밑지방재배치 사례 1
-                </p>
-                <p className="mt-1 text-[13px] leading-5 text-gray-600">
-                  첫 번째 쇼츠 사례를 확인해보세요.
-                </p>
-              </div>
-
-              <div className="px-4 pb-4 pt-3">
-                <div className="mx-auto aspect-[9/16] w-full max-w-[420px] overflow-hidden rounded-2xl bg-black">
-                  <iframe
-                    src="https://www.youtube.com/embed/-qNI_oVCev4?autoplay=1&mute=1&playsinline=1&rel=0"
-                    title="눈밑지방재배치 쇼츠 1"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    className="h-full w-full"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="overflow-hidden rounded-[24px] border border-gray-200 bg-white shadow-[0_12px_30px_rgba(0,0,0,0.10)]">
-              <div className="px-4 pt-4">
-                <p className="text-[14px] font-semibold text-black">
-                  눈밑지방재배치 사례 2
-                </p>
-                <p className="mt-1 text-[13px] leading-5 text-gray-600">
-                  두 번째 쇼츠 사례도 함께 비교해보세요.
-                </p>
-              </div>
-
-              <div className="px-4 pb-4 pt-3">
-                <div className="mx-auto aspect-[9/16] w-full max-w-[420px] overflow-hidden rounded-2xl bg-black">
-                  <iframe
-                    src="https://www.youtube.com/embed/g5TzGxqmEvc?autoplay=1&mute=1&playsinline=1&rel=0"
-                    title="눈밑지방재배치 쇼츠 2"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    className="h-full w-full"
-                  />
-                </div>
-              </div>
-            </div>
+            {isLanding02 ? (
+              <>
+                <ShortsCard
+                  title="눈밑지방재배치 사례 1"
+                  desc="첫 번째 쇼츠 사례를 확인해보세요."
+                  src="https://www.youtube.com/embed/-qNI_oVCev4?autoplay=1&mute=1&playsinline=1&rel=0"
+                  iframeTitle="눈밑지방재배치 쇼츠 1"
+                />
+                <ShortsCard
+                  title="눈밑지방재배치 사례 2"
+                  desc="두 번째 쇼츠 사례도 함께 비교해보세요."
+                  src="https://www.youtube.com/embed/g5TzGxqmEvc?autoplay=1&mute=1&playsinline=1&rel=0"
+                  iframeTitle="눈밑지방재배치 쇼츠 2"
+                />
+              </>
+            ) : (
+              <>
+                <ShortsCard
+                  title="코수술 사례 1"
+                  desc="첫 번째 코 라인 사례를 확인해보세요."
+                  src="https://www.youtube.com/embed/GQDuvMr7FOU?autoplay=1&mute=1&playsinline=1&rel=0"
+                  iframeTitle="코수술 쇼츠 1"
+                />
+                <ShortsCard
+                  title="코수술 사례 2"
+                  desc="두 번째 코수술 사례도 함께 비교해보세요."
+                  src="https://www.youtube.com/embed/yaV40RGSmGk?autoplay=1&mute=1&playsinline=1&rel=0"
+                  iframeTitle="코수술 쇼츠 2"
+                />
+              </>
+            )}
           </div>
         </div>
       </section>
 
-      <InlineCTA text="상담 신청하기" onClick={onOpenForm} />
+      <InlineCTA
+        text={isLanding02 ? "상담 신청하기" : "상담 가능 여부 확인하기"}
+        onClick={onOpenForm}
+      />
 
       <section>
         <img
-          src="/intro/02/02.jpg"
-          alt="02 랜딩 하단"
+          src={isLanding02 ? "/intro/02/02.jpg" : "/intro/03/02.jpg"}
+          alt={isLanding02 ? "02 랜딩 하단" : "03 랜딩 하단"}
           className="block w-full"
           draggable={false}
         />
       </section>
 
-      <InlineCTA text="상담 신청하기" onClick={onOpenForm} />
+      <InlineCTA
+        text={isLanding02 ? "상담 신청하기" : "상담 가능 여부 확인하기"}
+        onClick={onOpenForm}
+      />
     </>
   );
 }
@@ -470,6 +558,8 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
   const lk = useMemo(() => normalizeLK(seg1 || landingKey || "00"), [seg1, landingKey]);
   const config = useMemo(() => getLandingConfig(lk), [lk]);
   const isLanding02 = config.key === "02";
+  const isLanding03 = config.key === "03";
+  const isSpecialLanding = isLanding02 || isLanding03;
 
   const pages = useMemo(() => {
     const count = config.pageCount ?? 10;
@@ -488,6 +578,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const [concerns02, setConcerns02] = useState<string[]>([]);
+  const [concerns03, setConcerns03] = useState<string[]>([]);
   const [submitError, setSubmitError] = useState("");
   const [submitInfo, setSubmitInfo] = useState("");
 
@@ -496,6 +587,12 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
   function toggleConcern02(item: string) {
     setConcerns02((prev) =>
+      prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item]
+    );
+  }
+
+  function toggleConcern03(item: string) {
+    setConcerns03((prev) =>
       prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item]
     );
   }
@@ -608,6 +705,12 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
         utm_content: utm.utm_content,
       });
 
+      const selectedConcerns = isLanding02
+        ? concerns02
+        : isLanding03
+        ? concerns03
+        : [];
+
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: {
@@ -618,7 +721,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
           name: cleanName,
           phone: cleanPhone,
           landing_key: config.key,
-          concerns: isLanding02 ? concerns02 : [],
+          concerns: selectedConcerns,
           utm_source: utm.utm_source,
           utm_medium: utm.utm_medium,
           utm_campaign: utm.utm_campaign,
@@ -690,6 +793,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       setPhone("");
       setAgreed(false);
       setConcerns02([]);
+      setConcerns03([]);
       setOpen(false);
       formStartedRef.current = false;
     } catch (error: any) {
@@ -724,10 +828,11 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
         <div className="grid min-h-[100dvh] w-full grid-cols-1 lg:grid-cols-[minmax(0,1fr)_420px]">
           <div className="min-w-0 pb-24 lg:pb-0">
-            {isLanding02 ? (
-              <Landing02Content
-                concerns={concerns02}
-                toggleConcern={toggleConcern02}
+            {isSpecialLanding ? (
+              <LandingSpecialContent
+                landingKey={isLanding02 ? "02" : "03"}
+                concerns={isLanding02 ? concerns02 : concerns03}
+                toggleConcern={isLanding02 ? toggleConcern02 : toggleConcern03}
                 onOpenForm={() => openFormWithTracking("inline_cta")}
                 name={name}
                 phone={phone}
@@ -793,7 +898,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                   </div>
 
                   <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-                    {isLanding02 && <RequiredVisitNotice compact />}
+                    {isSpecialLanding && <RequiredVisitNotice compact />}
 
                     <input
                       className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] font-medium text-black placeholder:text-gray-400 outline-none transition focus:border-black focus:ring-2 focus:ring-black/5"
@@ -842,7 +947,11 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                       aria-busy={submitting}
                       className="mt-1 h-12 rounded-xl bg-black text-[15px] font-semibold text-white shadow-sm transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {submitting ? "전송 중..." : "상담 신청하기"}
+                      {submitting
+                        ? "전송 중..."
+                        : isLanding03
+                        ? "상담 가능 여부 확인하기"
+                        : "상담 신청하기"}
                     </button>
 
                     <p className="text-center text-[12px] leading-5 text-gray-500">
@@ -861,7 +970,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
             onClick={() => openFormWithTracking("mobile_sticky")}
             className="h-12 w-full rounded-xl bg-black text-[15px] font-semibold text-white shadow-sm"
           >
-            상담 신청하기
+            {isLanding03 ? "상담 가능 여부 확인하기" : "상담 신청하기"}
           </button>
         </div>
 
@@ -875,7 +984,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
               onClick={(e) => e.stopPropagation()}
             >
               <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-                {isLanding02 && <RequiredVisitNotice compact />}
+                {isSpecialLanding && <RequiredVisitNotice compact />}
 
                 <input
                   placeholder="이름을 입력해주세요"
@@ -922,7 +1031,11 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                   aria-busy={submitting}
                   className="h-12 w-full rounded-xl bg-black text-[15px] font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {submitting ? "전송 중..." : "상담 신청하기"}
+                  {submitting
+                    ? "전송 중..."
+                    : isLanding03
+                    ? "상담 가능 여부 확인하기"
+                    : "상담 신청하기"}
                 </button>
 
                 <p className="text-center text-[12px] leading-5 text-gray-500">

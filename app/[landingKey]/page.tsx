@@ -19,6 +19,26 @@ function getLandingSeo(lk: string) {
   const fallbackImage = `${baseUrl}/intro/${lk}/01.jpg`;
   const ogImage = `${baseUrl}/og/${lk}.jpg`;
 
+  if (lk === "03") {
+    return {
+      title: "코수술 상담",
+      description:
+        "낮은 콧대, 퍼진 코, 휜 코, 옆라인 고민이 있으신가요? 지금 상담 신청하고 상담 가능 여부를 확인해보세요.",
+      keywords: [
+        "코수술 상담",
+        "코성형 상담",
+        "낮은 콧대 상담",
+        "휜 코 상담",
+        "코라인 상담",
+      ],
+      ogTitle: "코수술 상담",
+      ogDescription:
+        "코 라인, 콧대, 비대칭 고민이 있다면 지금 상담 신청하고 상담 가능 여부를 확인해보세요.",
+      image: ogImage,
+      fallbackImage,
+    };
+  }
+
   if (lk === "02") {
     return {
       title: "눈밑지방재배치 상담",
