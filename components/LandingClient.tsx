@@ -328,19 +328,19 @@ function LandingSpecialContent({
 
   const heading = isLanding02 ? "눈밑 고민," : "코 고민,";
   const headingSub = isLanding02
-    ? "어떤 유형에 가까우신가요?"
-    : "어떤 유형에 가까우신가요?";
+      ? "어떤 유형에 가까우신가요?"
+      : "어떤 유형에 가까우신가요?";
   const helperText = isLanding02
-    ? "현재 가장 신경 쓰이는 고민을 선택해 주세요."
-    : "현재 가장 신경 쓰이는 코 고민을 선택해 주세요.";
+      ? "현재 가장 신경 쓰이는 고민을 선택해 주세요."
+      : "현재 가장 신경 쓰이는 코 고민을 선택해 주세요.";
 
   const selectedBoxText = isLanding02
-    ? "선택하신 내용으로 상담 안내가 진행됩니다."
-    : "선택하신 코 고민 기준으로 상담 안내가 진행됩니다.";
+      ? "선택하신 내용으로 상담 안내가 진행됩니다."
+      : "선택하신 코 고민 기준으로 상담 안내가 진행됩니다.";
 
   const submitButtonText = isLanding02
-    ? "상담 신청하기"
-    : "상담 신청하기";
+      ? "상담 신청하기"
+      : "상담 신청하기";
 
   function handleConcernClick(item: string) {
     const wasSelected = concerns.includes(item);
@@ -357,197 +357,203 @@ function LandingSpecialContent({
   }
 
   return (
-    <>
-      <section className="bg-[#f7faf8] px-4 py-10">
-        <div className="mx-auto w-full max-w-[760px]">
-          <div className="rounded-[28px] border border-[#dce9e3] bg-white px-6 py-8 text-center shadow-[0_12px_32px_rgba(0,0,0,0.05)]">
-            <p className="text-[12px] font-semibold tracking-[0.18em] text-[#0f766e]">
-              SELF CHECK
-            </p>
+      <>
+        {landingKey === "03" && (
+            <section>
+              <img
+                  src="/intro/03/01.jpg"
+                  alt="코수술 메인"
+                  className="block w-full"
+                  draggable={false}
+              />
+            </section>
+        )}
 
-            <h1 className="mt-3 text-[29px] font-bold leading-[1.35] text-black sm:text-[32px]">
-              {heading}
-              <br />
-              {headingSub}
-            </h1>
+        <section className="bg-[#f7faf8] px-4 py-10">
+          <div className="mx-auto w-full max-w-[760px]">
+            <div
+                className="rounded-[28px] border border-[#dce9e3] bg-white px-6 py-8 text-center shadow-[0_12px_32px_rgba(0,0,0,0.05)]">
+              <p className="text-[12px] font-semibold tracking-[0.18em] text-[#0f766e]">
+                SELF CHECK
+              </p>
 
-            <p className="mt-3 text-[15px] leading-6 text-gray-600">
-              {helperText}
-              <br />
-              여러 개 선택하셔도 됩니다.
-            </p>
-          </div>
+              <h1 className="mt-3 text-[29px] font-bold leading-[1.35] text-black sm:text-[32px]">
+                {heading}
+                <br/>
+                {headingSub}
+              </h1>
 
-          <div className="mt-6 grid gap-4">
-            {options.map((item) => {
-              const selected = concerns.includes(item.title);
+              <p className="mt-3 text-[15px] leading-6 text-gray-600">
+                {helperText}
+                <br/>
+                여러 개 선택하셔도 됩니다.
+              </p>
+            </div>
 
-              return (
-                <button
-                  key={item.title}
-                  type="button"
-                  onClick={() => handleConcernClick(item.title)}
-                  className={`group w-full rounded-2xl border px-5 py-5 text-left transition active:scale-[0.99] ${
-                    selected
-                      ? "border-[#10b981] bg-[#f6fffb] shadow-[0_12px_28px_rgba(16,185,129,0.14)]"
-                      : "border-[#d9e7e1] bg-white hover:border-[#9fd5c1] hover:shadow-[0_8px_20px_rgba(0,0,0,0.06)]"
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <div
-                      className={`mt-[1px] flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-[15px] font-bold transition ${
-                        selected
-                          ? "border-[#10b981] bg-[#10b981] text-white shadow-[0_6px_16px_rgba(16,185,129,0.22)]"
-                          : "border-gray-300 bg-white text-transparent"
-                      }`}
+            <div className="mt-6 grid gap-4">
+              {options.map((item) => {
+                const selected = concerns.includes(item.title);
+
+                return (
+                    <button
+                        key={item.title}
+                        type="button"
+                        onClick={() => handleConcernClick(item.title)}
+                        className={`group w-full rounded-2xl border px-5 py-5 text-left transition active:scale-[0.99] ${
+                            selected
+                                ? "border-[#10b981] bg-[#f6fffb] shadow-[0_12px_28px_rgba(16,185,129,0.14)]"
+                                : "border-[#d9e7e1] bg-white hover:border-[#9fd5c1] hover:shadow-[0_8px_20px_rgba(0,0,0,0.06)]"
+                        }`}
                     >
-                      ✓
+                      <div className="flex items-start gap-4">
+                        <div
+                            className={`mt-[1px] flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-[15px] font-bold transition ${
+                                selected
+                                    ? "border-[#10b981] bg-[#10b981] text-white shadow-[0_6px_16px_rgba(16,185,129,0.22)]"
+                                    : "border-gray-300 bg-white text-transparent"
+                            }`}
+                        >
+                          ✓
+                        </div>
+
+                        <div className="min-w-0">
+                          <div className="text-[16px] font-semibold leading-6 text-black">
+                            {item.title}
+                          </div>
+                          <div className="mt-1.5 text-[14px] leading-6 text-gray-500">
+                            {item.desc}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-[#cfe8dd] bg-white px-4 py-4 text-center">
+              <p className="text-[14px] font-medium leading-6 text-gray-700">
+                선택 내용은 상담 시 참고용으로만 활용되며,
+                <br className="sm:hidden"/> 무리한 권유 없이 상태에 맞게 안내드립니다.
+              </p>
+            </div>
+
+            <div ref={leadFormRef}>
+              {concerns.length > 0 && (
+                  <>
+                    <div className="mt-5 rounded-2xl border border-[#dfeee7] bg-[#f8faf9] px-4 py-4">
+                      <div className="text-center text-[14px] font-medium leading-6 text-gray-700">
+                        {selectedBoxText}
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap justify-center gap-2">
+                        {concerns.map((item) => (
+                            <span
+                                key={item}
+                                className="rounded-full border border-[#10b981] bg-white px-3 py-1.5 text-[13px] font-semibold text-[#047857]"
+                            >
+                      {item}
+                    </span>
+                        ))}
+                      </div>
                     </div>
 
-                    <div className="min-w-0">
-                      <div className="text-[16px] font-semibold leading-6 text-black">
-                        {item.title}
-                      </div>
-                      <div className="mt-1.5 text-[14px] leading-6 text-gray-500">
-                        {item.desc}
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="mt-5 rounded-2xl border border-[#cfe8dd] bg-white px-4 py-4 text-center">
-            <p className="text-[14px] font-medium leading-6 text-gray-700">
-              선택 내용은 상담 시 참고용으로만 활용되며,
-              <br className="sm:hidden" /> 무리한 권유 없이 상태에 맞게 안내드립니다.
-            </p>
-          </div>
-
-          <div ref={leadFormRef}>
-            {concerns.length > 0 && (
-              <>
-                <div className="mt-5 rounded-2xl border border-[#dfeee7] bg-[#f8faf9] px-4 py-4">
-                  <div className="text-center text-[14px] font-medium leading-6 text-gray-700">
-                    {selectedBoxText}
-                  </div>
-
-                  <div className="mt-3 flex flex-wrap justify-center gap-2">
-                    {concerns.map((item) => (
-                      <span
-                        key={item}
-                        className="rounded-full border border-[#10b981] bg-white px-3 py-1.5 text-[13px] font-semibold text-[#047857]"
-                      >
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <TopLeadForm
-                  name={name}
-                  phone={phone}
-                  agreed={agreed}
-                  submitting={submitting}
-                  submitError={submitError}
-                  submitInfo={submitInfo}
-                  setName={setName}
-                  setPhone={setPhone}
-                  setAgreed={setAgreed}
-                  handleSubmit={handleSubmit}
-                  handleFormStarted={handleFormStarted}
-                  submitButtonText={submitButtonText}
-                />
-              </>
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-white px-4 py-8">
-        <div className="mx-auto w-full max-w-[760px]">
-          <div className="mb-6 text-center">
-            <p className="text-[13px] font-semibold tracking-[0.12em] text-[#0f766e]">
-              BEFORE & AFTER SHORTS
-            </p>
-            <h2 className="mt-2 text-[24px] font-bold leading-tight text-black">
-              {isLanding02 ? (
-                <>
-                  같은 고민 사례를
-                  <br />
-                  짧은 영상으로 먼저 확인해보세요
-                </>
-              ) : (
-                <>
-                  코 라인과 분위기 변화를
-                  <br />
-                  짧은 영상으로 먼저 확인해보세요
-                </>
+                    <TopLeadForm
+                        name={name}
+                        phone={phone}
+                        agreed={agreed}
+                        submitting={submitting}
+                        submitError={submitError}
+                        submitInfo={submitInfo}
+                        setName={setName}
+                        setPhone={setPhone}
+                        setAgreed={setAgreed}
+                        handleSubmit={handleSubmit}
+                        handleFormStarted={handleFormStarted}
+                        submitButtonText="상담 신청하기"
+                    />
+                  </>
               )}
-            </h2>
-            <p className="mt-2 text-[14px] leading-6 text-gray-600">
-              {isLanding02
-                ? "실제 전후 느낌을 빠르게 보고 상담 여부를 결정하실 수 있습니다."
-                : "실제 사례 느낌을 먼저 보고 상담 여부를 편하게 결정하실 수 있습니다."}
-            </p>
+            </div>
           </div>
+        </section>
 
-          <div className="grid gap-6">
-            {isLanding02 ? (
-              <>
-                <ShortsCard
-                  title="눈밑지방재배치 사례 1"
-                  desc="첫 번째 쇼츠 사례를 확인해보세요."
-                  src="https://www.youtube.com/embed/-qNI_oVCev4?autoplay=1&mute=1&playsinline=1&rel=0"
-                  iframeTitle="눈밑지방재배치 쇼츠 1"
-                />
-                <ShortsCard
-                  title="눈밑지방재배치 사례 2"
-                  desc="두 번째 쇼츠 사례도 함께 비교해보세요."
-                  src="https://www.youtube.com/embed/g5TzGxqmEvc?autoplay=1&mute=1&playsinline=1&rel=0"
-                  iframeTitle="눈밑지방재배치 쇼츠 2"
-                />
-              </>
-            ) : (
-              <>
-                <ShortsCard
-                  title="코수술 사례 1"
-                  desc="첫 번째 코 라인 사례를 확인해보세요."
-                  src="https://www.youtube.com/embed/GQDuvMr7FOU?autoplay=1&mute=1&playsinline=1&rel=0"
-                  iframeTitle="코수술 쇼츠 1"
-                />
-                <ShortsCard
-                  title="코수술 사례 2"
-                  desc="두 번째 코수술 사례도 함께 비교해보세요."
-                  src="https://www.youtube.com/embed/yaV40RGSmGk?autoplay=1&mute=1&playsinline=1&rel=0"
-                  iframeTitle="코수술 쇼츠 2"
-                />
-              </>
-            )}
+        <section className="bg-white px-4 py-8">
+          <div className="mx-auto w-full max-w-[760px]">
+            <div className="mb-6 text-center">
+              <p className="text-[13px] font-semibold tracking-[0.12em] text-[#0f766e]">
+                BEFORE & AFTER SHORTS
+              </p>
+              <h2 className="mt-2 text-[24px] font-bold leading-tight text-black">
+                {landingKey === "02" ? (
+                    <>
+                      같은 고민 사례를
+                      <br/>
+                      짧은 영상으로 먼저 확인해보세요
+                    </>
+                ) : (
+                    <>
+                      코 라인과 분위기 변화를
+                      <br/>
+                      짧은 영상으로 먼저 확인해보세요
+                    </>
+                )}
+              </h2>
+              <p className="mt-2 text-[14px] leading-6 text-gray-600">
+                {landingKey === "02"
+                    ? "실제 전후 느낌을 빠르게 보고 상담 여부를 결정하실 수 있습니다."
+                    : "실제 사례 느낌을 먼저 보고 상담 여부를 편하게 결정하실 수 있습니다."}
+              </p>
+            </div>
+
+            <div className="grid gap-6">
+              {landingKey === "02" ? (
+                  <>
+                    <ShortsCard
+                        title="눈밑지방재배치 사례 1"
+                        desc="첫 번째 쇼츠 사례를 확인해보세요."
+                        src="https://www.youtube.com/embed/-qNI_oVCev4?autoplay=1&mute=1&playsinline=1&rel=0"
+                        iframeTitle="눈밑지방재배치 쇼츠 1"
+                    />
+                    <ShortsCard
+                        title="눈밑지방재배치 사례 2"
+                        desc="두 번째 쇼츠 사례도 함께 비교해보세요."
+                        src="https://www.youtube.com/embed/g5TzGxqmEvc?autoplay=1&mute=1&playsinline=1&rel=0"
+                        iframeTitle="눈밑지방재배치 쇼츠 2"
+                    />
+                  </>
+              ) : (
+                  <>
+                    <ShortsCard
+                        title="코수술 사례 1"
+                        desc="첫 번째 코 라인 사례를 확인해보세요."
+                        src="https://www.youtube.com/embed/GQDuvMr7FOU?autoplay=1&mute=1&playsinline=1&rel=0"
+                        iframeTitle="코수술 쇼츠 1"
+                    />
+                    <ShortsCard
+                        title="코수술 사례 2"
+                        desc="두 번째 코수술 사례도 함께 비교해보세요."
+                        src="https://www.youtube.com/embed/yaV40RGSmGk?autoplay=1&mute=1&playsinline=1&rel=0"
+                        iframeTitle="코수술 쇼츠 2"
+                    />
+                  </>
+              )}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <InlineCTA
-        text={isLanding02 ? "상담 신청하기" : "상담 신청하기"}
-        onClick={onOpenForm}
-      />
+        <InlineCTA text="상담 신청하기" onClick={onOpenForm}/>
 
-      <section>
-        <img
-          src={isLanding02 ? "/intro/02/02.jpg" : "/intro/03/02.jpg"}
-          alt={isLanding02 ? "02 랜딩 하단" : "03 랜딩 하단"}
-          className="block w-full"
-          draggable={false}
-        />
-      </section>
+        <section>
+          <img
+              src={landingKey === "02" ? "/intro/02/02.jpg" : "/intro/03/02.jpg"}
+              alt={landingKey === "02" ? "02 랜딩 하단" : "03 랜딩 하단"}
+              className="block w-full"
+              draggable={false}
+          />
+        </section>
 
-      <InlineCTA
-        text={isLanding02 ? "상담 신청하기" : "상담 신청하기"}
-        onClick={onOpenForm}
-      />
-    </>
+        <InlineCTA text="상담 신청하기" onClick={onOpenForm}/>
+      </>
   );
 }
 
