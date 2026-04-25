@@ -21,6 +21,12 @@ function toInt(v: any, fallback: number) {
   return Math.trunc(n);
 }
 
+function canAccessLandingKey(userLK: string, targetLK: string) {
+  if (userLK === "00") return true;
+  if (userLK === "02" && (targetLK === "02" || targetLK === "03")) return true;
+  return userLK === targetLK;
+}
+
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   const user = session?.user as SessionUser | undefined;
@@ -39,7 +45,6 @@ export async function GET(req: Request) {
 
   const selectCols = "admin_id, landing_key, balance, price_per_lead, is_active, updated_at";
 
-  // ✅ Root(00): 전체 목록 or 특정 LK 조회
   if (userLK === "00") {
     if (lk) {
       const { data, error } = await supabaseAdmin
@@ -61,9 +66,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: true, items: data ?? [] });
   }
 
-  // ✅ 일반 admin: 자기 LK만
   const targetLK = lk ?? userLK;
-  if (targetLK !== userLK) {
+
+  if (!canAccessLandingKey(userLK, targetLK)) {
     return NextResponse.json({ ok: false, error: "Forbidden landing_key" }, { status: 403 });
   }
 
@@ -85,7 +90,6 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
-  // ✅ Root만 단가/활성 수정 가능
   const userLK = normalizeLandingKey(user?.landing_key);
   if (userLK !== "00") {
     return NextResponse.json({ ok: false, error: "Root only" }, { status: 403 });
@@ -97,7 +101,6 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ ok: false, error: "Missing landing_key" }, { status: 400 });
   }
 
-  // ✅ landing_key만으로 업데이트 (PK)
   const patch: any = {};
 
   if (body.balance !== undefined) {

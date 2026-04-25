@@ -8,7 +8,7 @@ export const revalidate = 0;
 
 type SessionUser = {
   email?: string | null;
-  landing_key?: string | null; // "00" | "01" ...
+  landing_key?: string | null;
 };
 
 function normalizeLandingKey(v: unknown) {
@@ -16,6 +16,12 @@ function normalizeLandingKey(v: unknown) {
   if (!s) return null;
   if (/^\d{1,2}$/.test(s)) return s.padStart(2, "0");
   return null;
+}
+
+function canAccessLandingKey(userLK: string, targetLK: string) {
+  if (userLK === "00") return true;
+  if (userLK === "02" && (targetLK === "02" || targetLK === "03")) return true;
+  return userLK === targetLK;
 }
 
 export async function GET(req: Request) {
@@ -34,12 +40,9 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const requestedLK = normalizeLandingKey(searchParams.get("landing_key"));
-
-  // ✅ 기본값: 쿼리가 없으면 내 LK
   const lk = requestedLK ?? userLK;
 
-  // ✅ 권한 체크: 루트만 다른 LK 조회 가능
-  if (userLK !== "00" && lk !== userLK) {
+  if (!canAccessLandingKey(userLK, lk)) {
     return NextResponse.json({ ok: false, error: "Forbidden landing_key" }, { status: 403 });
   }
 
@@ -50,7 +53,6 @@ export async function GET(req: Request) {
     .limit(300);
 
   if (lk === "00") {
-    // 루트에서는 NULL + 00 같이
     q = q.or("landing_key.is.null,landing_key.eq.00");
   } else {
     q = q.eq("landing_key", lk);
