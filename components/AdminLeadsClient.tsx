@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
@@ -13,6 +12,7 @@ type Lead = {
   status: string | null;
   memo: string | null;
   landing_key: string | null;
+  utm_source?: string | null;
 };
 
 type Account = {
@@ -128,6 +128,43 @@ function LandingBadge({ landingKey }: { landingKey: string | null }) {
       }}
     >
       {lk}번
+    </span>
+  );
+}
+
+function SourceBadge({ source }: { source?: string | null }) {
+  const raw = String(source || "").trim();
+  const s = raw.toLowerCase();
+
+  let label = raw || "-";
+
+  if (s.includes("meta") || s.includes("facebook") || s.includes("instagram")) {
+    label = "메타";
+  } else if (s.includes("karrot") || s.includes("daangn") || s.includes("danggeun")) {
+    label = "당근";
+  } else if (s.includes("naver")) {
+    label = "네이버";
+  } else if (s.includes("tiktok")) {
+    label = "틱톡";
+  } else if (s.includes("google")) {
+    label = "구글";
+  }
+
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "4px 10px",
+        borderRadius: 999,
+        fontSize: 12,
+        fontWeight: 900,
+        background: "#F3F4F6",
+        color: "#111",
+        border: "1px solid #E5E7EB",
+      }}
+    >
+      {label}
     </span>
   );
 }
@@ -590,21 +627,6 @@ export default function AdminLeadsClient() {
         </div>
 
         <div style={{ display: "flex", gap: 8 }}>
-          <Link
-            href="/admin/analytics"
-            style={{
-              padding: "8px 12px",
-              borderRadius: 10,
-              border: "1px solid #ddd",
-              background: "#fff",
-              fontWeight: 700,
-              textDecoration: "none",
-              color: "#111",
-            }}
-          >
-            광고분석
-          </Link>
-
           <button
             onClick={() => signOut({ callbackUrl: `/${pageLK}/admin/login` })}
             style={{
@@ -806,6 +828,7 @@ export default function AdminLeadsClient() {
             <tr>
               <th style={th}>시간</th>
               <th style={th}>랜딩</th>
+              <th style={th}>유입</th>
               <th style={th}>이름</th>
               <th style={th}>전화</th>
               <th style={th}>상태</th>
@@ -829,6 +852,9 @@ export default function AdminLeadsClient() {
                   <td style={tdTop}>{new Date(l.created_at).toLocaleString("ko-KR")}</td>
                   <td style={tdTop}>
                     <LandingBadge landingKey={l.landing_key} />
+                  </td>
+                  <td style={tdTop}>
+                    <SourceBadge source={l.utm_source} />
                   </td>
                   <td style={tdTop}>{l.name ?? "-"}</td>
                   <td style={tdTop}>{l.phone ?? "-"}</td>
@@ -921,7 +947,7 @@ export default function AdminLeadsClient() {
 
             {!loadingRows && displayRows.length === 0 && (
               <tr>
-                <td colSpan={isMainAdmin ? 8 : 7} style={{ padding: 14, color: "#666" }}>
+                <td colSpan={isMainAdmin ? 9 : 8} style={{ padding: 14, color: "#666" }}>
                   데이터 없음
                 </td>
               </tr>

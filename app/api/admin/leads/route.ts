@@ -48,7 +48,7 @@ export async function GET(req: Request) {
 
   let q = supabaseAdmin
     .from("leads")
-    .select("id, created_at, name, phone, status, memo, landing_key")
+    .select("id, created_at, name, phone, status, memo, landing_key, utm_source")
     .order("created_at", { ascending: false })
     .limit(300);
 
