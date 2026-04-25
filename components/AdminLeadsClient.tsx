@@ -92,6 +92,7 @@ function countMonth(rows: Lead[]) {
 function StatusBadge({ status }: { status: string | null }) {
   const key = (String(status ?? "NEW").toUpperCase() as StatusKey) || "NEW";
   const m = STATUS_META[key] ?? STATUS_META.NEW;
+
   return (
     <span
       style={{
@@ -113,6 +114,7 @@ function StatusBadge({ status }: { status: string | null }) {
 
 function LandingBadge({ landingKey }: { landingKey: string | null }) {
   const lk = normalizeLK(landingKey ?? "");
+
   return (
     <span
       style={{
@@ -229,17 +231,29 @@ export default function AdminLeadsClient() {
     return safeNumber(account?.balance, 0);
   }, [isIntegrated02, integratedAccounts, account]);
 
-  const totalPricePerLeadText = useMemo(() => {
-    if (!isIntegrated02) return fmt(account?.price_per_lead);
+  const price02 = useMemo(() => {
+    const acc = integratedAccounts.find((a) => a.landing_key === "02");
+    return safeNumber(acc?.price_per_lead, 0);
+  }, [integratedAccounts]);
 
-    const prices = Array.from(
-      new Set(integratedAccounts.map((a) => safeNumber(a.price_per_lead, 0)).filter((v) => v > 0))
-    );
+  const price03 = useMemo(() => {
+    const acc = integratedAccounts.find((a) => a.landing_key === "03");
+    return safeNumber(acc?.price_per_lead, 0);
+  }, [integratedAccounts]);
 
-    if (prices.length === 0) return "-";
-    if (prices.length === 1) return fmt(prices[0]);
-    return prices.map((v) => fmt(v)).join(" / ");
-  }, [isIntegrated02, integratedAccounts, account]);
+  const leads02 = useMemo(() => {
+    return rows.filter((r) => normalizeLK(r.landing_key) === "02");
+  }, [rows]);
+
+  const leads03 = useMemo(() => {
+    return rows.filter((r) => normalizeLK(r.landing_key) === "03");
+  }, [rows]);
+
+  const today02 = useMemo(() => countToday(leads02), [leads02]);
+  const month02 = useMemo(() => countMonth(leads02), [leads02]);
+
+  const today03 = useMemo(() => countToday(leads03), [leads03]);
+  const month03 = useMemo(() => countMonth(leads03), [leads03]);
 
   const statusCounts = useMemo(() => {
     const base: Record<string, number> = {};
@@ -281,6 +295,7 @@ export default function AdminLeadsClient() {
   async function saveLead(id: string) {
     const d = draft[id] || {};
     const body: any = {};
+
     if (typeof d.status === "string") body.status = d.status;
     if (typeof d.memo === "string") body.memo = d.memo;
     if (Object.keys(body).length === 0) return;
@@ -355,6 +370,7 @@ export default function AdminLeadsClient() {
       router.replace(`/${pageLK}/admin/login`);
       return;
     }
+
     if (authStatus !== "authenticated") return;
 
     const ac = new AbortController();
@@ -385,6 +401,7 @@ export default function AdminLeadsClient() {
               setErr(`${item.res.status} ${item.json?.error || "error"}`);
               continue;
             }
+
             mergedLeads = mergedLeads.concat((item.json.items || item.json.data || []) as Lead[]);
           }
 
@@ -499,10 +516,16 @@ export default function AdminLeadsClient() {
     if (userLK !== "00") return;
 
     const ac = new AbortController();
+
     (async () => {
       setAccountsLoading(true);
+
       try {
-        const res = await fetch("/api/admin/accounts", { cache: "no-store", signal: ac.signal });
+        const res = await fetch("/api/admin/accounts", {
+          cache: "no-store",
+          signal: ac.signal,
+        });
+
         const json = await res.json().catch(() => ({}));
         if (res.ok) setAccounts((json.items || []) as Account[]);
       } catch {
@@ -516,8 +539,10 @@ export default function AdminLeadsClient() {
 
   async function refreshAccountsList() {
     if (userLK !== "00") return;
+
     const res = await fetch("/api/admin/accounts", { cache: "no-store" });
     const json = await res.json().catch(() => ({}));
+
     if (res.ok) setAccounts((json.items || []) as Account[]);
   }
 
@@ -560,6 +585,7 @@ export default function AdminLeadsClient() {
         const res2 = await fetch(`/api/admin/accounts?landing_key=${encodeURIComponent(selectedLK)}`, {
           cache: "no-store",
         });
+
         const j2 = await res2.json().catch(() => ({}));
         if (res2.ok) setAccount(j2.item || null);
       }
@@ -594,6 +620,7 @@ export default function AdminLeadsClient() {
       const res2 = await fetch(`/api/admin/accounts?landing_key=${encodeURIComponent(selectedLK)}`, {
         cache: "no-store",
       });
+
       const j2 = await res2.json().catch(() => ({}));
       if (res2.ok) setAccount(j2.item || null);
     }
@@ -615,10 +642,12 @@ export default function AdminLeadsClient() {
       >
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>Admin Leads</h1>
+
           <p style={{ opacity: 0.7, marginTop: 6, marginBottom: 0 }}>
             user: {(session?.user as any)?.email} / my_landing_key: {userLK || "-"} / page_lk:{" "}
             {pageLK}
           </p>
+
           {isIntegrated02 && (
             <p style={{ marginTop: 6, marginBottom: 0, fontWeight: 800, color: "#0f766e" }}>
               통합 관리: 02번 + 03번 리드 / 잔액 합산 표시
@@ -669,7 +698,9 @@ export default function AdminLeadsClient() {
         style={{
           marginTop: 12,
           display: "grid",
-          gridTemplateColumns: isMainAdmin ? "repeat(4, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
+          gridTemplateColumns: isIntegrated02
+            ? "repeat(7, minmax(0, 1fr))"
+            : "repeat(4, minmax(0, 1fr))",
           gap: 10,
         }}
       >
@@ -677,14 +708,45 @@ export default function AdminLeadsClient() {
           {isIntegrated02 ? "통합 잔액" : "잔액"}
           <div style={cardBig}>{fmt(totalBalance)}</div>
         </div>
-        <div style={card}>
-          리드 단가
-          <div style={cardBig}>{totalPricePerLeadText}</div>
-        </div>
+
+        {isIntegrated02 ? (
+          <>
+            <div style={card}>
+              02 단가
+              <div style={cardBig}>{fmt(price02)}</div>
+            </div>
+
+            <div style={card}>
+              03 단가
+              <div style={cardBig}>{fmt(price03)}</div>
+            </div>
+
+            <div style={card}>
+              02 리드
+              <div style={cardBig}>
+                오늘 {fmt(today02)} / 월 {fmt(month02)}
+              </div>
+            </div>
+
+            <div style={card}>
+              03 리드
+              <div style={cardBig}>
+                오늘 {fmt(today03)} / 월 {fmt(month03)}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div style={card}>
+            리드 단가
+            <div style={cardBig}>{fmt(account?.price_per_lead)}</div>
+          </div>
+        )}
+
         <div style={card}>
           오늘 리드
           <div style={cardBig}>{fmt(stats?.counts?.today ?? todayCount)}</div>
         </div>
+
         <div style={card}>
           이번달 리드
           <div style={cardBig}>{fmt(stats?.counts?.month ?? monthCount)}</div>
@@ -692,15 +754,24 @@ export default function AdminLeadsClient() {
       </div>
 
       {isMainAdmin && (
-        <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
+        <div
+          style={{
+            marginTop: 10,
+            display: "grid",
+            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+            gap: 10,
+          }}
+        >
           <div style={card}>
             전체 오늘 리드
             <div style={cardBig}>{fmt(totalTodayCount)}</div>
           </div>
+
           <div style={card}>
             전체 이번달 리드
             <div style={cardBig}>{fmt(totalMonthCount)}</div>
           </div>
+
           <div style={card}>
             전체 누적 리드
             <div style={cardBig}>{fmt(totalAllCount)}</div>
@@ -742,11 +813,24 @@ export default function AdminLeadsClient() {
 
       {userLK === "00" && (
         <div style={{ marginTop: 18, border: "1px solid #eee", borderRadius: 14, padding: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+            }}
+          >
             <h3 style={{ margin: 0, fontWeight: 900 }}>Root: 충전 / 단가 설정</h3>
+
             <button
               onClick={refreshAccountsList}
-              style={{ padding: "6px 10px", borderRadius: 10, border: "1px solid #ddd", background: "#fff" }}
+              style={{
+                padding: "6px 10px",
+                borderRadius: 10,
+                border: "1px solid #ddd",
+                background: "#fff",
+              }}
             >
               목록 새로고침
             </button>
@@ -759,6 +843,7 @@ export default function AdminLeadsClient() {
               onChange={(e) => setTopupAdminId(e.target.value)}
               style={inp}
             />
+
             <input
               placeholder="충전 금액"
               type="number"
@@ -766,12 +851,14 @@ export default function AdminLeadsClient() {
               onChange={(e) => setTopupAmount(Number(e.target.value))}
               style={inp}
             />
+
             <input
               placeholder="메모(선택)"
               value={topupNote}
               onChange={(e) => setTopupNote(e.target.value)}
               style={inp}
             />
+
             <button
               onClick={doTopup}
               disabled={topupLoading}
@@ -799,10 +886,12 @@ export default function AdminLeadsClient() {
                   <th style={th}>저장</th>
                 </tr>
               </thead>
+
               <tbody>
                 {accounts.map((a) => (
                   <AccountRow key={a.admin_id} a={a} onSave={saveAccountSetting} />
                 ))}
+
                 {accounts.length === 0 && (
                   <tr>
                     <td colSpan={6} style={{ padding: 12, color: "#666" }}>
@@ -837,6 +926,7 @@ export default function AdminLeadsClient() {
               {isMainAdmin && <th style={th}>삭제</th>}
             </tr>
           </thead>
+
           <tbody>
             {displayRows.map((l) => {
               const d = draft[l.id] || {};
@@ -850,18 +940,23 @@ export default function AdminLeadsClient() {
               return (
                 <tr key={l.id}>
                   <td style={tdTop}>{new Date(l.created_at).toLocaleString("ko-KR")}</td>
+
                   <td style={tdTop}>
                     <LandingBadge landingKey={l.landing_key} />
                   </td>
+
                   <td style={tdTop}>
                     <SourceBadge source={l.utm_source} />
                   </td>
+
                   <td style={tdTop}>{l.name ?? "-"}</td>
+
                   <td style={tdTop}>{l.phone ?? "-"}</td>
 
                   <td style={tdTop}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <StatusBadge status={curStatus} />
+
                       <select
                         value={curStatus}
                         onChange={(e) =>
@@ -978,8 +1073,11 @@ function AccountRow({
   return (
     <tr>
       <td style={td}>{a.admin_id}</td>
+
       <td style={td}>{a.landing_key}</td>
+
       <td style={td}>{fmt(a.balance)}</td>
+
       <td style={td}>
         <input
           type="number"
@@ -988,13 +1086,11 @@ function AccountRow({
           style={{ width: 120 }}
         />
       </td>
+
       <td style={td}>
-        <input
-          type="checkbox"
-          checked={active}
-          onChange={(e) => setActive(e.target.checked)}
-        />
+        <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
       </td>
+
       <td style={td}>
         <button
           onClick={async () => {
@@ -1005,7 +1101,12 @@ function AccountRow({
               setSaving(false);
             }
           }}
-          style={{ padding: "6px 10px", borderRadius: 10, border: "1px solid #ddd", background: "#fff" }}
+          style={{
+            padding: "6px 10px",
+            borderRadius: 10,
+            border: "1px solid #ddd",
+            background: "#fff",
+          }}
           disabled={saving}
         >
           {saving ? "저장중..." : "저장"}
