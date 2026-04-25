@@ -60,6 +60,12 @@ function safeNumber(v: any, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function getAccessLandingKeys(pageLK: string, selectedLK: string, canSwitchAny: boolean) {
+  if (canSwitchAny) return [selectedLK];
+  if (pageLK === "02") return ["02", "03"];
+  return [selectedLK];
+}
+
 function countToday(rows: Lead[]) {
   const now = new Date();
   const y = now.getFullYear();
@@ -105,6 +111,27 @@ function StatusBadge({ status }: { status: string | null }) {
   );
 }
 
+function LandingBadge({ landingKey }: { landingKey: string | null }) {
+  const lk = normalizeLK(landingKey ?? "");
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "4px 10px",
+        borderRadius: 999,
+        fontSize: 12,
+        fontWeight: 900,
+        background: lk === "03" ? "#FFF7ED" : "#F0FDFA",
+        color: lk === "03" ? "#9A3412" : "#0F766E",
+        border: lk === "03" ? "1px solid #FED7AA" : "1px solid #99F6E4",
+      }}
+    >
+      {lk}번
+    </span>
+  );
+}
+
 export default function AdminLeadsClient() {
   const router = useRouter();
   const sp = useSearchParams();
@@ -122,6 +149,13 @@ export default function AdminLeadsClient() {
   const userLK = normalizeLK((session?.user as any)?.landing_key ?? "");
   const canSwitchAny = userLK === "00";
 
+  const accessLandingKeys = useMemo(
+    () => getAccessLandingKeys(pageLK, selectedLK, canSwitchAny),
+    [pageLK, selectedLK, canSwitchAny]
+  );
+
+  const isIntegrated02 = !canSwitchAny && pageLK === "02";
+
   const [rows, setRows] = useState<Lead[]>([]);
   const [allRows, setAllRows] = useState<Lead[]>([]);
   const [err, setErr] = useState<string | null>(null);
@@ -132,6 +166,7 @@ export default function AdminLeadsClient() {
   const [deleting, setDeleting] = useState<Record<string, boolean>>({});
 
   const [account, setAccount] = useState<Account | null>(null);
+  const [integratedAccounts, setIntegratedAccounts] = useState<Account[]>([]);
   const [stats, setStats] = useState<any | null>(null);
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
@@ -145,19 +180,38 @@ export default function AdminLeadsClient() {
 
   const visibleKeys = useMemo(() => {
     if (canSwitchAny) return LK_KEYS;
+    if (pageLK === "02") return ["02", "03"];
     if (userLK) return [userLK];
     return [pageLK];
   }, [canSwitchAny, userLK, pageLK]);
 
+  const totalBalance = useMemo(() => {
+    if (isIntegrated02) {
+      return integratedAccounts.reduce((sum, a) => sum + safeNumber(a.balance, 0), 0);
+    }
+    return safeNumber(account?.balance, 0);
+  }, [isIntegrated02, integratedAccounts, account]);
+
+  const totalPricePerLeadText = useMemo(() => {
+    if (!isIntegrated02) return fmt(account?.price_per_lead);
+
+    const prices = Array.from(
+      new Set(integratedAccounts.map((a) => safeNumber(a.price_per_lead, 0)).filter((v) => v > 0))
+    );
+
+    if (prices.length === 0) return "-";
+    if (prices.length === 1) return fmt(prices[0]);
+    return prices.map((v) => fmt(v)).join(" / ");
+  }, [isIntegrated02, integratedAccounts, account]);
+
   const statusCounts = useMemo(() => {
-    if (stats?.counts?.status) return stats.counts.status as Record<string, number>;
     const base: Record<string, number> = {};
     for (const r of rows) {
       const k = String(r.status ?? "NEW").toUpperCase();
       base[k] = (base[k] ?? 0) + 1;
     }
     return base;
-  }, [stats, rows]);
+  }, [rows]);
 
   const displayRows = useMemo(() => {
     if (statusFilter === "ALL") return rows;
@@ -172,8 +226,16 @@ export default function AdminLeadsClient() {
   const totalAllCount = useMemo(() => allRows.length, [allRows]);
 
   function setLandingKey(k: string) {
+    const nk = normalizeLK(k);
+
+    if (isIntegrated02) {
+      router.push(`/${pageLK}/admin/leads`);
+      router.refresh();
+      return;
+    }
+
     const p = new URLSearchParams(sp.toString());
-    p.set("landing_key", normalizeLK(k));
+    p.set("landing_key", nk);
 
     router.push(`/${pageLK}/admin/leads?${p.toString()}`);
     router.refresh();
@@ -265,35 +327,89 @@ export default function AdminLeadsClient() {
       setLoadingRows(true);
 
       try {
-        const [leadsRes, statsRes, accRes] = await Promise.all([
-          fetch(`/api/admin/leads?landing_key=${encodeURIComponent(selectedLK)}`, {
-            cache: "no-store",
-            signal: ac.signal,
-          }),
-          fetch(`/api/admin/stats?landing_key=${encodeURIComponent(selectedLK)}`, {
-            cache: "no-store",
-            signal: ac.signal,
-          }),
-          fetch(`/api/admin/accounts?landing_key=${encodeURIComponent(selectedLK)}`, {
-            cache: "no-store",
-            signal: ac.signal,
-          }),
-        ]);
+        let mergedLeads: Lead[] = [];
+        let mergedAccounts: Account[] = [];
 
-        const leadsJson = await leadsRes.json().catch(() => ({}));
-        const statsJson = await statsRes.json().catch(() => ({}));
-        const accJson = await accRes.json().catch(() => ({}));
+        if (isIntegrated02) {
+          const leadResults = await Promise.all(
+            accessLandingKeys.map((lk) =>
+              fetch(`/api/admin/leads?landing_key=${encodeURIComponent(lk)}`, {
+                cache: "no-store",
+                signal: ac.signal,
+              }).then(async (res) => ({
+                res,
+                json: await res.json().catch(() => ({})),
+              }))
+            )
+          );
 
-        if (!leadsRes.ok) {
-          setErr(`${leadsRes.status} ${leadsJson?.error || "error"}`);
-          setRows([]);
-        } else {
-          setRows((leadsJson.items || leadsJson.data || []) as Lead[]);
+          for (const item of leadResults) {
+            if (!item.res.ok) {
+              setErr(`${item.res.status} ${item.json?.error || "error"}`);
+              continue;
+            }
+            mergedLeads = mergedLeads.concat((item.json.items || item.json.data || []) as Lead[]);
+          }
+
+          mergedLeads.sort(
+            (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+
+          const accountResults = await Promise.all(
+            accessLandingKeys.map((lk) =>
+              fetch(`/api/admin/accounts?landing_key=${encodeURIComponent(lk)}`, {
+                cache: "no-store",
+                signal: ac.signal,
+              }).then(async (res) => ({
+                res,
+                json: await res.json().catch(() => ({})),
+              }))
+            )
+          );
+
+          for (const item of accountResults) {
+            if (item.res.ok && item.json?.item) {
+              mergedAccounts.push(item.json.item as Account);
+            }
+          }
+
+          setRows(mergedLeads);
           setDraft({});
-        }
+          setStats(null);
+          setIntegratedAccounts(mergedAccounts);
+          setAccount(mergedAccounts[0] || null);
+        } else {
+          const [leadsRes, statsRes, accRes] = await Promise.all([
+            fetch(`/api/admin/leads?landing_key=${encodeURIComponent(selectedLK)}`, {
+              cache: "no-store",
+              signal: ac.signal,
+            }),
+            fetch(`/api/admin/stats?landing_key=${encodeURIComponent(selectedLK)}`, {
+              cache: "no-store",
+              signal: ac.signal,
+            }),
+            fetch(`/api/admin/accounts?landing_key=${encodeURIComponent(selectedLK)}`, {
+              cache: "no-store",
+              signal: ac.signal,
+            }),
+          ]);
 
-        setStats(statsRes.ok ? statsJson : null);
-        setAccount(accRes.ok ? ((accJson.item || null) as Account | null) : null);
+          const leadsJson = await leadsRes.json().catch(() => ({}));
+          const statsJson = await statsRes.json().catch(() => ({}));
+          const accJson = await accRes.json().catch(() => ({}));
+
+          if (!leadsRes.ok) {
+            setErr(`${leadsRes.status} ${leadsJson?.error || "error"}`);
+            setRows([]);
+          } else {
+            setRows((leadsJson.items || leadsJson.data || []) as Lead[]);
+            setDraft({});
+          }
+
+          setStats(statsRes.ok ? statsJson : null);
+          setAccount(accRes.ok ? ((accJson.item || null) as Account | null) : null);
+          setIntegratedAccounts([]);
+        }
       } catch (e: any) {
         if (e?.name !== "AbortError") {
           console.error(e);
@@ -301,6 +417,7 @@ export default function AdminLeadsClient() {
           setRows([]);
           setStats(null);
           setAccount(null);
+          setIntegratedAccounts([]);
         }
       } finally {
         setLoadingRows(false);
@@ -308,7 +425,7 @@ export default function AdminLeadsClient() {
     })();
 
     return () => ac.abort();
-  }, [authStatus, router, selectedLK, pageLK]);
+  }, [authStatus, router, selectedLK, pageLK, isIntegrated02, accessLandingKeys]);
 
   useEffect(() => {
     if (authStatus !== "authenticated") return;
@@ -465,6 +582,11 @@ export default function AdminLeadsClient() {
             user: {(session?.user as any)?.email} / my_landing_key: {userLK || "-"} / page_lk:{" "}
             {pageLK}
           </p>
+          {isIntegrated02 && (
+            <p style={{ marginTop: 6, marginBottom: 0, fontWeight: 800, color: "#0f766e" }}>
+              통합 관리: 02번 + 03번 리드 / 잔액 합산 표시
+            </p>
+          )}
         </div>
 
         <div style={{ display: "flex", gap: 8 }}>
@@ -506,9 +628,12 @@ export default function AdminLeadsClient() {
               padding: "6px 10px",
               borderRadius: 999,
               border: "1px solid #ddd",
-              fontWeight: k === selectedLK ? 900 : 600,
-              background: k === selectedLK ? "#111" : "#fff",
-              color: k === selectedLK ? "#fff" : "#111",
+              fontWeight:
+                k === selectedLK || (isIntegrated02 && (k === "02" || k === "03")) ? 900 : 600,
+              background:
+                k === selectedLK || (isIntegrated02 && (k === "02" || k === "03")) ? "#111" : "#fff",
+              color:
+                k === selectedLK || (isIntegrated02 && (k === "02" || k === "03")) ? "#fff" : "#111",
               cursor: "pointer",
             }}
             title={canSwitchAny ? "landing_key 변경" : "권한: 본인 landing_key만"}
@@ -522,31 +647,26 @@ export default function AdminLeadsClient() {
         style={{
           marginTop: 12,
           display: "grid",
-          gridTemplateColumns: isMainAdmin ? "repeat(4, minmax(0, 1fr))" : "repeat(2, minmax(0, 1fr))",
+          gridTemplateColumns: isMainAdmin ? "repeat(4, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
           gap: 10,
         }}
       >
         <div style={card}>
-          잔액
-          <div style={cardBig}>{fmt(account?.balance)}</div>
+          {isIntegrated02 ? "통합 잔액" : "잔액"}
+          <div style={cardBig}>{fmt(totalBalance)}</div>
         </div>
         <div style={card}>
           리드 단가
-          <div style={cardBig}>{fmt(account?.price_per_lead)}</div>
+          <div style={cardBig}>{totalPricePerLeadText}</div>
         </div>
-
-        {isMainAdmin && (
-          <>
-            <div style={card}>
-              오늘 리드
-              <div style={cardBig}>{fmt(stats?.counts?.today ?? todayCount)}</div>
-            </div>
-            <div style={card}>
-              이번달 리드
-              <div style={cardBig}>{fmt(stats?.counts?.month ?? monthCount)}</div>
-            </div>
-          </>
-        )}
+        <div style={card}>
+          오늘 리드
+          <div style={cardBig}>{fmt(stats?.counts?.today ?? todayCount)}</div>
+        </div>
+        <div style={card}>
+          이번달 리드
+          <div style={cardBig}>{fmt(stats?.counts?.month ?? monthCount)}</div>
+        </div>
       </div>
 
       {isMainAdmin && (
@@ -676,13 +796,16 @@ export default function AdminLeadsClient() {
 
       <div style={{ marginTop: 12, border: "1px solid #eee", borderRadius: 14, overflow: "hidden" }}>
         <div style={{ padding: 12, borderBottom: "1px solid #eee", fontWeight: 800 }}>
-          landing_key: {selectedLK} • {loadingRows ? "불러오는 중..." : `${displayRows.length}건`}
+          {isIntegrated02
+            ? `landing_key: 02 + 03 통합 • ${loadingRows ? "불러오는 중..." : `${displayRows.length}건`}`
+            : `landing_key: ${selectedLK} • ${loadingRows ? "불러오는 중..." : `${displayRows.length}건`}`}
         </div>
 
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
               <th style={th}>시간</th>
+              <th style={th}>랜딩</th>
               <th style={th}>이름</th>
               <th style={th}>전화</th>
               <th style={th}>상태</th>
@@ -704,6 +827,9 @@ export default function AdminLeadsClient() {
               return (
                 <tr key={l.id}>
                   <td style={tdTop}>{new Date(l.created_at).toLocaleString("ko-KR")}</td>
+                  <td style={tdTop}>
+                    <LandingBadge landingKey={l.landing_key} />
+                  </td>
                   <td style={tdTop}>{l.name ?? "-"}</td>
                   <td style={tdTop}>{l.phone ?? "-"}</td>
 
@@ -795,7 +921,7 @@ export default function AdminLeadsClient() {
 
             {!loadingRows && displayRows.length === 0 && (
               <tr>
-                <td colSpan={isMainAdmin ? 7 : 6} style={{ padding: 14, color: "#666" }}>
+                <td colSpan={isMainAdmin ? 8 : 7} style={{ padding: 14, color: "#666" }}>
                   데이터 없음
                 </td>
               </tr>
