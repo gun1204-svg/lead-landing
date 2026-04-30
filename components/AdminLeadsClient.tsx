@@ -24,6 +24,20 @@ type Account = {
   updated_at?: string | null;
 };
 
+type PermissionRow = {
+  admin_id: string;
+  landing_key: string;
+};
+
+type ViewSetting = {
+  admin_id: string;
+  default_landing_key: string;
+  show_combined_leads: boolean;
+  show_landing_compare: boolean;
+  can_edit_allowed_leads: boolean;
+  updated_at?: string | null;
+};
+
 const LK_KEYS = Array.from({ length: 21 }, (_, i) => String(i).padStart(2, "0"));
 
 const STATUS_OPTIONS = ["NEW", "BOOKED", "CALLED", "NO_ANSWER", "INVALID"] as const;
@@ -58,12 +72,6 @@ function fmt(n: any) {
 function safeNumber(v: any, fallback = 0) {
   const n = Number(v);
   return Number.isFinite(n) ? n : fallback;
-}
-
-function getAccessLandingKeys(pageLK: string, selectedLK: string, canSwitchAny: boolean) {
-  if (canSwitchAny) return [selectedLK];
-  if (pageLK === "02") return ["02", "03"];
-  return [selectedLK];
 }
 
 function countToday(rows: Lead[]) {
@@ -181,24 +189,18 @@ export default function AdminLeadsClient() {
   const session = sess?.data;
 
   const pageLK = useMemo(() => extractLKFromPath(pathname), [pathname]);
-
   const isMainAdmin = pageLK === "00";
-  const selectedLK = normalizeLK(sp.get("landing_key") ?? pageLK);
 
   const userLK = normalizeLK((session?.user as any)?.landing_key ?? "");
   const canSwitchAny = userLK === "00";
-
-  const accessLandingKeys = useMemo(
-    () => getAccessLandingKeys(pageLK, selectedLK, canSwitchAny),
-    [pageLK, selectedLK, canSwitchAny]
-  );
-
-  const isIntegrated02 = !canSwitchAny && pageLK === "02";
+  const selectedLK = normalizeLK(sp.get("landing_key") ?? pageLK);
 
   const [rows, setRows] = useState<Lead[]>([]);
   const [allRows, setAllRows] = useState<Lead[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [loadingRows, setLoadingRows] = useState(false);
+
+  const [allowedLandingKeys, setAllowedLandingKeys] = useState<string[]>([pageLK]);
 
   const [draft, setDraft] = useState<Record<string, { status?: string; memo?: string }>>({});
   const [saving, setSaving] = useState<Record<string, boolean>>({});
@@ -217,43 +219,33 @@ export default function AdminLeadsClient() {
   const [topupLoading, setTopupLoading] = useState(false);
   const [accountsLoading, setAccountsLoading] = useState(false);
 
+  const [permissions, setPermissions] = useState<PermissionRow[]>([]);
+  const [viewSettings, setViewSettings] = useState<ViewSetting[]>([]);
+  const [permissionsLoading, setPermissionsLoading] = useState(false);
+
+  const isIntegratedAdmin = !canSwitchAny && allowedLandingKeys.length > 1;
+
   const visibleKeys = useMemo(() => {
     if (canSwitchAny) return LK_KEYS;
-    if (pageLK === "02") return ["02", "03"];
-    if (userLK) return [userLK];
-    return [pageLK];
-  }, [canSwitchAny, userLK, pageLK]);
+    return allowedLandingKeys.length ? allowedLandingKeys : [pageLK];
+  }, [canSwitchAny, allowedLandingKeys, pageLK]);
 
   const totalBalance = useMemo(() => {
-    if (isIntegrated02) {
+    if (isIntegratedAdmin) {
       return integratedAccounts.reduce((sum, a) => sum + safeNumber(a.balance, 0), 0);
     }
     return safeNumber(account?.balance, 0);
-  }, [isIntegrated02, integratedAccounts, account]);
+  }, [isIntegratedAdmin, integratedAccounts, account]);
 
-  const price02 = useMemo(() => {
-    const acc = integratedAccounts.find((a) => a.landing_key === "02");
-    return safeNumber(acc?.price_per_lead, 0);
-  }, [integratedAccounts]);
-
-  const price03 = useMemo(() => {
-    const acc = integratedAccounts.find((a) => a.landing_key === "03");
-    return safeNumber(acc?.price_per_lead, 0);
-  }, [integratedAccounts]);
-
-  const leads02 = useMemo(() => {
-    return rows.filter((r) => normalizeLK(r.landing_key) === "02");
+  const leadsByLanding = useMemo(() => {
+    const map: Record<string, Lead[]> = {};
+    for (const r of rows) {
+      const lk = normalizeLK(r.landing_key);
+      if (!map[lk]) map[lk] = [];
+      map[lk].push(r);
+    }
+    return map;
   }, [rows]);
-
-  const leads03 = useMemo(() => {
-    return rows.filter((r) => normalizeLK(r.landing_key) === "03");
-  }, [rows]);
-
-  const today02 = useMemo(() => countToday(leads02), [leads02]);
-  const month02 = useMemo(() => countMonth(leads02), [leads02]);
-
-  const today03 = useMemo(() => countToday(leads03), [leads03]);
-  const month03 = useMemo(() => countMonth(leads03), [leads03]);
 
   const statusCounts = useMemo(() => {
     const base: Record<string, number> = {};
@@ -278,12 +270,6 @@ export default function AdminLeadsClient() {
 
   function setLandingKey(k: string) {
     const nk = normalizeLK(k);
-
-    if (isIntegrated02) {
-      router.push(`/${pageLK}/admin/leads`);
-      router.refresh();
-      return;
-    }
 
     const p = new URLSearchParams(sp.toString());
     p.set("landing_key", nk);
@@ -380,37 +366,36 @@ export default function AdminLeadsClient() {
       setLoadingRows(true);
 
       try {
-        let mergedLeads: Lead[] = [];
-        let mergedAccounts: Account[] = [];
+        if (!canSwitchAny) {
+          const leadsRes = await fetch("/api/admin/leads", {
+            cache: "no-store",
+            signal: ac.signal,
+          });
 
-        if (isIntegrated02) {
-          const leadResults = await Promise.all(
-            accessLandingKeys.map((lk) =>
-              fetch(`/api/admin/leads?landing_key=${encodeURIComponent(lk)}`, {
-                cache: "no-store",
-                signal: ac.signal,
-              }).then(async (res) => ({
-                res,
-                json: await res.json().catch(() => ({})),
-              }))
-            )
-          );
+          const leadsJson = await leadsRes.json().catch(() => ({}));
 
-          for (const item of leadResults) {
-            if (!item.res.ok) {
-              setErr(`${item.res.status} ${item.json?.error || "error"}`);
-              continue;
-            }
-
-            mergedLeads = mergedLeads.concat((item.json.items || item.json.data || []) as Lead[]);
+          if (!leadsRes.ok) {
+            setErr(`${leadsRes.status} ${leadsJson?.error || "error"}`);
+            setRows([]);
+            setAllowedLandingKeys([pageLK]);
+            return;
           }
 
-          mergedLeads.sort(
-            (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          const keys: string[] = Array.isArray(leadsJson.allowed_landing_keys)
+            ? leadsJson.allowed_landing_keys.map((v: any) => normalizeLK(v))
+            : [pageLK];
+
+          const uniqueKeys: string[] = Array.from(
+              new Set<string>(keys.length ? keys : [pageLK])
           );
 
+          setAllowedLandingKeys(uniqueKeys);
+          setRows((leadsJson.items || leadsJson.data || []) as Lead[]);
+          setDraft({});
+          setStats(null);
+
           const accountResults = await Promise.all(
-            accessLandingKeys.map((lk) =>
+            uniqueKeys.map((lk) =>
               fetch(`/api/admin/accounts?landing_key=${encodeURIComponent(lk)}`, {
                 cache: "no-store",
                 signal: ac.signal,
@@ -421,49 +406,49 @@ export default function AdminLeadsClient() {
             )
           );
 
+          const mergedAccounts: Account[] = [];
           for (const item of accountResults) {
             if (item.res.ok && item.json?.item) {
               mergedAccounts.push(item.json.item as Account);
             }
           }
 
-          setRows(mergedLeads);
-          setDraft({});
-          setStats(null);
           setIntegratedAccounts(mergedAccounts);
           setAccount(mergedAccounts[0] || null);
-        } else {
-          const [leadsRes, statsRes, accRes] = await Promise.all([
-            fetch(`/api/admin/leads?landing_key=${encodeURIComponent(selectedLK)}`, {
-              cache: "no-store",
-              signal: ac.signal,
-            }),
-            fetch(`/api/admin/stats?landing_key=${encodeURIComponent(selectedLK)}`, {
-              cache: "no-store",
-              signal: ac.signal,
-            }),
-            fetch(`/api/admin/accounts?landing_key=${encodeURIComponent(selectedLK)}`, {
-              cache: "no-store",
-              signal: ac.signal,
-            }),
-          ]);
-
-          const leadsJson = await leadsRes.json().catch(() => ({}));
-          const statsJson = await statsRes.json().catch(() => ({}));
-          const accJson = await accRes.json().catch(() => ({}));
-
-          if (!leadsRes.ok) {
-            setErr(`${leadsRes.status} ${leadsJson?.error || "error"}`);
-            setRows([]);
-          } else {
-            setRows((leadsJson.items || leadsJson.data || []) as Lead[]);
-            setDraft({});
-          }
-
-          setStats(statsRes.ok ? statsJson : null);
-          setAccount(accRes.ok ? ((accJson.item || null) as Account | null) : null);
-          setIntegratedAccounts([]);
+          return;
         }
+
+        const [leadsRes, statsRes, accRes] = await Promise.all([
+          fetch(`/api/admin/leads?landing_key=${encodeURIComponent(selectedLK)}`, {
+            cache: "no-store",
+            signal: ac.signal,
+          }),
+          fetch(`/api/admin/stats?landing_key=${encodeURIComponent(selectedLK)}`, {
+            cache: "no-store",
+            signal: ac.signal,
+          }),
+          fetch(`/api/admin/accounts?landing_key=${encodeURIComponent(selectedLK)}`, {
+            cache: "no-store",
+            signal: ac.signal,
+          }),
+        ]);
+
+        const leadsJson = await leadsRes.json().catch(() => ({}));
+        const statsJson = await statsRes.json().catch(() => ({}));
+        const accJson = await accRes.json().catch(() => ({}));
+
+        if (!leadsRes.ok) {
+          setErr(`${leadsRes.status} ${leadsJson?.error || "error"}`);
+          setRows([]);
+        } else {
+          setRows((leadsJson.items || leadsJson.data || []) as Lead[]);
+          setDraft({});
+        }
+
+        setAllowedLandingKeys([selectedLK]);
+        setStats(statsRes.ok ? statsJson : null);
+        setAccount(accRes.ok ? ((accJson.item || null) as Account | null) : null);
+        setIntegratedAccounts([]);
       } catch (e: any) {
         if (e?.name !== "AbortError") {
           console.error(e);
@@ -479,7 +464,7 @@ export default function AdminLeadsClient() {
     })();
 
     return () => ac.abort();
-  }, [authStatus, router, selectedLK, pageLK, isIntegrated02, accessLandingKeys]);
+  }, [authStatus, router, selectedLK, pageLK, canSwitchAny]);
 
   useEffect(() => {
     if (authStatus !== "authenticated") return;
@@ -546,6 +531,33 @@ export default function AdminLeadsClient() {
     if (res.ok) setAccounts((json.items || []) as Account[]);
   }
 
+  async function refreshPermissions() {
+    if (userLK !== "00") return;
+
+    setPermissionsLoading(true);
+
+    try {
+      const res = await fetch("/api/admin/permissions", { cache: "no-store" });
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setErr(`${res.status} ${json?.error || "권한 목록 불러오기 실패"}`);
+        return;
+      }
+
+      setPermissions((json.permissions || []) as PermissionRow[]);
+      setViewSettings((json.settings || []) as ViewSetting[]);
+    } finally {
+      setPermissionsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (authStatus !== "authenticated") return;
+    if (userLK !== "00") return;
+    refreshPermissions();
+  }, [authStatus, userLK]);
+
   async function doTopup() {
     if (userLK !== "00") return;
 
@@ -580,15 +592,6 @@ export default function AdminLeadsClient() {
       setTopupNote("");
 
       await refreshAccountsList();
-
-      if (account?.admin_id === admin_id) {
-        const res2 = await fetch(`/api/admin/accounts?landing_key=${encodeURIComponent(selectedLK)}`, {
-          cache: "no-store",
-        });
-
-        const j2 = await res2.json().catch(() => ({}));
-        if (res2.ok) setAccount(j2.item || null);
-      }
     } finally {
       setTopupLoading(false);
     }
@@ -615,15 +618,6 @@ export default function AdminLeadsClient() {
     }
 
     await refreshAccountsList();
-
-    if (landing_key === selectedLK) {
-      const res2 = await fetch(`/api/admin/accounts?landing_key=${encodeURIComponent(selectedLK)}`, {
-        cache: "no-store",
-      });
-
-      const j2 = await res2.json().catch(() => ({}));
-      if (res2.ok) setAccount(j2.item || null);
-    }
   }
 
   if (!authStatus || authStatus === "loading") {
@@ -632,42 +626,27 @@ export default function AdminLeadsClient() {
 
   return (
     <div style={{ padding: 20, maxWidth: 1200, margin: "0 auto" }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-        }}
-      >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>Admin Leads</h1>
 
           <p style={{ opacity: 0.7, marginTop: 6, marginBottom: 0 }}>
-            user: {(session?.user as any)?.email} / my_landing_key: {userLK || "-"} / page_lk:{" "}
-            {pageLK}
+            user: {(session?.user as any)?.email} / my_landing_key: {userLK || "-"} / page_lk: {pageLK}
           </p>
 
-          {isIntegrated02 && (
+          {isIntegratedAdmin && (
             <p style={{ marginTop: 6, marginBottom: 0, fontWeight: 800, color: "#0f766e" }}>
-              통합 관리: 02번 + 03번 리드 / 잔액 합산 표시
+              통합 관리: {allowedLandingKeys.join(" + ")}번 리드 / 잔액 합산 표시
             </p>
           )}
         </div>
 
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            onClick={() => signOut({ callbackUrl: `/${pageLK}/admin/login` })}
-            style={{
-              padding: "8px 12px",
-              borderRadius: 10,
-              border: "1px solid #ddd",
-              background: "#fff",
-            }}
-          >
-            로그아웃
-          </button>
-        </div>
+        <button
+          onClick={() => signOut({ callbackUrl: `/${pageLK}/admin/login` })}
+          style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #ddd", background: "#fff" }}
+        >
+          로그아웃
+        </button>
       </div>
 
       <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -679,15 +658,11 @@ export default function AdminLeadsClient() {
               padding: "6px 10px",
               borderRadius: 999,
               border: "1px solid #ddd",
-              fontWeight:
-                k === selectedLK || (isIntegrated02 && (k === "02" || k === "03")) ? 900 : 600,
-              background:
-                k === selectedLK || (isIntegrated02 && (k === "02" || k === "03")) ? "#111" : "#fff",
-              color:
-                k === selectedLK || (isIntegrated02 && (k === "02" || k === "03")) ? "#fff" : "#111",
+              fontWeight: k === selectedLK || (!canSwitchAny && allowedLandingKeys.includes(k)) ? 900 : 600,
+              background: k === selectedLK || (!canSwitchAny && allowedLandingKeys.includes(k)) ? "#111" : "#fff",
+              color: k === selectedLK || (!canSwitchAny && allowedLandingKeys.includes(k)) ? "#fff" : "#111",
               cursor: "pointer",
             }}
-            title={canSwitchAny ? "landing_key 변경" : "권한: 본인 landing_key만"}
           >
             {k}
           </button>
@@ -698,42 +673,35 @@ export default function AdminLeadsClient() {
         style={{
           marginTop: 12,
           display: "grid",
-          gridTemplateColumns: isIntegrated02
-            ? "repeat(7, minmax(0, 1fr))"
+          gridTemplateColumns: isIntegratedAdmin
+            ? `repeat(${Math.min(7, Math.max(4, allowedLandingKeys.length + 3))}, minmax(0, 1fr))`
             : "repeat(4, minmax(0, 1fr))",
           gap: 10,
         }}
       >
         <div style={card}>
-          {isIntegrated02 ? "통합 잔액" : "잔액"}
+          {isIntegratedAdmin ? "통합 잔액" : "잔액"}
           <div style={cardBig}>{fmt(totalBalance)}</div>
         </div>
 
-        {isIntegrated02 ? (
+        {isIntegratedAdmin ? (
           <>
-            <div style={card}>
-              02 단가
-              <div style={cardBig}>{fmt(price02)}</div>
-            </div>
+            {allowedLandingKeys.map((lk) => {
+              const acc = integratedAccounts.find((a) => normalizeLK(a.landing_key) === lk);
+              const leadRows = leadsByLanding[lk] || [];
 
-            <div style={card}>
-              03 단가
-              <div style={cardBig}>{fmt(price03)}</div>
-            </div>
-
-            <div style={card}>
-              02 리드
-              <div style={cardBig}>
-                오늘 {fmt(today02)} / 월 {fmt(month02)}
-              </div>
-            </div>
-
-            <div style={card}>
-              03 리드
-              <div style={cardBig}>
-                오늘 {fmt(today03)} / 월 {fmt(month03)}
-              </div>
-            </div>
+              return (
+                <div key={lk} style={card}>
+                  {lk} 리드
+                  <div style={cardBig}>
+                    오늘 {fmt(countToday(leadRows))} / 월 {fmt(countMonth(leadRows))}
+                  </div>
+                  <div style={{ marginTop: 6, fontSize: 12, color: "#666" }}>
+                    단가 {fmt(acc?.price_per_lead)}
+                  </div>
+                </div>
+              );
+            })}
           </>
         ) : (
           <div style={card}>
@@ -754,14 +722,7 @@ export default function AdminLeadsClient() {
       </div>
 
       {isMainAdmin && (
-        <div
-          style={{
-            marginTop: 10,
-            display: "grid",
-            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-            gap: 10,
-          }}
-        >
+        <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
           <div style={card}>
             전체 오늘 리드
             <div style={cardBig}>{fmt(totalTodayCount)}</div>
@@ -783,7 +744,7 @@ export default function AdminLeadsClient() {
         {(["ALL", ...STATUS_OPTIONS] as const).map((s) => {
           const active = statusFilter === (s as any);
           const label = s === "ALL" ? "전체" : STATUS_META[s].label;
-          const count = s === "ALL" ? rows.length : (statusCounts?.[s] ?? 0);
+          const count = s === "ALL" ? rows.length : statusCounts?.[s] ?? 0;
 
           return (
             <button
@@ -805,110 +766,73 @@ export default function AdminLeadsClient() {
         })}
       </div>
 
-      {err && (
-        <p style={{ marginTop: 12, color: "crimson", whiteSpace: "pre-wrap" }}>
-          {err}
-        </p>
-      )}
+      {err && <p style={{ marginTop: 12, color: "crimson", whiteSpace: "pre-wrap" }}>{err}</p>}
 
       {userLK === "00" && (
-        <div style={{ marginTop: 18, border: "1px solid #eee", borderRadius: 14, padding: 12 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 10,
-            }}
-          >
-            <h3 style={{ margin: 0, fontWeight: 900 }}>Root: 충전 / 단가 설정</h3>
+        <>
+          <RootPermissionsBox
+            accounts={accounts}
+            permissions={permissions}
+            viewSettings={viewSettings}
+            loading={permissionsLoading}
+            onRefresh={refreshPermissions}
+          />
 
-            <button
-              onClick={refreshAccountsList}
-              style={{
-                padding: "6px 10px",
-                borderRadius: 10,
-                border: "1px solid #ddd",
-                background: "#fff",
-              }}
-            >
-              목록 새로고침
-            </button>
-          </div>
+          <div style={{ marginTop: 18, border: "1px solid #eee", borderRadius: 14, padding: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+              <h3 style={{ margin: 0, fontWeight: 900 }}>Root: 충전 / 단가 설정</h3>
 
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-            <input
-              placeholder="admin_id (admin01)"
-              value={topupAdminId}
-              onChange={(e) => setTopupAdminId(e.target.value)}
-              style={inp}
-            />
+              <button onClick={refreshAccountsList} style={smallBtn}>
+                목록 새로고침
+              </button>
+            </div>
 
-            <input
-              placeholder="충전 금액"
-              type="number"
-              value={topupAmount ? String(topupAmount) : ""}
-              onChange={(e) => setTopupAmount(Number(e.target.value))}
-              style={inp}
-            />
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+              <input placeholder="admin_id (admin01)" value={topupAdminId} onChange={(e) => setTopupAdminId(e.target.value)} style={inp} />
+              <input placeholder="충전 금액" type="number" value={topupAmount ? String(topupAmount) : ""} onChange={(e) => setTopupAmount(Number(e.target.value))} style={inp} />
+              <input placeholder="메모(선택)" value={topupNote} onChange={(e) => setTopupNote(e.target.value)} style={inp} />
 
-            <input
-              placeholder="메모(선택)"
-              value={topupNote}
-              onChange={(e) => setTopupNote(e.target.value)}
-              style={inp}
-            />
+              <button onClick={doTopup} disabled={topupLoading} style={blackBtn}>
+                {topupLoading ? "충전중..." : "충전"}
+              </button>
+            </div>
 
-            <button
-              onClick={doTopup}
-              disabled={topupLoading}
-              style={{
-                padding: "8px 12px",
-                borderRadius: 10,
-                border: "1px solid #ddd",
-                background: "#111",
-                color: "#fff",
-              }}
-            >
-              {topupLoading ? "충전중..." : "충전"}
-            </button>
-          </div>
-
-          <div style={{ marginTop: 12, opacity: accountsLoading ? 0.6 : 1 }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr>
-                  <th style={th}>admin</th>
-                  <th style={th}>LK</th>
-                  <th style={th}>잔액</th>
-                  <th style={th}>단가</th>
-                  <th style={th}>활성</th>
-                  <th style={th}>저장</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {accounts.map((a) => (
-                  <AccountRow key={a.admin_id} a={a} onSave={saveAccountSetting} />
-                ))}
-
-                {accounts.length === 0 && (
+            <div style={{ marginTop: 12, opacity: accountsLoading ? 0.6 : 1 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
                   <tr>
-                    <td colSpan={6} style={{ padding: 12, color: "#666" }}>
-                      계정 없음 (admin_accounts 테이블에 seed 필요)
-                    </td>
+                    <th style={th}>admin</th>
+                    <th style={th}>LK</th>
+                    <th style={th}>잔액</th>
+                    <th style={th}>단가</th>
+                    <th style={th}>활성</th>
+                    <th style={th}>저장</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+
+                <tbody>
+                  {accounts.map((a) => (
+                    <AccountRow key={`${a.admin_id}-${a.landing_key}`} a={a} onSave={saveAccountSetting} />
+                  ))}
+
+                  {accounts.length === 0 && (
+                    <tr>
+                      <td colSpan={6} style={{ padding: 12, color: "#666" }}>
+                        계정 없음
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       <div style={{ marginTop: 12, border: "1px solid #eee", borderRadius: 14, overflow: "hidden" }}>
         <div style={{ padding: 12, borderBottom: "1px solid #eee", fontWeight: 800 }}>
-          {isIntegrated02
-            ? `landing_key: 02 + 03 통합 • ${loadingRows ? "불러오는 중..." : `${displayRows.length}건`}`
+          {isIntegratedAdmin
+            ? `landing_key: ${allowedLandingKeys.join(" + ")} 통합 • ${loadingRows ? "불러오는 중..." : `${displayRows.length}건`}`
             : `landing_key: ${selectedLK} • ${loadingRows ? "불러오는 중..." : `${displayRows.length}건`}`}
         </div>
 
@@ -940,17 +864,9 @@ export default function AdminLeadsClient() {
               return (
                 <tr key={l.id}>
                   <td style={tdTop}>{new Date(l.created_at).toLocaleString("ko-KR")}</td>
-
-                  <td style={tdTop}>
-                    <LandingBadge landingKey={l.landing_key} />
-                  </td>
-
-                  <td style={tdTop}>
-                    <SourceBadge source={l.utm_source} />
-                  </td>
-
+                  <td style={tdTop}><LandingBadge landingKey={l.landing_key} /></td>
+                  <td style={tdTop}><SourceBadge source={l.utm_source} /></td>
                   <td style={tdTop}>{l.name ?? "-"}</td>
-
                   <td style={tdTop}>{l.phone ?? "-"}</td>
 
                   <td style={tdTop}>
@@ -1054,6 +970,213 @@ export default function AdminLeadsClient() {
   );
 }
 
+function RootPermissionsBox({
+  accounts,
+  permissions,
+  viewSettings,
+  loading,
+  onRefresh,
+}: {
+  accounts: Account[];
+  permissions: PermissionRow[];
+  viewSettings: ViewSetting[];
+  loading: boolean;
+  onRefresh: () => Promise<void>;
+}) {
+  const adminIds = useMemo(() => {
+    return Array.from(
+      new Set(accounts.map((a) => a.admin_id).filter((id) => id && id !== "admin"))
+    ).sort();
+  }, [accounts]);
+
+  return (
+    <div style={{ marginTop: 18, border: "1px solid #eee", borderRadius: 14, padding: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+        <h3 style={{ margin: 0, fontWeight: 900 }}>Root: 어드민 권한 설정</h3>
+
+        <button onClick={onRefresh} style={smallBtn}>
+          {loading ? "불러오는 중..." : "권한 새로고침"}
+        </button>
+      </div>
+
+      <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+        {adminIds.map((adminId) => {
+          const allowed = permissions
+            .filter((p) => p.admin_id === adminId)
+            .map((p) => normalizeLK(p.landing_key));
+
+          const setting = viewSettings.find((s) => s.admin_id === adminId);
+
+          return (
+            <PermissionEditor
+              key={adminId}
+              adminId={adminId}
+              initialLandingKeys={allowed.length ? allowed : [normalizeLK(adminId.replace("admin", ""))]}
+              initialSetting={setting}
+              onSaved={onRefresh}
+            />
+          );
+        })}
+
+        {adminIds.length === 0 && (
+          <div style={{ padding: 12, color: "#666" }}>
+            계정이 없습니다. 먼저 accounts에 admin02/admin03 계정이 있어야 표시됩니다.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PermissionEditor({
+  adminId,
+  initialLandingKeys,
+  initialSetting,
+  onSaved,
+}: {
+  adminId: string;
+  initialLandingKeys: string[];
+  initialSetting?: ViewSetting;
+  onSaved: () => Promise<void>;
+}) {
+  const fallbackLK = normalizeLK(adminId.replace("admin", ""));
+  const initialKeys = Array.from(new Set(initialLandingKeys.length ? initialLandingKeys : [fallbackLK]));
+
+  const [landingKeys, setLandingKeys] = useState<string[]>(initialKeys);
+  const [defaultLK, setDefaultLK] = useState(normalizeLK(initialSetting?.default_landing_key ?? initialKeys[0] ?? fallbackLK));
+  const [showCombined, setShowCombined] = useState(!!initialSetting?.show_combined_leads);
+  const [showCompare, setShowCompare] = useState(initialSetting?.show_landing_compare !== false);
+  const [canEdit, setCanEdit] = useState(initialSetting?.can_edit_allowed_leads !== false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const keys = Array.from(new Set(initialLandingKeys.length ? initialLandingKeys : [fallbackLK]));
+    setLandingKeys(keys);
+    setDefaultLK(normalizeLK(initialSetting?.default_landing_key ?? keys[0] ?? fallbackLK));
+    setShowCombined(!!initialSetting?.show_combined_leads);
+    setShowCompare(initialSetting?.show_landing_compare !== false);
+    setCanEdit(initialSetting?.can_edit_allowed_leads !== false);
+  }, [initialLandingKeys.join(","), initialSetting?.admin_id, initialSetting?.updated_at]);
+
+  function toggleLK(lk: string) {
+    setLandingKeys((prev) => {
+      const exists = prev.includes(lk);
+      const next = exists ? prev.filter((x) => x !== lk) : [...prev, lk].sort();
+
+      if (next.length === 0) return prev;
+      if (!next.includes(defaultLK)) setDefaultLK(next[0]);
+
+      return next;
+    });
+  }
+
+  async function save() {
+    if (!landingKeys.includes(defaultLK)) {
+      alert("기본 랜딩은 접근 가능 랜딩에 포함되어야 합니다.");
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const res = await fetch("/api/admin/permissions", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          admin_id: adminId,
+          landing_keys: landingKeys,
+          default_landing_key: defaultLK,
+          show_combined_leads: showCombined,
+          show_landing_compare: showCompare,
+          can_edit_allowed_leads: canEdit,
+        }),
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        alert(json?.error || "권한 저장 실패");
+        return;
+      }
+
+      alert("권한 저장 완료");
+      await onSaved();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div style={{ border: "1px solid #f0f0f0", borderRadius: 12, padding: 12, background: "#fafafa" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+        <strong>{adminId}</strong>
+
+        <button onClick={save} disabled={saving} style={blackBtn}>
+          {saving ? "저장중..." : "권한 저장"}
+        </button>
+      </div>
+
+      <div style={{ marginTop: 10 }}>
+        <div style={{ fontSize: 13, fontWeight: 900, marginBottom: 6 }}>접근 가능 랜딩</div>
+
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {LK_KEYS.filter((k) => k !== "00").map((lk) => (
+            <label
+              key={lk}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "6px 10px",
+                borderRadius: 999,
+                border: landingKeys.includes(lk) ? "1px solid #111" : "1px solid #ddd",
+                background: landingKeys.includes(lk) ? "#111" : "#fff",
+                color: landingKeys.includes(lk) ? "#fff" : "#111",
+                cursor: "pointer",
+                fontWeight: 800,
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={landingKeys.includes(lk)}
+                onChange={() => toggleLK(lk)}
+              />
+              {lk}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <span style={{ fontSize: 13, fontWeight: 900 }}>기본 랜딩</span>
+
+        <select value={defaultLK} onChange={(e) => setDefaultLK(normalizeLK(e.target.value))}>
+          {landingKeys.map((lk) => (
+            <option key={lk} value={lk}>
+              {lk}
+            </option>
+          ))}
+        </select>
+
+        <label style={checkLabel}>
+          <input type="checkbox" checked={showCombined} onChange={(e) => setShowCombined(e.target.checked)} />
+          통합 리드 표시
+        </label>
+
+        <label style={checkLabel}>
+          <input type="checkbox" checked={showCompare} onChange={(e) => setShowCompare(e.target.checked)} />
+          랜딩별 비교 카드 표시
+        </label>
+
+        <label style={checkLabel}>
+          <input type="checkbox" checked={canEdit} onChange={(e) => setCanEdit(e.target.checked)} />
+          허용 랜딩 수정 가능
+        </label>
+      </div>
+    </div>
+  );
+}
+
 function AccountRow({
   a,
   onSave,
@@ -1073,18 +1196,11 @@ function AccountRow({
   return (
     <tr>
       <td style={td}>{a.admin_id}</td>
-
       <td style={td}>{a.landing_key}</td>
-
       <td style={td}>{fmt(a.balance)}</td>
 
       <td style={td}>
-        <input
-          type="number"
-          value={price}
-          onChange={(e) => setPrice(Number(e.target.value))}
-          style={{ width: 120 }}
-        />
+        <input type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} style={{ width: 120 }} />
       </td>
 
       <td style={td}>
@@ -1101,12 +1217,7 @@ function AccountRow({
               setSaving(false);
             }
           }}
-          style={{
-            padding: "6px 10px",
-            borderRadius: 10,
-            border: "1px solid #ddd",
-            background: "#fff",
-          }}
+          style={smallBtn}
           disabled={saving}
         >
           {saving ? "저장중..." : "저장"}
@@ -1133,6 +1244,31 @@ const inp: React.CSSProperties = {
   padding: "8px 10px",
   borderRadius: 10,
   border: "1px solid #ddd",
+};
+
+const blackBtn: React.CSSProperties = {
+  padding: "8px 12px",
+  borderRadius: 10,
+  border: "1px solid #ddd",
+  background: "#111",
+  color: "#fff",
+  cursor: "pointer",
+};
+
+const smallBtn: React.CSSProperties = {
+  padding: "6px 10px",
+  borderRadius: 10,
+  border: "1px solid #ddd",
+  background: "#fff",
+  cursor: "pointer",
+};
+
+const checkLabel: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  fontSize: 13,
+  fontWeight: 800,
 };
 
 const th: React.CSSProperties = {

@@ -31,6 +31,23 @@ function normalizeMemo(v: unknown) {
   return s.slice(0, 500);
 }
 
+async function getAllowedLandingKeys(adminId: string, userLK: string) {
+  if (userLK === "00") return null; // 메인 admin = 전체
+
+  const { data, error } = await supabaseAdmin
+    .from("admin_landing_permissions")
+    .select("landing_key")
+    .eq("admin_id", adminId);
+
+  if (error) throw error;
+
+  const keys = (data ?? [])
+    .map((row) => normalizeLandingKey(row.landing_key))
+    .filter(Boolean) as string[];
+
+  return Array.from(new Set(keys.length ? keys : [userLK]));
+}
+
 export async function PATCH(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -38,7 +55,8 @@ export async function PATCH(
   const session = await getServerSession(authOptions);
   const user = session?.user as SessionUser | undefined;
 
-  if (!user?.email) {
+  const adminId = user?.email;
+  if (!adminId) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
@@ -75,9 +93,26 @@ export async function PATCH(
     return NextResponse.json({ ok: false, error: gErr?.message || "Not found" }, { status: 404 });
   }
 
-  const leadLK = normalizeLandingKey(lead.landing_key) ?? null;
+  const leadLK = normalizeLandingKey(lead.landing_key);
 
-  if (userLK !== "00" && leadLK !== userLK) {
+  if (!leadLK) {
+    return NextResponse.json({ ok: false, error: "Invalid lead landing_key" }, { status: 400 });
+  }
+
+  let allowedKeys: string[] | null;
+
+  try {
+    allowedKeys = await getAllowedLandingKeys(adminId, userLK);
+  } catch (e: any) {
+    return NextResponse.json(
+      { ok: false, error: e?.message || "Permission load failed" },
+      { status: 500 }
+    );
+  }
+
+  const canEdit = userLK === "00" || allowedKeys?.includes(leadLK);
+
+  if (!canEdit) {
     return NextResponse.json({ ok: false, error: "Forbidden landing_key" }, { status: 403 });
   }
 
@@ -112,7 +147,6 @@ export async function DELETE(
 
   const userLK = normalizeLandingKey(user?.landing_key);
 
-  // 00(메인 admin)만 삭제 가능
   if (userLK !== "00") {
     return NextResponse.json(
       { ok: false, error: "Only main admin can delete" },
@@ -125,10 +159,7 @@ export async function DELETE(
     return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
   }
 
-  const { error } = await supabaseAdmin
-    .from("leads")
-    .delete()
-    .eq("id", id);
+  const { error } = await supabaseAdmin.from("leads").delete().eq("id", id);
 
   if (error) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });

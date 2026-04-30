@@ -18,18 +18,29 @@ function normalizeLandingKey(v: unknown) {
   return null;
 }
 
-function canAccessLandingKey(userLK: string, targetLK: string) {
-  if (userLK === "00") return true;
-  if (userLK === "02" && (targetLK === "02" || targetLK === "03")) return true;
-  return userLK === targetLK;
+async function getAllowedLandingKeys(adminId: string, userLK: string) {
+  if (userLK === "00") return null; // 메인 admin = 전체
+
+  const { data, error } = await supabaseAdmin
+    .from("admin_landing_permissions")
+    .select("landing_key")
+    .eq("admin_id", adminId);
+
+  if (error) throw error;
+
+  const keys = (data ?? [])
+    .map((row) => normalizeLandingKey(row.landing_key))
+    .filter(Boolean) as string[];
+
+  return Array.from(new Set(keys.length ? keys : [userLK]));
 }
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   const user = session?.user as SessionUser | undefined;
 
-  const email = user?.email;
-  if (!email) {
+  const adminId = user?.email;
+  if (!adminId) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
@@ -40,10 +51,16 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const requestedLK = normalizeLandingKey(searchParams.get("landing_key"));
-  const lk = requestedLK ?? userLK;
 
-  if (!canAccessLandingKey(userLK, lk)) {
-    return NextResponse.json({ ok: false, error: "Forbidden landing_key" }, { status: 403 });
+  let allowedKeys: string[] | null;
+
+  try {
+    allowedKeys = await getAllowedLandingKeys(adminId, userLK);
+  } catch (e: any) {
+    return NextResponse.json(
+      { ok: false, error: e?.message || "Permission load failed" },
+      { status: 500 }
+    );
   }
 
   let q = supabaseAdmin
@@ -52,16 +69,34 @@ export async function GET(req: Request) {
     .order("created_at", { ascending: false })
     .limit(300);
 
-  if (lk === "00") {
-    q = q.or("landing_key.is.null,landing_key.eq.00");
+  if (userLK === "00") {
+    if (requestedLK && requestedLK !== "00") {
+      q = q.eq("landing_key", requestedLK);
+    }
   } else {
-    q = q.eq("landing_key", lk);
+    if (requestedLK) {
+      if (!allowedKeys?.includes(requestedLK)) {
+        return NextResponse.json(
+          { ok: false, error: "Forbidden landing_key" },
+          { status: 403 }
+        );
+      }
+      q = q.eq("landing_key", requestedLK);
+    } else {
+      q = q.in("landing_key", allowedKeys ?? [userLK]);
+    }
   }
 
   const { data, error } = await q;
+
   if (error) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, landing_key: lk, items: data ?? [] });
+  return NextResponse.json({
+    ok: true,
+    landing_key: requestedLK ?? userLK,
+    allowed_landing_keys: allowedKeys,
+    items: data ?? [],
+  });
 }
