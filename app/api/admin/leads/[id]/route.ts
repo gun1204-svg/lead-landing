@@ -124,7 +124,7 @@ export async function PATCH(
     .from("leads")
     .update(patch)
     .eq("id", id)
-    .select("id, created_at, name, phone, status, memo, landing_key")
+    .select("id, created_at, name, phone, status, memo, landing_key, utm_source")
     .single();
 
   if (uErr) {
