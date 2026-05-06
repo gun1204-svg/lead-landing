@@ -5,11 +5,28 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
+const ACTIVE_DM_STATUSES = [
+  "dm_sent",
+  "follow_up",
+  "replied",
+  "negotiating",
+  "confirmed",
+  "completed",
+];
+
+const REPLIED_STATUSES = [
+  "replied",
+  "negotiating",
+  "confirmed",
+  "completed",
+];
+
 function needsFollowUp(item: {
   status?: string | null;
   dm_sent_at?: string | null;
   replied_at?: string | null;
 }) {
+  if (item.status === "follow_up") return true;
   if (item.status !== "dm_sent") return false;
   if (!item.dm_sent_at) return false;
   if (item.replied_at) return false;
@@ -34,8 +51,10 @@ export async function GET(req: NextRequest) {
     }
 
     const sp = req.nextUrl.searchParams;
-    const status = sp.get("status") || "";
+
+    const status = sp.get("status") || "all";
     const q = sp.get("q") || "";
+    const country = sp.get("country") || "all";
     const minFollowers = Number(sp.get("min_followers") || "0");
     const followUpOnly = sp.get("follow_up_only") === "true";
 
@@ -47,6 +66,10 @@ export async function GET(req: NextRequest) {
 
     if (status && status !== "all") {
       query = query.eq("status", status);
+    }
+
+    if (country && country !== "all") {
+      query = query.eq("country", country);
     }
 
     if (minFollowers > 0) {
@@ -77,7 +100,20 @@ export async function GET(req: NextRequest) {
       follow_up_needed: needsFollowUp(item),
     }));
 
-    const filtered = followUpOnly ? items.filter((x) => x.follow_up_needed) : items;
+    const filtered = followUpOnly
+      ? items.filter((x) => x.follow_up_needed)
+      : items;
+
+    const dmSentCount = items.filter((x) =>
+      ACTIVE_DM_STATUSES.includes(x.status)
+    ).length;
+
+    const repliedCount = items.filter((x) =>
+      REPLIED_STATUSES.includes(x.status)
+    ).length;
+
+    const replyRate =
+      dmSentCount > 0 ? Math.round((repliedCount / dmSentCount) * 100) : 0;
 
     return NextResponse.json({
       ok: true,
@@ -85,11 +121,17 @@ export async function GET(req: NextRequest) {
       stats: {
         total: items.length,
         newCount: items.filter((x) => x.status === "new").length,
-        dmSentCount: items.filter((x) => x.status === "dm_sent").length,
-        repliedCount: items.filter((x) => x.status === "replied").length,
+        dmSentCount,
+        repliedCount,
         closedCount: items.filter((x) => x.status === "closed").length,
-        followUpCount: items.filter((x) => x.follow_up_needed).length,
+        followUpCount: items.filter(
+          (x) => x.follow_up_needed || x.status === "follow_up"
+        ).length,
         qualifiedCount: items.filter((x) => (x.followers_count || 0) >= 50000).length,
+        negotiatingCount: items.filter((x) => x.status === "negotiating").length,
+        confirmedCount: items.filter((x) => x.status === "confirmed").length,
+        completedCount: items.filter((x) => x.status === "completed").length,
+        replyRate,
       },
     });
   } catch (e: any) {

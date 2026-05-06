@@ -2,6 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+type InfluencerStatus =
+  | "new"
+  | "dm_sent"
+  | "follow_up"
+  | "replied"
+  | "negotiating"
+  | "confirmed"
+  | "completed"
+  | "closed";
+
 type InfluencerLead = {
   id: string;
   username: string;
@@ -13,7 +23,7 @@ type InfluencerLead = {
   language: string | null;
   category: string | null;
   notes: string | null;
-  status: "new" | "dm_sent" | "replied" | "closed";
+  status: InfluencerStatus;
   dm_sent_at: string | null;
   replied_at: string | null;
   closed_at: string | null;
@@ -40,14 +50,36 @@ type Stats = {
   closedCount: number;
   followUpCount: number;
   qualifiedCount: number;
+  negotiatingCount: number;
+  confirmedCount: number;
+  completedCount: number;
+  replyRate: number;
 };
 
-const STATUS_OPTIONS: InfluencerLead["status"][] = [
+const STATUS_OPTIONS: InfluencerStatus[] = [
   "new",
   "dm_sent",
+  "follow_up",
   "replied",
+  "negotiating",
+  "confirmed",
+  "completed",
   "closed",
 ];
+
+const EMPTY_STATS: Stats = {
+  total: 0,
+  newCount: 0,
+  dmSentCount: 0,
+  repliedCount: 0,
+  closedCount: 0,
+  followUpCount: 0,
+  qualifiedCount: 0,
+  negotiatingCount: 0,
+  confirmedCount: 0,
+  completedCount: 0,
+  replyRate: 0,
+};
 
 function formatNum(v?: number | null) {
   if (!v) return "-";
@@ -63,14 +95,28 @@ function formatDate(v?: string | null) {
   }
 }
 
-function statusLabel(status: InfluencerLead["status"]) {
+function getDaysFrom(date?: string | null) {
+  if (!date) return null;
+  const diff = Date.now() - new Date(date).getTime();
+  return Math.floor(diff / (1000 * 60 * 60 * 24));
+}
+
+function statusLabel(status: InfluencerStatus) {
   switch (status) {
     case "new":
       return "신규";
     case "dm_sent":
       return "DM 발송";
+    case "follow_up":
+      return "팔로우업";
     case "replied":
       return "답장";
+    case "negotiating":
+      return "협의중";
+    case "confirmed":
+      return "확정";
+    case "completed":
+      return "완료";
     case "closed":
       return "종료";
     default:
@@ -78,14 +124,22 @@ function statusLabel(status: InfluencerLead["status"]) {
   }
 }
 
-function statusClass(status: InfluencerLead["status"]) {
+function statusClass(status: InfluencerStatus) {
   switch (status) {
     case "new":
       return "bg-blue-100 text-blue-700";
     case "dm_sent":
       return "bg-amber-100 text-amber-700";
+    case "follow_up":
+      return "bg-amber-200 text-amber-800";
     case "replied":
       return "bg-green-100 text-green-700";
+    case "negotiating":
+      return "bg-purple-100 text-purple-700";
+    case "confirmed":
+      return "bg-emerald-100 text-emerald-700";
+    case "completed":
+      return "bg-teal-100 text-teal-700";
     case "closed":
       return "bg-zinc-200 text-zinc-700";
     default:
@@ -113,21 +167,49 @@ function applyTemplate(content: string, item: InfluencerLead) {
     .replaceAll("{{name}}", item.display_name || item.username || "");
 }
 
+function calcStats(items: InfluencerLead[], serverStats?: Partial<Stats>): Stats {
+  const dmSent = items.filter(
+    (x) =>
+      x.status === "dm_sent" ||
+      x.status === "follow_up" ||
+      x.status === "replied" ||
+      x.status === "negotiating" ||
+      x.status === "confirmed" ||
+      x.status === "completed"
+  ).length;
+
+  const replied = items.filter(
+    (x) =>
+      x.status === "replied" ||
+      x.status === "negotiating" ||
+      x.status === "confirmed" ||
+      x.status === "completed"
+  ).length;
+
+  return {
+    total: serverStats?.total ?? items.length,
+    newCount: items.filter((x) => x.status === "new").length,
+    dmSentCount: dmSent,
+    repliedCount: replied,
+    closedCount: items.filter((x) => x.status === "closed").length,
+    followUpCount:
+      serverStats?.followUpCount ??
+      items.filter((x) => x.follow_up_needed || x.status === "follow_up").length,
+    qualifiedCount: items.filter((x) => (x.followers_count || 0) >= 50000).length,
+    negotiatingCount: items.filter((x) => x.status === "negotiating").length,
+    confirmedCount: items.filter((x) => x.status === "confirmed").length,
+    completedCount: items.filter((x) => x.status === "completed").length,
+    replyRate: dmSent > 0 ? Math.round((replied / dmSent) * 100) : 0,
+  };
+}
+
 export default function AdminInfluencersClient({
   apiBase = "/api/internal/influencers",
 }: {
   apiBase?: string;
 }) {
   const [items, setItems] = useState<InfluencerLead[]>([]);
-  const [stats, setStats] = useState<Stats>({
-    total: 0,
-    newCount: 0,
-    dmSentCount: 0,
-    repliedCount: 0,
-    closedCount: 0,
-    followUpCount: 0,
-    qualifiedCount: 0,
-  });
+  const [stats, setStats] = useState<Stats>(EMPTY_STATS);
 
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -138,11 +220,12 @@ export default function AdminInfluencersClient({
   const [savingTemplateKey, setSavingTemplateKey] = useState<string | null>(null);
 
   const [statusFilter, setStatusFilter] = useState("all");
+  const [countryFilter, setCountryFilter] = useState("all");
   const [q, setQ] = useState("");
   const [qualifiedOnly, setQualifiedOnly] = useState(false);
   const [followUpOnly, setFollowUpOnly] = useState(false);
 
-  const [draftStatus, setDraftStatus] = useState<Record<string, InfluencerLead["status"]>>({});
+  const [draftStatus, setDraftStatus] = useState<Record<string, InfluencerStatus>>({});
   const [draftNotes, setDraftNotes] = useState<Record<string, string>>({});
 
   const queryString = useMemo(() => {
@@ -151,8 +234,9 @@ export default function AdminInfluencersClient({
     if (q.trim()) sp.set("q", q.trim());
     if (qualifiedOnly) sp.set("min_followers", "50000");
     if (followUpOnly) sp.set("follow_up_only", "true");
+    if (countryFilter !== "all") sp.set("country", countryFilter);
     return sp.toString();
-  }, [statusFilter, q, qualifiedOnly, followUpOnly]);
+  }, [statusFilter, q, qualifiedOnly, followUpOnly, countryFilter]);
 
   async function fetchItems() {
     try {
@@ -168,23 +252,15 @@ export default function AdminInfluencersClient({
         throw new Error(json?.error || "조회 실패");
       }
 
-      setItems(json.items || []);
-      setStats(
-        json.stats || {
-          total: 0,
-          newCount: 0,
-          dmSentCount: 0,
-          repliedCount: 0,
-          closedCount: 0,
-          followUpCount: 0,
-          qualifiedCount: 0,
-        }
-      );
+      const list: InfluencerLead[] = json.items || [];
 
-      const nextStatus: Record<string, InfluencerLead["status"]> = {};
+      setItems(list);
+      setStats(calcStats(list, json.stats));
+
+      const nextStatus: Record<string, InfluencerStatus> = {};
       const nextNotes: Record<string, string> = {};
 
-      for (const item of json.items || []) {
+      for (const item of list) {
         nextStatus[item.id] = item.status;
         nextNotes[item.id] = item.notes || "";
       }
@@ -211,17 +287,14 @@ export default function AdminInfluencersClient({
 
       const templateOrder = ["english", "japanese", "followup"];
 
-      const items = (json.items || []).sort((a: DmTemplate, b: DmTemplate) => {
-        return (
-          templateOrder.indexOf(a.template_key) -
-          templateOrder.indexOf(b.template_key)
-        );
+      const templateItems = (json.items || []).sort((a: DmTemplate, b: DmTemplate) => {
+        return templateOrder.indexOf(a.template_key) - templateOrder.indexOf(b.template_key);
       });
 
-      setTemplates(items);
+      setTemplates(templateItems);
 
       const drafts: Record<string, string> = {};
-      for (const item of items) {
+      for (const item of templateItems) {
         drafts[item.template_key] = item.content || "";
       }
       setTemplateDrafts(drafts);
@@ -349,6 +422,15 @@ export default function AdminInfluencersClient({
     }
   }
 
+  const countryButtons = [
+    ["all", "전체"],
+    ["jp", "🇯🇵 일본"],
+    ["th", "🇹🇭 태국"],
+    ["us", "🇺🇸 미국"],
+    ["kr", "🇰🇷 한국"],
+    ["vn", "🇻🇳 베트남"],
+  ];
+
   return (
     <div className="mx-auto max-w-7xl p-4 md:p-6">
       <div className="mb-6">
@@ -358,27 +440,52 @@ export default function AdminInfluencersClient({
         </p>
       </div>
 
-      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-6">
+      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-5 lg:grid-cols-10">
         <div className="rounded-2xl border bg-white p-4">
           <div className="text-xs text-zinc-500">전체</div>
           <div className="mt-1 text-2xl font-bold">{stats.total}</div>
         </div>
+
         <div className="rounded-2xl border bg-white p-4">
           <div className="text-xs text-zinc-500">신규</div>
           <div className="mt-1 text-2xl font-bold">{stats.newCount}</div>
         </div>
+
         <div className="rounded-2xl border bg-white p-4">
           <div className="text-xs text-zinc-500">DM 발송</div>
           <div className="mt-1 text-2xl font-bold">{stats.dmSentCount}</div>
         </div>
+
         <div className="rounded-2xl border bg-white p-4">
           <div className="text-xs text-zinc-500">답장</div>
           <div className="mt-1 text-2xl font-bold">{stats.repliedCount}</div>
         </div>
+
         <div className="rounded-2xl border bg-white p-4">
-          <div className="text-xs text-zinc-500">팔로우업 필요</div>
+          <div className="text-xs text-zinc-500">답장률</div>
+          <div className="mt-1 text-2xl font-bold">{stats.replyRate}%</div>
+        </div>
+
+        <div className="rounded-2xl border bg-white p-4">
+          <div className="text-xs text-zinc-500">협의중</div>
+          <div className="mt-1 text-2xl font-bold">{stats.negotiatingCount}</div>
+        </div>
+
+        <div className="rounded-2xl border bg-white p-4">
+          <div className="text-xs text-zinc-500">확정</div>
+          <div className="mt-1 text-2xl font-bold">{stats.confirmedCount}</div>
+        </div>
+
+        <div className="rounded-2xl border bg-white p-4">
+          <div className="text-xs text-zinc-500">완료</div>
+          <div className="mt-1 text-2xl font-bold">{stats.completedCount}</div>
+        </div>
+
+        <div className="rounded-2xl border bg-white p-4">
+          <div className="text-xs text-zinc-500">팔로우업</div>
           <div className="mt-1 text-2xl font-bold">{stats.followUpCount}</div>
         </div>
+
         <div className="rounded-2xl border bg-white p-4">
           <div className="text-xs text-zinc-500">5만 이상</div>
           <div className="mt-1 text-2xl font-bold">{stats.qualifiedCount}</div>
@@ -386,6 +493,20 @@ export default function AdminInfluencersClient({
       </div>
 
       <div className="mb-4 rounded-2xl border bg-white p-4">
+        <div className="mb-3 flex flex-wrap gap-2">
+          {countryButtons.map(([value, label]) => (
+            <button
+              key={value}
+              onClick={() => setCountryFilter(value)}
+              className={`rounded-xl border px-4 py-2 text-sm font-medium ${
+                countryFilter === value ? "bg-black text-white" : "bg-white"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         <div className="grid gap-3 md:grid-cols-[160px_1fr_auto_auto_auto]">
           <select
             className="rounded-xl border px-3 py-2 text-sm"
@@ -395,7 +516,11 @@ export default function AdminInfluencersClient({
             <option value="all">전체 상태</option>
             <option value="new">new</option>
             <option value="dm_sent">dm_sent</option>
+            <option value="follow_up">follow_up</option>
             <option value="replied">replied</option>
+            <option value="negotiating">negotiating</option>
+            <option value="confirmed">confirmed</option>
+            <option value="completed">completed</option>
             <option value="closed">closed</option>
           </select>
 
@@ -482,9 +607,7 @@ export default function AdminInfluencersClient({
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold">저장된 리스트</h2>
-            <p className="mt-1 text-xs text-zinc-500">
-              가로 스크롤 없이 카드형으로 관리
-            </p>
+            <p className="mt-1 text-xs text-zinc-500">가로 스크롤 없이 카드형으로 관리</p>
           </div>
 
           <button
@@ -507,6 +630,7 @@ export default function AdminInfluencersClient({
           <div className="grid gap-4">
             {items.map((item) => {
               const qualified = (item.followers_count || 0) >= 50000;
+              const dmDays = getDaysFrom(item.dm_sent_at);
 
               return (
                 <div key={item.id} className="rounded-2xl border bg-white p-4 shadow-sm">
@@ -527,7 +651,7 @@ export default function AdminInfluencersClient({
                           {qualified ? "5만 이상" : "확인 필요"}
                         </span>
 
-                        {item.follow_up_needed ? (
+                        {item.follow_up_needed || item.status === "follow_up" ? (
                           <span className="inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700">
                             🔥 팔로우업 필요
                           </span>
@@ -583,13 +707,31 @@ export default function AdminInfluencersClient({
                         </span>
                       </div>
 
+                      {dmDays !== null && item.status === "dm_sent" ? (
+                        <div className="mb-3">
+                          {dmDays >= 14 ? (
+                            <div className="rounded-xl bg-red-100 px-3 py-2 text-xs font-medium text-red-700">
+                              14일 경과 · 종료 검토
+                            </div>
+                          ) : dmDays >= 7 ? (
+                            <div className="rounded-xl bg-orange-100 px-3 py-2 text-xs font-medium text-orange-700">
+                              7일 경과 · 팔로우업 추천
+                            </div>
+                          ) : dmDays >= 3 ? (
+                            <div className="rounded-xl bg-amber-100 px-3 py-2 text-xs font-medium text-amber-700">
+                              3일 경과 · 답장 체크
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
+
                       <select
                         className="w-full rounded-xl border px-3 py-2 text-sm"
                         value={draftStatus[item.id] || item.status}
                         onChange={(e) =>
                           setDraftStatus((prev) => ({
                             ...prev,
-                            [item.id]: e.target.value as InfluencerLead["status"],
+                            [item.id]: e.target.value as InfluencerStatus,
                           }))
                         }
                       >

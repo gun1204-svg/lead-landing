@@ -5,7 +5,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
-const ALLOWED_STATUS = ["new", "dm_sent", "replied", "closed"] as const;
+const ALLOWED_STATUS = ["new", "dm_sent", "follow_up", "replied", "negotiating", "confirmed", "completed", "closed"] as const;
 
 export async function PATCH(
   req: NextRequest,
