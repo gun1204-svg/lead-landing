@@ -23,6 +23,15 @@ type InfluencerLead = {
   follow_up_needed?: boolean;
 };
 
+type DmTemplate = {
+  id: string;
+  template_key: "english" | "japanese" | "followup" | string;
+  label: string;
+  content: string;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
 type Stats = {
   total: number;
   newCount: number;
@@ -98,6 +107,12 @@ async function readApiJson(res: Response) {
   }
 }
 
+function applyTemplate(content: string, item: InfluencerLead) {
+  return content
+    .replaceAll("{{username}}", item.username ? `@${item.username}` : "")
+    .replaceAll("{{name}}", item.display_name || item.username || "");
+}
+
 export default function AdminInfluencersClient({
   apiBase = "/api/internal/influencers",
 }: {
@@ -117,6 +132,10 @@ export default function AdminInfluencersClient({
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState("");
+
+  const [templates, setTemplates] = useState<DmTemplate[]>([]);
+  const [templateDrafts, setTemplateDrafts] = useState<Record<string, string>>({});
+  const [savingTemplateKey, setSavingTemplateKey] = useState<string | null>(null);
 
   const [statusFilter, setStatusFilter] = useState("all");
   const [q, setQ] = useState("");
@@ -150,15 +169,17 @@ export default function AdminInfluencersClient({
       }
 
       setItems(json.items || []);
-      setStats(json.stats || {
-        total: 0,
-        newCount: 0,
-        dmSentCount: 0,
-        repliedCount: 0,
-        closedCount: 0,
-        followUpCount: 0,
-        qualifiedCount: 0,
-      });
+      setStats(
+        json.stats || {
+          total: 0,
+          newCount: 0,
+          dmSentCount: 0,
+          repliedCount: 0,
+          closedCount: 0,
+          followUpCount: 0,
+          qualifiedCount: 0,
+        }
+      );
 
       const nextStatus: Record<string, InfluencerLead["status"]> = {};
       const nextNotes: Record<string, string> = {};
@@ -177,9 +198,37 @@ export default function AdminInfluencersClient({
     }
   }
 
+  async function fetchTemplates() {
+    try {
+      const res = await fetch("/api/internal/dm-templates", {
+        cache: "no-store",
+      });
+      const json = await readApiJson(res);
+
+      if (!res.ok || !json?.ok) {
+        throw new Error(json?.error || "템플릿 조회 실패");
+      }
+
+      const items = json.items || [];
+      setTemplates(items);
+
+      const drafts: Record<string, string> = {};
+      for (const item of items) {
+        drafts[item.template_key] = item.content || "";
+      }
+      setTemplateDrafts(drafts);
+    } catch (e: any) {
+      setError(e?.message || "템플릿 조회 실패");
+    }
+  }
+
   useEffect(() => {
     fetchItems();
   }, [queryString, apiBase]);
+
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
 
   async function saveItem(id: string) {
     try {
@@ -241,6 +290,54 @@ export default function AdminInfluencersClient({
       setError(e?.message || "삭제 실패");
     } finally {
       setSavingId(null);
+    }
+  }
+
+  async function saveTemplate(templateKey: string) {
+    try {
+      setSavingTemplateKey(templateKey);
+      setError("");
+
+      const res = await fetch("/api/internal/dm-templates", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          template_key: templateKey,
+          content: templateDrafts[templateKey] || "",
+        }),
+      });
+
+      const json = await readApiJson(res);
+
+      if (!res.ok || !json?.ok) {
+        throw new Error(json?.error || "템플릿 저장 실패");
+      }
+
+      await fetchTemplates();
+      alert("DM 템플릿이 저장됐어");
+    } catch (e: any) {
+      setError(e?.message || "템플릿 저장 실패");
+    } finally {
+      setSavingTemplateKey(null);
+    }
+  }
+
+  async function copyTemplate(templateKey: string, item: InfluencerLead) {
+    try {
+      const template = templates.find((x) => x.template_key === templateKey);
+      if (!template) {
+        setError("템플릿을 찾을 수 없어");
+        return;
+      }
+
+      const text = applyTemplate(template.content, item);
+      await navigator.clipboard.writeText(text);
+      setError("");
+      alert("DM 문구가 복사됐어");
+    } catch {
+      setError("복사 실패");
     }
   }
 
@@ -326,6 +423,48 @@ export default function AdminInfluencersClient({
             새로고침
           </button>
         </div>
+      </div>
+
+      <div className="mb-4 rounded-2xl border bg-white p-4">
+        <div className="mb-3">
+          <h2 className="text-lg font-bold">DM 템플릿 관리</h2>
+          <p className="mt-1 text-xs text-zinc-500">
+            병원과 같이 문구를 수정할 수 있어. 사용 가능 변수: {"{{username}}"}, {"{{name}}"}
+          </p>
+        </div>
+
+        {templates.length === 0 ? (
+          <div className="rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-500">
+            템플릿이 없어. Supabase의 dm_templates 테이블과 기본 데이터를 확인해줘.
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-3">
+            {templates.map((template) => (
+              <div key={template.template_key} className="rounded-2xl border p-3">
+                <div className="mb-2 text-sm font-bold">{template.label}</div>
+
+                <textarea
+                  className="min-h-[220px] w-full rounded-xl border px-3 py-2 text-sm"
+                  value={templateDrafts[template.template_key] || ""}
+                  onChange={(e) =>
+                    setTemplateDrafts((prev) => ({
+                      ...prev,
+                      [template.template_key]: e.target.value,
+                    }))
+                  }
+                />
+
+                <button
+                  className="mt-2 w-full rounded-xl bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                  onClick={() => saveTemplate(template.template_key)}
+                  disabled={savingTemplateKey === template.template_key}
+                >
+                  {savingTemplateKey === template.template_key ? "저장중..." : "템플릿 저장"}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {error ? (
@@ -469,22 +608,47 @@ export default function AdminInfluencersClient({
                       </td>
 
                       <td className="px-4 py-4">
-                        <div className="flex gap-2">
-                          <button
-                            className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-                            onClick={() => saveItem(item.id)}
-                            disabled={savingId === item.id}
-                          >
-                            {savingId === item.id ? "처리중..." : "저장"}
-                          </button>
+                        <div className="flex flex-col gap-2">
+                          <div className="flex gap-2">
+                            <button
+                              className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                              onClick={() => saveItem(item.id)}
+                              disabled={savingId === item.id}
+                            >
+                              {savingId === item.id ? "처리중..." : "저장"}
+                            </button>
 
-                          <button
-                            className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-                            onClick={() => deleteItem(item.id)}
-                            disabled={savingId === item.id}
-                          >
-                            삭제
-                          </button>
+                            <button
+                              className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                              onClick={() => deleteItem(item.id)}
+                              disabled={savingId === item.id}
+                            >
+                              삭제
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-2">
+                            <button
+                              className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-700"
+                              onClick={() => copyTemplate("english", item)}
+                            >
+                              영문 DM 복사
+                            </button>
+
+                            <button
+                              className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-700"
+                              onClick={() => copyTemplate("japanese", item)}
+                            >
+                              일본어 DM 복사
+                            </button>
+
+                            <button
+                              className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700"
+                              onClick={() => copyTemplate("followup", item)}
+                            >
+                              팔로우업 복사
+                            </button>
+                          </div>
                         </div>
                       </td>
                     </tr>
