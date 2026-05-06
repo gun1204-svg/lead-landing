@@ -85,3 +85,60 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return NextResponse.json({ ok: false, error: "UNAUTHORIZED" }, { status: 401 });
+    }
+
+    if ((session.user as any).role !== "internal") {
+      return NextResponse.json({ ok: false, error: "FORBIDDEN" }, { status: 403 });
+    }
+
+    const { id } = await params;
+
+    const { data: existing, error: existingError } = await supabaseAdmin
+      .from("influencer_leads")
+      .select("id")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (existingError) {
+      return NextResponse.json(
+        { ok: false, error: existingError.message },
+        { status: 500 }
+      );
+    }
+
+    if (!existing) {
+      return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
+    }
+
+    const { data: deleted, error: deleteError } = await supabaseAdmin
+      .from("influencer_leads")
+      .delete()
+      .eq("id", id)
+      .select("id")
+      .single();
+
+    if (deleteError) {
+      return NextResponse.json(
+        { ok: false, error: deleteError.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ ok: true, deleted });
+  } catch (e: any) {
+    return NextResponse.json(
+      { ok: false, error: e?.message || "UNKNOWN_ERROR" },
+      { status: 500 }
+    );
+  }
+}
