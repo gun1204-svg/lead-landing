@@ -82,7 +82,6 @@ export async function GET(req: NextRequest) {
           `username.ilike.%${q}%`,
           `display_name.ilike.%${q}%`,
           `country.ilike.%${q}%`,
-          `language.ilike.%${q}%`,
           `category.ilike.%${q}%`,
           `notes.ilike.%${q}%`,
         ].join(",")

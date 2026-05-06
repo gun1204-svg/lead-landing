@@ -526,7 +526,7 @@ export default function AdminInfluencersClient({
 
           <input
             className="rounded-xl border px-3 py-2 text-sm"
-            placeholder="아이디 / 국가 / 언어 / 카테고리 / 메모 검색"
+            placeholder="아이디 / 국가 / 카테고리 / 메모 검색"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
@@ -683,9 +683,9 @@ export default function AdminInfluencersClient({
                         </div>
 
                         <div className="rounded-xl bg-zinc-50 p-3">
-                          <div className="text-xs text-zinc-500">국가 / 언어</div>
+                          <div className="text-xs text-zinc-500">국가</div>
                           <div className="mt-1 font-semibold">
-                            {item.country || "-"} / {item.language || "-"}
+                            {item.country || "-"}
                           </div>
                           <div className="mt-1 text-xs text-zinc-500">
                             {item.category || "-"}
