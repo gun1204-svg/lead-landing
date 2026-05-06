@@ -209,7 +209,15 @@ export default function AdminInfluencersClient({
         throw new Error(json?.error || "템플릿 조회 실패");
       }
 
-      const items = json.items || [];
+      const templateOrder = ["english", "japanese", "followup"];
+
+      const items = (json.items || []).sort((a: DmTemplate, b: DmTemplate) => {
+        return (
+          templateOrder.indexOf(a.template_key) -
+          templateOrder.indexOf(b.template_key)
+        );
+      });
+
       setTemplates(items);
 
       const drafts: Record<string, string> = {};
@@ -428,9 +436,6 @@ export default function AdminInfluencersClient({
       <div className="mb-4 rounded-2xl border bg-white p-4">
         <div className="mb-3">
           <h2 className="text-lg font-bold">DM 템플릿 관리</h2>
-          <p className="mt-1 text-xs text-zinc-500">
-            병원과 같이 문구를 수정할 수 있어. 사용 가능 변수: {"{{username}}"}, {"{{name}}"}
-          </p>
         </div>
 
         {templates.length === 0 ? (
@@ -475,7 +480,7 @@ export default function AdminInfluencersClient({
 
       <div className="overflow-hidden rounded-2xl border bg-white">
         <div className="overflow-x-auto">
-          <table className="min-w-[1300px] w-full text-sm">
+          <table className="min-w-[1600px] w-full text-sm">
             <thead className="bg-zinc-50">
               <tr className="text-left text-zinc-600">
                 <th className="px-4 py-3">계정</th>
