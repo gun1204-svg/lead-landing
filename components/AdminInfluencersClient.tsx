@@ -480,7 +480,7 @@ export default function AdminInfluencersClient({
 
       <div className="overflow-hidden rounded-2xl border bg-white">
         <div className="overflow-x-auto">
-          <table className="min-w-[1600px] w-full table-fixed text-sm">
+          <table className="min-w-[1450px] w-full table-fixed text-sm">
             <thead className="bg-zinc-50">
               <tr className="text-left text-zinc-600">
                 <th className="px-4 py-3">계정</th>
@@ -490,7 +490,9 @@ export default function AdminInfluencersClient({
                 <th className="px-4 py-3">상태</th>
                 <th className="px-4 py-3">메모</th>
                 <th className="px-4 py-3">기록</th>
-                <th className="px-4 py-3">액션</th>
+                <th className="sticky right-0 z-10 w-[220px] bg-zinc-50 px-4 py-3">
+                  액션
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -512,7 +514,7 @@ export default function AdminInfluencersClient({
 
                   return (
                     <tr key={item.id} className="border-t align-top">
-                      <td className="px-4 py-4">
+                      <td className="sticky right-0 z-10 bg-white px-4 py-4">
                         <div className="truncate font-semibold">
                           @{item.username}</div>
                         <div className="mt-1 text-xs text-zinc-500">
