@@ -480,7 +480,7 @@ export default function AdminInfluencersClient({
 
       <div className="overflow-hidden rounded-2xl border bg-white">
         <div className="overflow-x-auto">
-          <table className="min-w-[1600px] w-full text-sm">
+          <table className="min-w-[1600px] w-full table-fixed text-sm">
             <thead className="bg-zinc-50">
               <tr className="text-left text-zinc-600">
                 <th className="px-4 py-3">계정</th>
@@ -513,7 +513,8 @@ export default function AdminInfluencersClient({
                   return (
                     <tr key={item.id} className="border-t align-top">
                       <td className="px-4 py-4">
-                        <div className="font-semibold">@{item.username}</div>
+                        <div className="truncate font-semibold">
+                          @{item.username}</div>
                         <div className="mt-1 text-xs text-zinc-500">
                           {item.display_name || "-"}
                         </div>
