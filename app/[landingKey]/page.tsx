@@ -19,6 +19,28 @@ function getLandingSeo(lk: string) {
   const fallbackImage = `${baseUrl}/intro/${lk}/01.jpg`;
   const ogImage = `${baseUrl}/og/${lk}.jpg`;
 
+  if (lk === "04") {
+    return {
+      title: "코재수술 상담",
+      description:
+        "실패한 원인을 정확히 분석하여 마지막 코수술이 되도록!",
+      keywords: [
+        "코재수술 상담",
+        "코재수술",
+        "코성형 재수술",
+        "코끝 재수술",
+        "보형물 재수술",
+        "휜 코 재수술",
+        "코 비대칭 상담",
+      ],
+      ogTitle: "코재수술 상담",
+      ogDescription:
+        "코수술 후 코 모양, 코끝, 보형물, 비대칭 고민이 있다면 지금 상담 신청",
+      image: ogImage,
+      fallbackImage,
+    };
+  }
+
   if (lk === "03") {
     return {
       title: "코수술 상담",
