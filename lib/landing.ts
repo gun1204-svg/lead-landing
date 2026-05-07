@@ -105,6 +105,27 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     privacyContact: "02-595-5503",
     privacyEmail: "",
   },
+  "04": {
+    key: "04",
+    hospitalName: "미호성형외과의원",
+    title: "미호성형외과 코재수술 상담 신청",
+    description: "실패한 원인을 정확히 분석하여 마지막 코수술이 되도록",
+    introPath: "/intro/04",
+    submitLabel: "상담 신청하기",
+    mobileSubmitLabel: "상담 신청하기",
+    pageCount: 2,
+    telegramChatId: process.env.TELEGRAM_CHAT_ID_02,
+
+    businessName: "미호성형외과의원",
+    address:
+      "서울시 강남구 강남대로 492 HM타워 7,8,9층 (신논현역 3번출구 도보 3분)",
+    businessNumber: "848-79-00072",
+    representativeName: "윤석호",
+    phone: "02-595-5503",
+    privacyManager: "미호성형외과의원",
+    privacyContact: "02-595-5503",
+    privacyEmail: "",
+  },
 };
 
 export function normalizeLK(value?: string) {
