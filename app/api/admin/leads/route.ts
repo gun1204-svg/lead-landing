@@ -39,9 +39,10 @@ export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   const user = session?.user as SessionUser | undefined;
 
-  const adminId = user?.email;
-  if (!adminId) {
-    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  const sessionAdminId = String(user?.email ?? "").trim();
+
+  if (!sessionAdminId) {
+  return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
   const userLK = normalizeLandingKey(user?.landing_key);
@@ -55,7 +56,10 @@ export async function GET(req: Request) {
   let allowedKeys: string[] | null;
 
   try {
-    allowedKeys = await getAllowedLandingKeys(adminId, userLK);
+    const permissionAdminId =
+      userLK === "00" ? "admin" : `admin${userLK}`;
+
+    allowedKeys = await getAllowedLandingKeys(permissionAdminId, userLK);
   } catch (e: any) {
     return NextResponse.json(
       { ok: false, error: e?.message || "Permission load failed" },
