@@ -25,8 +25,11 @@ function uniqueStrings(values: string[]) {
   return Array.from(new Set(values.map((v) => v.trim()).filter(Boolean)));
 }
 
-async function getAllowedLandingKeys(sessionAdminId: string, userLK: string) {
-  if (userLK === "00") return null;
+async function getAllowedLandingKeys(
+  sessionAdminId: string,
+  userLK: string
+): Promise<string[]> {
+  if (userLK === "00") return [];
 
   const permissionAdminIds = uniqueStrings([
     sessionAdminId,
