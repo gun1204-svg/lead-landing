@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import BalanceHistoryCard from "@/components/BalanceHistoryCard";
 
 type Lead = {
   id: string;
@@ -224,6 +225,7 @@ export default function AdminLeadsClient() {
   const [permissionsLoading, setPermissionsLoading] = useState(false);
 
   const isIntegratedAdmin = !canSwitchAny && allowedLandingKeys.length > 1;
+  const historyLandingKey = canSwitchAny ? selectedLK : undefined;
 
   const visibleKeys = useMemo(() => {
     if (canSwitchAny) return LK_KEYS;
@@ -386,7 +388,7 @@ export default function AdminLeadsClient() {
             : [pageLK];
 
           const uniqueKeys: string[] = Array.from(
-              new Set<string>(keys.length ? keys : [pageLK])
+            new Set<string>(keys.length ? keys : [pageLK])
           );
 
           setAllowedLandingKeys(uniqueKeys);
@@ -739,6 +741,8 @@ export default function AdminLeadsClient() {
           </div>
         </div>
       )}
+
+      <BalanceHistoryCard pageLK={historyLandingKey} />
 
       <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
         {(["ALL", ...STATUS_OPTIONS] as const).map((s) => {
