@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import BalanceHistoryCard from "@/components/BalanceHistoryCard";
 
 type Lead = {
   id: string;
@@ -225,7 +224,6 @@ export default function AdminLeadsClient() {
   const [permissionsLoading, setPermissionsLoading] = useState(false);
 
   const isIntegratedAdmin = !canSwitchAny && allowedLandingKeys.length > 1;
-  const historyLandingKey = canSwitchAny ? selectedLK : undefined;
 
   const visibleKeys = useMemo(() => {
     if (canSwitchAny) return LK_KEYS;
@@ -278,6 +276,11 @@ export default function AdminLeadsClient() {
 
     router.push(`/${pageLK}/admin/leads?${p.toString()}`);
     router.refresh();
+  }
+
+  function goAccountLogsPage() {
+    const q = canSwitchAny ? `?landing_key=${encodeURIComponent(selectedLK)}` : "";
+    router.push(`/${pageLK}/admin/account-logs${q}`);
   }
 
   async function saveLead(id: string) {
@@ -643,12 +646,35 @@ export default function AdminLeadsClient() {
           )}
         </div>
 
-        <button
-          onClick={() => signOut({ callbackUrl: `/${pageLK}/admin/login` })}
-          style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #ddd", background: "#fff" }}
-        >
-          로그아웃
-        </button>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <button
+            onClick={goAccountLogsPage}
+            style={{
+              padding: "8px 12px",
+              borderRadius: 10,
+              border: "1px solid #ddd",
+              background: "#111",
+              color: "#fff",
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            잔액 히스토리
+          </button>
+
+          <button
+            onClick={() => signOut({ callbackUrl: `/${pageLK}/admin/login` })}
+            style={{
+              padding: "8px 12px",
+              borderRadius: 10,
+              border: "1px solid #ddd",
+              background: "#fff",
+              cursor: "pointer",
+            }}
+          >
+            로그아웃
+          </button>
+        </div>
       </div>
 
       <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -741,8 +767,6 @@ export default function AdminLeadsClient() {
           </div>
         </div>
       )}
-
-      <BalanceHistoryCard pageLK={historyLandingKey} />
 
       <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
         {(["ALL", ...STATUS_OPTIONS] as const).map((s) => {
