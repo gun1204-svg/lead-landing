@@ -19,6 +19,29 @@ function getLandingSeo(lk: string) {
   const fallbackImage = `${baseUrl}/intro/${lk}/01.jpg`;
   const ogImage = `${baseUrl}/og/${lk}.jpg`;
 
+  if (lk === "10") {
+    return {
+      title: "예롬성형외과 얼굴라인 상담",
+      description:
+        "이중턱, 볼처짐, 얼굴라인 고민이 있다면 지금 상담 신청하고 개선 방향을 확인해보세요.",
+      keywords: [
+        "예롬성형외과",
+        "얼굴라인 상담",
+        "이중턱 상담",
+        "볼처짐 상담",
+        "윤곽주사 상담",
+        "얼굴형 상담",
+        "강남 성형외과",
+      ],
+      ogTitle: "예롬성형외과 얼굴라인 상담",
+      ogDescription:
+        "이중턱, 볼처짐, 얼굴라인 고민이 있다면 지금 상담 신청하고 개선 방향을 확인해보세요.",
+      siteName: "예롬성형외과의원",
+      image: fallbackImage,
+      fallbackImage,
+    };
+  }
+
   if (lk === "04") {
     return {
       title: "코재수술 상담",
@@ -36,6 +59,7 @@ function getLandingSeo(lk: string) {
       ogTitle: "코재수술 상담",
       ogDescription:
         "코수술 후 코 모양, 코끝, 보형물, 비대칭 고민이 있다면 지금 상담 신청",
+      siteName: "비엔파트너스",
       image: ogImage,
       fallbackImage,
     };
@@ -56,6 +80,7 @@ function getLandingSeo(lk: string) {
       ogTitle: "코수술 상담",
       ogDescription:
         "코 라인, 콧대, 비대칭 고민이 있다면 지금 상담 신청",
+      siteName: "비엔파트너스",
       image: ogImage,
       fallbackImage,
     };
@@ -76,6 +101,7 @@ function getLandingSeo(lk: string) {
       ogTitle: "눈밑지방재배치 상담",
       ogDescription:
         "다크서클, 눈밑지방, 처짐 고민이 있다면 지금 상담 신청하고 개선 방향을 확인해보세요.",
+      siteName: "비엔파트너스",
       image: ogImage,
       fallbackImage,
     };
@@ -88,6 +114,7 @@ function getLandingSeo(lk: string) {
       keywords: ["상담 신청", "비엔파트너스"],
       ogTitle: "상담 신청",
       ogDescription: "상담 신청 후 빠르게 안내드립니다.",
+      siteName: "비엔파트너스",
       image: ogImage,
       fallbackImage,
     };
@@ -105,6 +132,7 @@ function getLandingSeo(lk: string) {
     ],
     ogTitle: "비엔파트너스",
     ogDescription: "성과 중심 퍼포먼스 마케팅과 상담 랜딩 운영.",
+    siteName: "비엔파트너스",
     image: ogImage,
     fallbackImage,
   };
@@ -137,7 +165,7 @@ export async function generateMetadata({
       title: seo.ogTitle,
       description: seo.ogDescription,
       url,
-      siteName: "비엔파트너스",
+      siteName: seo.siteName,
       locale: "ko_KR",
       type: "website",
       images: [
