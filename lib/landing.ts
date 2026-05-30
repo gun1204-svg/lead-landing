@@ -105,6 +105,7 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     privacyContact: "02-595-5503",
     privacyEmail: "",
   },
+
   "04": {
     key: "04",
     hospitalName: "미호성형외과의원",
@@ -124,6 +125,27 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     phone: "02-595-5503",
     privacyManager: "미호성형외과의원",
     privacyContact: "02-595-5503",
+    privacyEmail: "",
+  },
+
+  "10": {
+    key: "10",
+    hospitalName: "예롬성형외과의원",
+    title: "예롬성형외과 상담 신청",
+    description: "예롬성형외과 상담 신청 페이지입니다.",
+    introPath: "/intro/10",
+    submitLabel: "상담 신청하기",
+    mobileSubmitLabel: "상담 신청하기",
+    pageCount: 2,
+    telegramChatId: process.env.TELEGRAM_CHAT_ID_10,
+
+    businessName: "예롬성형외과의원",
+    address: "서울 강남구 논현로175길7 나사빌딩 4층",
+    businessNumber: "211-09-49964",
+    representativeName: "나민화",
+    phone: "02-545-1984",
+    privacyManager: "예롬성형외과의원",
+    privacyContact: "02-545-1984",
     privacyEmail: "",
   },
 };
