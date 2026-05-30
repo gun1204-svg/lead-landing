@@ -116,6 +116,29 @@ const concernOptions04 = [
   },
 ];
 
+const concernOptions10 = [
+  {
+    title: "전체적으로 밋밋하게 큰 얼굴 고민",
+    desc: "다른 곳에 비해 유독 얼굴만 커보이거나, 얼굴이 전체적으로 넓대대하고 밋밋해 보이는 경우",
+  },
+  {
+    title: "처진 입꼬리와 볼주름 때문에 인상이 사나워보여서 고민",
+    desc: "양쪽 입옆에 볼록하게 튀어나온 볼주름 때문에 심술궂고 뚱해보이는 인상 개선을 원하는 경우",
+  },
+  {
+    title: "탄력저하로 늘어지고 처진 얼굴선과 둔해보이는 턱라인 고민",
+    desc: "처진 턱살과 볼살(심술보) 때문에 턱과 얼굴의 경계가 흐려져 둔해보이고 뭉툭해보이는 경우",
+  },
+  {
+    title: "두툼한 이중턱과 유독 발달된 사각턱 때문에 넓대한 턱라인 고민",
+    desc: "과하게 발달된 사각턱과 밑으로 늘어진 이중턱으로 얼굴이 커보이고 멍해 보이는 경우",
+  },
+  {
+    title: "타병원 윤곽주사 또는 레이저 시술로 크게 효과를 보지 못해서 고민",
+    desc: "타병원 윤곽주사 또는 레이저 시술을 받고 크게 효과를 보지 못했거나 시술에 실망한 경우",
+  },
+];
+
 function InlineCTA({
   text = "상담 신청하기",
   onClick,
@@ -199,6 +222,7 @@ function TopLeadForm({
   handleSubmit,
   handleFormStarted,
   submitButtonText = "상담 신청하기",
+  showRequiredVisitNotice = true,
 }: {
   name: string;
   phone: string;
@@ -212,6 +236,7 @@ function TopLeadForm({
   handleSubmit: (e: React.FormEvent) => Promise<void>;
   handleFormStarted: () => void;
   submitButtonText?: string;
+  showRequiredVisitNotice?: boolean;
 }) {
   return (
     <section id="lead-form-top" className="bg-white px-4 py-6">
@@ -219,7 +244,7 @@ function TopLeadForm({
         <div className="overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-[0_16px_40px_rgba(0,0,0,0.08)]">
           <div className="px-5 py-5">
             <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-              <RequiredVisitNotice />
+              {showRequiredVisitNotice && <RequiredVisitNotice />}
 
               <input
                 className="h-13 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] font-medium text-black placeholder:text-gray-400 outline-none transition focus:border-black focus:ring-2 focus:ring-black/5"
@@ -328,7 +353,7 @@ function LandingSpecialContent({
   handleSubmit,
   handleFormStarted,
 }: {
-  landingKey: "02" | "03" | "04";
+  landingKey: "02" | "03" | "04" | "10";
   concerns: string[];
   toggleConcern: (item: string) => void;
   onOpenForm: () => void;
@@ -348,14 +373,23 @@ function LandingSpecialContent({
 
   const isLanding02 = landingKey === "02";
   const isLanding04 = landingKey === "04";
+  const isLanding10 = landingKey === "10";
 
   const options = isLanding02
     ? concernOptions02
     : isLanding04
     ? concernOptions04
+    : isLanding10
+    ? concernOptions10
     : concernOptions03;
 
-  const heading = isLanding02 ? "눈밑 고민," : isLanding04 ? "코재수술 고민," : "코 고민,";
+  const heading = isLanding02
+    ? "눈밑 고민,"
+    : isLanding04
+    ? "코재수술 고민,"
+    : isLanding10
+    ? ""
+    : "코 고민,";
 
   const headingSub = "어떤 유형에 가까우신가요?";
 
@@ -363,12 +397,16 @@ function LandingSpecialContent({
     ? "현재 가장 신경 쓰이는 고민을 선택해 주세요."
     : isLanding04
     ? "현재 가장 고민되는 재수술 부분을 선택해 주세요."
+    : isLanding10
+    ? "현재 가장 신경 쓰이는 고민을 선택해 주세요."
     : "현재 가장 신경 쓰이는 코 고민을 선택해 주세요.";
 
   const selectedBoxText = isLanding02
     ? "선택하신 내용으로 상담 안내가 진행됩니다."
     : isLanding04
     ? "선택하신 재수술 고민 기준으로 상담 안내가 진행됩니다."
+    : isLanding10
+    ? "선택하신 얼굴 고민 기준으로 상담 안내가 진행됩니다."
     : "선택하신 코 고민 기준으로 상담 안내가 진행됩니다.";
 
   function handleConcernClick(item: string) {
@@ -388,11 +426,32 @@ function LandingSpecialContent({
 
   return (
     <>
-      {(landingKey === "03" || landingKey === "04") && (
+      {(landingKey === "03" || landingKey === "04" || landingKey === "10") && (
         <section>
           <img
-            src={landingKey === "04" ? "/intro/04/01.jpg" : "/intro/03/01.jpg"}
-            alt={landingKey === "04" ? "코재수술 메인" : "코수술 메인"}
+            src={
+              landingKey === "04"
+                ? "/intro/04/01.jpg"
+                : landingKey === "10"
+                ? "/intro/10/01.jpg"
+                : "/intro/03/01.jpg"
+            }
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src =
+                landingKey === "04"
+                  ? "/intro/04/01.png"
+                  : landingKey === "10"
+                  ? "/intro/10/01.png"
+                  : "/intro/03/01.png";
+            }}
+            alt={
+              landingKey === "04"
+                ? "코재수술 메인"
+                : landingKey === "10"
+                ? "예롬성형외과 메인"
+                : "코수술 메인"
+            }
             className="block w-full"
             draggable={false}
           />
@@ -407,9 +466,22 @@ function LandingSpecialContent({
             </p>
 
             <h1 className="mt-3 text-[29px] font-bold leading-[1.35] text-black sm:text-[32px]">
-              {heading}
-              <br />
-              {headingSub}
+              {isLanding10 ? (
+                <>
+                  사진 찍기 싫다! 거울 보기 싫다!
+                  <br />
+                  갑자기 확 느껴진{" "}
+                  <span className="text-red-500">얼굴 관리의 필요성!</span>
+                  <br />
+                  당신의 고민은 무엇인가요?
+                </>
+              ) : (
+                <>
+                  {heading}
+                  <br />
+                  {headingSub}
+                </>
+              )}
             </h1>
 
             <p className="mt-3 text-[15px] leading-6 text-gray-600">
@@ -499,6 +571,7 @@ function LandingSpecialContent({
                   handleSubmit={handleSubmit}
                   handleFormStarted={handleFormStarted}
                   submitButtonText="상담 신청하기"
+                  showRequiredVisitNotice={true}
                 />
               </>
             )}
@@ -506,7 +579,8 @@ function LandingSpecialContent({
         </div>
       </section>
 
-      <section className="bg-white px-4 py-8">
+      {!isLanding10 && (
+        <section className="bg-white px-4 py-8">
         <div className="mx-auto w-full max-w-[760px]">
           <div className="mb-6 text-center">
             <p className="text-[13px] font-semibold tracking-[0.12em] text-[#0f766e]">
@@ -597,6 +671,7 @@ function LandingSpecialContent({
           </div>
         </div>
       </section>
+      )}
 
       <InlineCTA text="상담 신청하기" onClick={onOpenForm} />
 
@@ -607,13 +682,28 @@ function LandingSpecialContent({
               ? "/intro/02/02.jpg"
               : landingKey === "04"
               ? "/intro/04/02.jpg"
+              : landingKey === "10"
+              ? "/intro/10/02.jpg"
               : "/intro/03/02.jpg"
           }
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src =
+              landingKey === "02"
+                ? "/intro/02/02.png"
+                : landingKey === "04"
+                ? "/intro/04/02.png"
+                : landingKey === "10"
+                ? "/intro/10/02.png"
+                : "/intro/03/02.png";
+          }}
           alt={
             landingKey === "02"
               ? "02 랜딩 하단"
               : landingKey === "04"
               ? "04 랜딩 하단"
+              : landingKey === "10"
+              ? "예롬성형외과 하단"
               : "03 랜딩 하단"
           }
           className="block w-full"
@@ -635,7 +725,9 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
   const isLanding02 = config.key === "02";
   const isLanding03 = config.key === "03";
   const isLanding04 = config.key === "04";
-  const isSpecialLanding = isLanding02 || isLanding03 || isLanding04;
+  const isLanding10 = config.key === "10";
+  const isSpecialLanding = isLanding02 || isLanding03 || isLanding04 || isLanding10;
+  const showRequiredVisitNotice = isLanding02 || isLanding03 || isLanding04 || isLanding10;
 
   const pages = useMemo(() => {
     const count = config.pageCount ?? 10;
@@ -656,6 +748,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
   const [concerns02, setConcerns02] = useState<string[]>([]);
   const [concerns03, setConcerns03] = useState<string[]>([]);
   const [concerns04, setConcerns04] = useState<string[]>([]);
+  const [concerns10, setConcerns10] = useState<string[]>([]);
   const [submitError, setSubmitError] = useState("");
   const [submitInfo, setSubmitInfo] = useState("");
 
@@ -676,6 +769,12 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
   function toggleConcern04(item: string) {
     setConcerns04((prev) =>
+      prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item]
+    );
+  }
+
+  function toggleConcern10(item: string) {
+    setConcerns10((prev) =>
       prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item]
     );
   }
@@ -794,6 +893,8 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
         ? concerns03
         : isLanding04
         ? concerns04
+        : isLanding10
+        ? concerns10
         : [];
 
       const res = await fetch("/api/leads", {
@@ -880,6 +981,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       setConcerns02([]);
       setConcerns03([]);
       setConcerns04([]);
+      setConcerns10([]);
       setOpen(false);
       formStartedRef.current = false;
     } catch (error: any) {
@@ -916,13 +1018,23 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
           <div className="min-w-0 pb-24 lg:pb-0">
             {isSpecialLanding ? (
               <LandingSpecialContent
-                landingKey={isLanding02 ? "02" : isLanding04 ? "04" : "03"}
-                concerns={isLanding02 ? concerns02 : isLanding04 ? concerns04 : concerns03}
+                landingKey={isLanding02 ? "02" : isLanding04 ? "04" : isLanding10 ? "10" : "03"}
+                concerns={
+                  isLanding02
+                    ? concerns02
+                    : isLanding04
+                    ? concerns04
+                    : isLanding10
+                    ? concerns10
+                    : concerns03
+                }
                 toggleConcern={
                   isLanding02
                     ? toggleConcern02
                     : isLanding04
                     ? toggleConcern04
+                    : isLanding10
+                    ? toggleConcern10
                     : toggleConcern03
                 }
                 onOpenForm={() => openFormWithTracking("inline_cta")}
@@ -990,7 +1102,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                   </div>
 
                   <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-                    {isSpecialLanding && <RequiredVisitNotice compact />}
+                    {showRequiredVisitNotice && <RequiredVisitNotice compact />}
 
                     <input
                       className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] font-medium text-black placeholder:text-gray-400 outline-none transition focus:border-black focus:ring-2 focus:ring-black/5"
@@ -1072,7 +1184,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
               onClick={(e) => e.stopPropagation()}
             >
               <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-                {isSpecialLanding && <RequiredVisitNotice compact />}
+                {showRequiredVisitNotice && <RequiredVisitNotice compact />}
 
                 <input
                   placeholder="이름을 입력해주세요"
