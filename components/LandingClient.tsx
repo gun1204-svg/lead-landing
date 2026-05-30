@@ -199,8 +199,8 @@ function RequiredVisitNotice({ compact = false }: { compact?: boolean }) {
       <p className="text-[15px] font-semibold text-[#0f766e]">! 필독 !</p>
       <p className="mt-2 text-[14px] leading-6 text-gray-800">
         이벤트 신청 후{" "}
-        <span className="font-semibold text-[#0f766e]">2주 이내 내원상담</span>이 가능하신
-        분들만 신청해주세요.
+        <span className="font-semibold text-[#0f766e]">2주 이내 내원상담</span>
+        이 가능하신 분들만 신청해주세요.
       </p>
       <p className="mt-1 text-[13px] leading-5 text-gray-600">
         ※ 빠른 상담 진행을 위해 일정 가능하신 분만 접수 부탁드립니다.
@@ -243,7 +243,11 @@ function TopLeadForm({
       <div className="mx-auto w-full max-w-[760px]">
         <div className="overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-[0_16px_40px_rgba(0,0,0,0.08)]">
           <div className="px-5 py-5">
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+            <form
+              onSubmit={handleSubmit}
+              className="flex flex-col gap-4"
+              noValidate
+            >
               {showRequiredVisitNotice && <RequiredVisitNotice />}
 
               <input
@@ -378,36 +382,36 @@ function LandingSpecialContent({
   const options = isLanding02
     ? concernOptions02
     : isLanding04
-    ? concernOptions04
-    : isLanding10
-    ? concernOptions10
-    : concernOptions03;
+      ? concernOptions04
+      : isLanding10
+        ? concernOptions10
+        : concernOptions03;
 
   const heading = isLanding02
     ? "눈밑 고민,"
     : isLanding04
-    ? "코재수술 고민,"
-    : isLanding10
-    ? ""
-    : "코 고민,";
+      ? "코재수술 고민,"
+      : isLanding10
+        ? ""
+        : "코 고민,";
 
   const headingSub = "어떤 유형에 가까우신가요?";
 
   const helperText = isLanding02
     ? "현재 가장 신경 쓰이는 고민을 선택해 주세요."
     : isLanding04
-    ? "현재 가장 고민되는 재수술 부분을 선택해 주세요."
-    : isLanding10
-    ? "현재 가장 신경 쓰이는 고민을 선택해 주세요."
-    : "현재 가장 신경 쓰이는 코 고민을 선택해 주세요.";
+      ? "현재 가장 고민되는 재수술 부분을 선택해 주세요."
+      : isLanding10
+        ? "현재 가장 신경 쓰이는 고민을 선택해 주세요."
+        : "현재 가장 신경 쓰이는 코 고민을 선택해 주세요.";
 
   const selectedBoxText = isLanding02
     ? "선택하신 내용으로 상담 안내가 진행됩니다."
     : isLanding04
-    ? "선택하신 재수술 고민 기준으로 상담 안내가 진행됩니다."
-    : isLanding10
-    ? "선택하신 얼굴 고민 기준으로 상담 안내가 진행됩니다."
-    : "선택하신 코 고민 기준으로 상담 안내가 진행됩니다.";
+      ? "선택하신 재수술 고민 기준으로 상담 안내가 진행됩니다."
+      : isLanding10
+        ? "선택하신 얼굴 고민 기준으로 상담 안내가 진행됩니다."
+        : "선택하신 코 고민 기준으로 상담 안내가 진행됩니다.";
 
   function handleConcernClick(item: string) {
     const wasSelected = concerns.includes(item);
@@ -433,8 +437,8 @@ function LandingSpecialContent({
               landingKey === "04"
                 ? "/intro/04/01.jpg"
                 : landingKey === "10"
-                ? "/intro/10/01.jpg"
-                : "/intro/03/01.jpg"
+                  ? "/intro/10/01.jpg"
+                  : "/intro/03/01.jpg"
             }
             onError={(e) => {
               e.currentTarget.onerror = null;
@@ -442,15 +446,15 @@ function LandingSpecialContent({
                 landingKey === "04"
                   ? "/intro/04/01.png"
                   : landingKey === "10"
-                  ? "/intro/10/01.png"
-                  : "/intro/03/01.png";
+                    ? "/intro/10/01.png"
+                    : "/intro/03/01.png";
             }}
             alt={
               landingKey === "04"
                 ? "코재수술 메인"
                 : landingKey === "10"
-                ? "예롬성형외과 메인"
-                : "코수술 메인"
+                  ? "예롬성형외과 메인"
+                  : "코수술 메인"
             }
             className="block w-full"
             draggable={false}
@@ -534,7 +538,8 @@ function LandingSpecialContent({
           <div className="mt-5 rounded-2xl border border-[#cfe8dd] bg-white px-4 py-4 text-center">
             <p className="text-[14px] font-medium leading-6 text-gray-700">
               선택 내용은 상담 시 참고용으로만 활용되며,
-              <br className="sm:hidden" /> 무리한 권유 없이 상태에 맞게 안내드립니다.
+              <br className="sm:hidden" /> 무리한 권유 없이 상태에 맞게
+              안내드립니다.
             </p>
           </div>
 
@@ -558,34 +563,6 @@ function LandingSpecialContent({
               </div>
             )}
 
-            {isLanding10 && (
-              <section className="mt-6 rounded-[24px] border border-[#dce9e3] bg-white px-4 py-6 shadow-[0_12px_30px_rgba(0,0,0,0.06)]">
-                <div className="mb-5 text-center">
-                  <p className="text-[13px] font-semibold tracking-[0.12em] text-[#0f766e]">
-                    PROCEDURE SHORTS
-                  </p>
-
-                  <h2 className="mt-2 text-[24px] font-bold leading-tight text-black">
-                    비슷한 고민 사례를
-                    <br />
-                    짧은 영상으로 먼저 확인해보세요
-                  </h2>
-
-                  <p className="mt-2 text-[14px] leading-6 text-gray-600">
-                    영상은 소리 없이 자동 재생되며,
-                    <br className="sm:hidden" /> 상담 전 시술 느낌을 먼저 확인하실 수 있습니다.
-                  </p>
-                </div>
-
-                <ShortsCard
-                  title="예롬성형외과 시술 사례"
-                  desc="얼굴라인 고민 사례를 짧은 영상으로 확인해보세요."
-                  src="https://www.youtube.com/embed/npSGWfW1d7g?autoplay=1&mute=1&playsinline=1&loop=1&playlist=npSGWfW1d7g&rel=0"
-                  iframeTitle="예롬성형외과 시술 사례 쇼츠"
-                />
-              </section>
-            )}
-
             {concerns.length > 0 && (
               <TopLeadForm
                 name={name}
@@ -603,102 +580,130 @@ function LandingSpecialContent({
                 showRequiredVisitNotice={true}
               />
             )}
+            {isLanding10 && (
+              <section className="mt-6 rounded-[24px] border border-[#dce9e3] bg-white px-4 py-6 shadow-[0_12px_30px_rgba(0,0,0,0.06)]">
+                <div className="mb-5 text-center">
+                  <p className="text-[13px] font-semibold tracking-[0.12em] text-[#0f766e]">
+                    PROCEDURE SHORTS
+                  </p>
+
+                  <h2 className="mt-2 text-[24px] font-bold leading-tight text-black">
+                    비슷한 고민 사례를
+                    <br />
+                    짧은 영상으로 먼저 확인해보세요
+                  </h2>
+
+                  <p className="mt-2 text-[14px] leading-6 text-gray-600">
+                    영상은 소리 없이 자동 재생되며,
+                    <br className="sm:hidden" /> 상담 전 시술 느낌을 먼저
+                    확인하실 수 있습니다.
+                  </p>
+                </div>
+
+                <ShortsCard
+                  title="예롬성형외과 시술 사례"
+                  desc="얼굴라인 고민 사례를 짧은 영상으로 확인해보세요."
+                  src="https://www.youtube.com/embed/npSGWfW1d7g?autoplay=1&mute=1&playsinline=1&loop=1&playlist=npSGWfW1d7g&rel=0"
+                  iframeTitle="예롬성형외과 시술 사례 쇼츠"
+                />
+              </section>
+            )}
           </div>
         </div>
       </section>
 
       {!isLanding10 && (
         <section className="bg-white px-4 py-8">
-        <div className="mx-auto w-full max-w-[760px]">
-          <div className="mb-6 text-center">
-            <p className="text-[13px] font-semibold tracking-[0.12em] text-[#0f766e]">
-              BEFORE & AFTER SHORTS
-            </p>
+          <div className="mx-auto w-full max-w-[760px]">
+            <div className="mb-6 text-center">
+              <p className="text-[13px] font-semibold tracking-[0.12em] text-[#0f766e]">
+                BEFORE & AFTER SHORTS
+              </p>
 
-            <h2 className="mt-2 text-[24px] font-bold leading-tight text-black">
+              <h2 className="mt-2 text-[24px] font-bold leading-tight text-black">
+                {landingKey === "02" ? (
+                  <>
+                    같은 고민 사례를
+                    <br />
+                    짧은 영상으로 먼저 확인해보세요
+                  </>
+                ) : landingKey === "04" ? (
+                  <>
+                    코재수술 전후 변화를
+                    <br />
+                    짧은 영상으로 먼저 확인해보세요
+                  </>
+                ) : (
+                  <>
+                    코 라인과 분위기 변화를
+                    <br />
+                    짧은 영상으로 먼저 확인해보세요
+                  </>
+                )}
+              </h2>
+
+              <p className="mt-2 text-[14px] leading-6 text-gray-600">
+                {landingKey === "02"
+                  ? "실제 전후 느낌을 빠르게 보고 상담 여부를 결정하실 수 있습니다."
+                  : landingKey === "04"
+                    ? "재수술 사례 느낌을 먼저 보고 상담 여부를 편하게 결정하실 수 있습니다."
+                    : "실제 사례 느낌을 먼저 보고 상담 여부를 편하게 결정하실 수 있습니다."}
+              </p>
+            </div>
+
+            <div className="grid gap-6">
               {landingKey === "02" ? (
                 <>
-                  같은 고민 사례를
-                  <br />
-                  짧은 영상으로 먼저 확인해보세요
+                  <ShortsCard
+                    title="눈밑지방재배치 사례 1"
+                    desc="첫 번째 쇼츠 사례를 확인해보세요."
+                    src="https://www.youtube.com/embed/-qNI_oVCev4?autoplay=1&mute=1&playsinline=1&loop=1&playlist=-qNI_oVCev4&rel=0"
+                    iframeTitle="눈밑지방재배치 쇼츠 1"
+                  />
+
+                  <ShortsCard
+                    title="눈밑지방재배치 사례 2"
+                    desc="두 번째 쇼츠 사례도 함께 비교해보세요."
+                    src="https://www.youtube.com/embed/g5TzGxqmEvc?autoplay=1&mute=1&playsinline=1&loop=1&playlist=g5TzGxqmEvc&rel=0"
+                    iframeTitle="눈밑지방재배치 쇼츠 2"
+                  />
                 </>
               ) : landingKey === "04" ? (
                 <>
-                  코재수술 전후 변화를
-                  <br />
-                  짧은 영상으로 먼저 확인해보세요
+                  <ShortsCard
+                    title="코재수술 사례 1"
+                    desc="첫 번째 재수술 사례를 확인해보세요."
+                    src="https://www.youtube.com/embed/XsJytEGOe88?autoplay=1&mute=1&playsinline=1&loop=1&playlist=XsJytEGOe88&rel=0"
+                    iframeTitle="코재수술 쇼츠 1"
+                  />
+
+                  <ShortsCard
+                    title="코재수술 사례 2"
+                    desc="두 번째 재수술 사례도 함께 비교해보세요."
+                    src="https://www.youtube.com/embed/NLRpdAcfPHQ?autoplay=1&mute=1&playsinline=1&loop=1&playlist=NLRpdAcfPHQ&rel=0"
+                    iframeTitle="코재수술 쇼츠 2"
+                  />
                 </>
               ) : (
                 <>
-                  코 라인과 분위기 변화를
-                  <br />
-                  짧은 영상으로 먼저 확인해보세요
+                  <ShortsCard
+                    title="코수술 사례 1"
+                    desc="첫 번째 코 라인 사례를 확인해보세요."
+                    src="https://www.youtube.com/embed/GQDuvMr7FOU?autoplay=1&mute=1&playsinline=1&loop=1&playlist=GQDuvMr7FOU&rel=0"
+                    iframeTitle="코수술 쇼츠 1"
+                  />
+
+                  <ShortsCard
+                    title="코수술 사례 2"
+                    desc="두 번째 코수술 사례도 함께 비교해보세요."
+                    src="https://www.youtube.com/embed/yaV40RGSmGk?autoplay=1&mute=1&playsinline=1&loop=1&playlist=yaV40RGSmGk&rel=0"
+                    iframeTitle="코수술 쇼츠 2"
+                  />
                 </>
               )}
-            </h2>
-
-            <p className="mt-2 text-[14px] leading-6 text-gray-600">
-              {landingKey === "02"
-                ? "실제 전후 느낌을 빠르게 보고 상담 여부를 결정하실 수 있습니다."
-                : landingKey === "04"
-                ? "재수술 사례 느낌을 먼저 보고 상담 여부를 편하게 결정하실 수 있습니다."
-                : "실제 사례 느낌을 먼저 보고 상담 여부를 편하게 결정하실 수 있습니다."}
-            </p>
+            </div>
           </div>
-
-          <div className="grid gap-6">
-            {landingKey === "02" ? (
-              <>
-                <ShortsCard
-                  title="눈밑지방재배치 사례 1"
-                  desc="첫 번째 쇼츠 사례를 확인해보세요."
-                  src="https://www.youtube.com/embed/-qNI_oVCev4?autoplay=1&mute=1&playsinline=1&loop=1&playlist=-qNI_oVCev4&rel=0"
-                  iframeTitle="눈밑지방재배치 쇼츠 1"
-                />
-
-                <ShortsCard
-                  title="눈밑지방재배치 사례 2"
-                  desc="두 번째 쇼츠 사례도 함께 비교해보세요."
-                  src="https://www.youtube.com/embed/g5TzGxqmEvc?autoplay=1&mute=1&playsinline=1&loop=1&playlist=g5TzGxqmEvc&rel=0"
-                  iframeTitle="눈밑지방재배치 쇼츠 2"
-                />
-              </>
-            ) : landingKey === "04" ? (
-              <>
-                <ShortsCard
-                  title="코재수술 사례 1"
-                  desc="첫 번째 재수술 사례를 확인해보세요."
-                  src="https://www.youtube.com/embed/XsJytEGOe88?autoplay=1&mute=1&playsinline=1&loop=1&playlist=XsJytEGOe88&rel=0"
-                  iframeTitle="코재수술 쇼츠 1"
-                />
-
-                <ShortsCard
-                  title="코재수술 사례 2"
-                  desc="두 번째 재수술 사례도 함께 비교해보세요."
-                  src="https://www.youtube.com/embed/NLRpdAcfPHQ?autoplay=1&mute=1&playsinline=1&loop=1&playlist=NLRpdAcfPHQ&rel=0"
-                  iframeTitle="코재수술 쇼츠 2"
-                />
-              </>
-            ) : (
-              <>
-                <ShortsCard
-                  title="코수술 사례 1"
-                  desc="첫 번째 코 라인 사례를 확인해보세요."
-                  src="https://www.youtube.com/embed/GQDuvMr7FOU?autoplay=1&mute=1&playsinline=1&loop=1&playlist=GQDuvMr7FOU&rel=0"
-                  iframeTitle="코수술 쇼츠 1"
-                />
-
-                <ShortsCard
-                  title="코수술 사례 2"
-                  desc="두 번째 코수술 사례도 함께 비교해보세요."
-                  src="https://www.youtube.com/embed/yaV40RGSmGk?autoplay=1&mute=1&playsinline=1&loop=1&playlist=yaV40RGSmGk&rel=0"
-                  iframeTitle="코수술 쇼츠 2"
-                />
-              </>
-            )}
-          </div>
-        </div>
-      </section>
+        </section>
       )}
 
       <InlineCTA text="상담 신청하기" onClick={onOpenForm} />
@@ -709,10 +714,10 @@ function LandingSpecialContent({
             landingKey === "02"
               ? "/intro/02/02.jpg"
               : landingKey === "04"
-              ? "/intro/04/02.jpg"
-              : landingKey === "10"
-              ? "/intro/10/02.jpg"
-              : "/intro/03/02.jpg"
+                ? "/intro/04/02.jpg"
+                : landingKey === "10"
+                  ? "/intro/10/02.jpg"
+                  : "/intro/03/02.jpg"
           }
           onError={(e) => {
             e.currentTarget.onerror = null;
@@ -720,19 +725,19 @@ function LandingSpecialContent({
               landingKey === "02"
                 ? "/intro/02/02.png"
                 : landingKey === "04"
-                ? "/intro/04/02.png"
-                : landingKey === "10"
-                ? "/intro/10/02.png"
-                : "/intro/03/02.png";
+                  ? "/intro/04/02.png"
+                  : landingKey === "10"
+                    ? "/intro/10/02.png"
+                    : "/intro/03/02.png";
           }}
           alt={
             landingKey === "02"
               ? "02 랜딩 하단"
               : landingKey === "04"
-              ? "04 랜딩 하단"
-              : landingKey === "10"
-              ? "예롬성형외과 하단"
-              : "03 랜딩 하단"
+                ? "04 랜딩 하단"
+                : landingKey === "10"
+                  ? "예롬성형외과 하단"
+                  : "03 랜딩 하단"
           }
           className="block w-full"
           draggable={false}
@@ -748,14 +753,19 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
   const pathname = usePathname();
   const seg1 = pathname?.split("/")[1] || "";
 
-  const lk = useMemo(() => normalizeLK(seg1 || landingKey || "00"), [seg1, landingKey]);
+  const lk = useMemo(
+    () => normalizeLK(seg1 || landingKey || "00"),
+    [seg1, landingKey],
+  );
   const config = useMemo(() => getLandingConfig(lk), [lk]);
   const isLanding02 = config.key === "02";
   const isLanding03 = config.key === "03";
   const isLanding04 = config.key === "04";
   const isLanding10 = config.key === "10";
-  const isSpecialLanding = isLanding02 || isLanding03 || isLanding04 || isLanding10;
-  const showRequiredVisitNotice = isLanding02 || isLanding03 || isLanding04 || isLanding10;
+  const isSpecialLanding =
+    isLanding02 || isLanding03 || isLanding04 || isLanding10;
+  const showRequiredVisitNotice =
+    isLanding02 || isLanding03 || isLanding04 || isLanding10;
 
   const pages = useMemo(() => {
     const count = config.pageCount ?? 10;
@@ -785,25 +795,25 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
   function toggleConcern02(item: string) {
     setConcerns02((prev) =>
-      prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item]
+      prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item],
     );
   }
 
   function toggleConcern03(item: string) {
     setConcerns03((prev) =>
-      prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item]
+      prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item],
     );
   }
 
   function toggleConcern04(item: string) {
     setConcerns04((prev) =>
-      prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item]
+      prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item],
     );
   }
 
   function toggleConcern10(item: string) {
     setConcerns10((prev) =>
-      prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item]
+      prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item],
     );
   }
 
@@ -918,12 +928,12 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       const selectedConcerns = isLanding02
         ? concerns02
         : isLanding03
-        ? concerns03
-        : isLanding04
-        ? concerns04
-        : isLanding10
-        ? concerns10
-        : [];
+          ? concerns03
+          : isLanding04
+            ? concerns04
+            : isLanding10
+              ? concerns10
+              : [];
 
       const res = await fetch("/api/leads", {
         method: "POST",
@@ -960,7 +970,9 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       }
 
       if (json?.duplicate) {
-        console.warn("[Lead Submit] duplicate lead blocked before trackLeadComplete");
+        console.warn(
+          "[Lead Submit] duplicate lead blocked before trackLeadComplete",
+        );
         trackDuplicateLead({
           landing_key: config.key,
           hospital_name: config.hospitalName,
@@ -1017,7 +1029,9 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       if (error?.name === "AbortError") {
         setSubmitError("응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.");
       } else {
-        setSubmitError(error?.message || "전송 실패. 잠시 후 다시 시도해주세요.");
+        setSubmitError(
+          error?.message || "전송 실패. 잠시 후 다시 시도해주세요.",
+        );
       }
     } finally {
       window.clearTimeout(timeoutId);
@@ -1046,24 +1060,32 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
           <div className="min-w-0 pb-24 lg:pb-0">
             {isSpecialLanding ? (
               <LandingSpecialContent
-                landingKey={isLanding02 ? "02" : isLanding04 ? "04" : isLanding10 ? "10" : "03"}
+                landingKey={
+                  isLanding02
+                    ? "02"
+                    : isLanding04
+                      ? "04"
+                      : isLanding10
+                        ? "10"
+                        : "03"
+                }
                 concerns={
                   isLanding02
                     ? concerns02
                     : isLanding04
-                    ? concerns04
-                    : isLanding10
-                    ? concerns10
-                    : concerns03
+                      ? concerns04
+                      : isLanding10
+                        ? concerns10
+                        : concerns03
                 }
                 toggleConcern={
                   isLanding02
                     ? toggleConcern02
                     : isLanding04
-                    ? toggleConcern04
-                    : isLanding10
-                    ? toggleConcern10
-                    : toggleConcern03
+                      ? toggleConcern04
+                      : isLanding10
+                        ? toggleConcern10
+                        : toggleConcern03
                 }
                 onOpenForm={() => openFormWithTracking("inline_cta")}
                 name={name}
@@ -1086,7 +1108,9 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                   return (
                     <section
                       key={src}
-                      className={isSingleLongImage ? "w-full" : "min-h-[100dvh] w-full"}
+                      className={
+                        isSingleLongImage ? "w-full" : "min-h-[100dvh] w-full"
+                      }
                     >
                       <img
                         src={jpgSrc}
@@ -1129,7 +1153,11 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                     </p>
                   </div>
 
-                  <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+                  <form
+                    onSubmit={handleSubmit}
+                    className="flex flex-col gap-4"
+                    noValidate
+                  >
                     {showRequiredVisitNotice && <RequiredVisitNotice compact />}
 
                     <input
@@ -1146,7 +1174,9 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                       className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] font-medium text-black placeholder:text-gray-400 outline-none transition focus:border-black focus:ring-2 focus:ring-black/5"
                       placeholder="010-1234-5678"
                       value={phone}
-                      onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
+                      onChange={(e) =>
+                        setPhone(formatPhoneInput(e.target.value))
+                      }
                       onFocus={handleFormStarted}
                       inputMode="numeric"
                       maxLength={13}
@@ -1168,10 +1198,14 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                     </label>
 
                     <div className="rounded-xl bg-[#f8faf9] px-4 py-3 text-center text-[13px] leading-5 text-gray-600">
-                      입력해주신 정보는 상담 안내 외 다른 용도로 사용되지 않습니다.
+                      입력해주신 정보는 상담 안내 외 다른 용도로 사용되지
+                      않습니다.
                     </div>
 
-                    <FormMessage submitError={submitError} submitInfo={submitInfo} />
+                    <FormMessage
+                      submitError={submitError}
+                      submitInfo={submitInfo}
+                    />
 
                     <button
                       type="submit"
@@ -1251,7 +1285,10 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                   상담 안내 외 다른 용도로 사용되지 않습니다.
                 </div>
 
-                <FormMessage submitError={submitError} submitInfo={submitInfo} />
+                <FormMessage
+                  submitError={submitError}
+                  submitInfo={submitInfo}
+                />
 
                 <button
                   type="submit"
