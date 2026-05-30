@@ -558,6 +558,34 @@ function LandingSpecialContent({
                   </div>
                 </div>
 
+                {isLanding10 && (
+                  <section className="mt-6 rounded-[24px] border border-[#dce9e3] bg-white px-4 py-6 shadow-[0_12px_30px_rgba(0,0,0,0.06)]">
+                    <div className="mb-5 text-center">
+                      <p className="text-[13px] font-semibold tracking-[0.12em] text-[#0f766e]">
+                        PROCEDURE SHORTS
+                      </p>
+
+                      <h2 className="mt-2 text-[24px] font-bold leading-tight text-black">
+                        비슷한 고민 사례를
+                        <br />
+                        짧은 영상으로 먼저 확인해보세요
+                      </h2>
+
+                      <p className="mt-2 text-[14px] leading-6 text-gray-600">
+                        영상은 소리 없이 자동 재생되며,
+                        <br className="sm:hidden" /> 상담 전 시술 느낌을 먼저 확인하실 수 있습니다.
+                      </p>
+                    </div>
+
+                    <ShortsCard
+                      title="예롬성형외과 시술 사례"
+                      desc="얼굴라인 고민 사례를 짧은 영상으로 확인해보세요."
+                      src="https://www.youtube.com/embed/npSGWfW1d7g?autoplay=1&mute=1&playsinline=1&loop=1&playlist=npSGWfW1d7g&rel=0"
+                      iframeTitle="예롬성형외과 시술 사례 쇼츠"
+                    />
+                  </section>
+                )}
+
                 <TopLeadForm
                   name={name}
                   phone={phone}
