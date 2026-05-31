@@ -708,6 +708,19 @@ function LandingSpecialContent({
 
       <InlineCTA text="상담 신청하기" onClick={onOpenForm} />
 
+      {isLanding10 && (
+        <section className="bg-white px-4 pb-2 pt-8">
+          <div className="mx-auto w-full max-w-[760px] text-center">
+            <p className="text-[13px] font-semibold tracking-[0.12em] text-[#0f766e]">
+              RECOMMENDED PROCEDURE
+            </p>
+            <h2 className="mt-2 text-[24px] font-bold leading-tight text-black sm:text-[28px]">
+              얼굴 고민별 추천 시술 및 시술 전후 사진
+            </h2>
+          </div>
+        </section>
+      )}
+
       <section>
         <img
           src={
