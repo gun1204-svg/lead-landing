@@ -35,7 +35,7 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     address: "서울시 성동구 성수동2가 280 SK V1 CENTER 1-1611",
     businessNumber: "114-16-48944",
     representativeName: "최건",
-    phone: "010-3703-1068",
+    phone: "",
     privacyManager: "비엔파트너스",
     privacyContact: "010-3703-1068",
     privacyEmail: "bienpartner@naver.com",
