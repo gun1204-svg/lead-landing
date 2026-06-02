@@ -472,12 +472,11 @@ function LandingSpecialContent({
             <h1 className="mt-3 text-[29px] font-bold leading-[1.35] text-black sm:text-[32px]">
               {isLanding10 ? (
                 <>
-                  사진 찍기 싫다! 거울 보기 싫다!
-                  <br />
-                  갑자기 확 느껴진{" "}
-                  <span className="text-red-500">얼굴 관리의 필요성!</span>
-                  <br />
-                  당신의 고민은 무엇인가요?
+                  <span className="block">사진 찍기 싫다!</span>
+                  <span className="block">거울 보기 싫다!</span>
+                  <span className="mt-2 block">갑자기 확 느껴진</span>
+                  <span className="block text-red-500">얼굴관리의 필요성!</span>
+                  <span className="mt-2 block">당신의 고민은 무엇인가요?</span>
                 </>
               ) : (
                 <>
@@ -603,7 +602,7 @@ function LandingSpecialContent({
                 <ShortsCard
                   title="예롬성형외과 시술 사례"
                   desc="얼굴라인 고민 사례를 짧은 영상으로 확인해보세요."
-                  src="https://www.youtube.com/embed/npSGWfW1d7g?autoplay=1&mute=1&playsinline=1&loop=1&playlist=npSGWfW1d7g&rel=0"
+                  src="https://www.youtube.com/embed/3LStycPrSgc?autoplay=1&mute=1&playsinline=1&loop=1&playlist=3LStycPrSgc&rel=0"
                   iframeTitle="예롬성형외과 시술 사례 쇼츠"
                 />
               </section>
