@@ -15,8 +15,15 @@ type AppSession = {
   user?: SessionUser | null;
 } | null;
 
+function normalizeLandingKey(v: unknown) {
+  const s = String(v ?? "").trim();
+  if (!s) return null;
+  if (/^\d{1,2}$/.test(s)) return s.padStart(2, "0");
+  return null;
+}
+
 function getSessionLandingKey(session: AppSession) {
-  return String(session?.user?.landing_key || "00");
+  return normalizeLandingKey(session?.user?.landing_key) || "00";
 }
 
 function isRootAdmin(userLK: string) {
@@ -41,12 +48,18 @@ export async function GET(req: Request) {
   const userLK = getSessionLandingKey(session);
   const { searchParams } = new URL(req.url);
 
-  const requestedOwnerLK =
-    searchParams.get("owner_landing_key") ||
-    searchParams.get("landing_key") ||
-    userLK;
+  const requestedOwnerLK = normalizeLandingKey(
+    searchParams.get("owner_landing_key") || searchParams.get("landing_key") || userLK
+  );
 
-  const ownerLK = String(requestedOwnerLK);
+  if (!requestedOwnerLK) {
+    return NextResponse.json(
+      { ok: false, error: "Invalid owner_landing_key" },
+      { status: 400 }
+    );
+  }
+
+  const ownerLK = requestedOwnerLK;
 
   if (!canManageOwner(userLK, ownerLK)) {
     return NextResponse.json(
@@ -87,11 +100,18 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
 
   const name = String(body?.name || "").trim();
-  const ownerLK = String(body?.owner_landing_key || userLK);
+  const ownerLK = normalizeLandingKey(body?.owner_landing_key || userLK);
 
   if (!name) {
     return NextResponse.json(
       { ok: false, error: "담당자 이름을 입력해주세요." },
+      { status: 400 }
+    );
+  }
+
+  if (!ownerLK) {
+    return NextResponse.json(
+      { ok: false, error: "Invalid owner_landing_key" },
       { status: 400 }
     );
   }

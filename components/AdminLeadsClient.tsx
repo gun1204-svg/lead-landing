@@ -234,9 +234,6 @@ export default function AdminLeadsClient() {
   const [managers, setManagers] = useState<LeadManager[]>([]);
   const [managerFilter, setManagerFilter] = useState<ManagerFilter>("ALL");
   const [managerLoading, setManagerLoading] = useState(false);
-  const [newManagerName, setNewManagerName] = useState("");
-  const [editingManagerId, setEditingManagerId] = useState<string | null>(null);
-  const [editingManagerName, setEditingManagerName] = useState("");
 
   const [account, setAccount] = useState<Account | null>(null);
   const [integratedAccounts, setIntegratedAccounts] = useState<Account[]>([]);
@@ -341,6 +338,11 @@ export default function AdminLeadsClient() {
     router.push(`/${pageLK}/admin/account-logs${q}`);
   }
 
+  function goManagersPage() {
+    const q = canSwitchAny ? `?landing_key=${encodeURIComponent(selectedLK)}` : "";
+    router.push(`/${pageLK}/admin/managers${q}`);
+  }
+
   async function loadManagers(signal?: AbortSignal) {
     if (!managerOwnerLK) return;
 
@@ -372,77 +374,6 @@ export default function AdminLeadsClient() {
     } finally {
       if (!signal?.aborted) setManagerLoading(false);
     }
-  }
-
-  async function addManager() {
-    const name = newManagerName.trim();
-
-    if (!name) {
-      alert("담당자 이름을 입력해주세요.");
-      return;
-    }
-
-    const res = await fetch("/api/admin/managers", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        owner_landing_key: managerOwnerLK,
-        name,
-      }),
-    });
-
-    const json = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      alert(json?.error || "담당자 추가 실패");
-      return;
-    }
-
-    setNewManagerName("");
-    await loadManagers();
-  }
-
-  async function updateManagerName(id: string) {
-    const name = editingManagerName.trim();
-
-    if (!name) {
-      alert("담당자 이름을 입력해주세요.");
-      return;
-    }
-
-    const res = await fetch(`/api/admin/managers/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-
-    const json = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      alert(json?.error || "담당자 이름 수정 실패");
-      return;
-    }
-
-    setEditingManagerId(null);
-    setEditingManagerName("");
-    await loadManagers();
-  }
-
-  async function toggleManagerActive(id: string, active: boolean) {
-    const res = await fetch(`/api/admin/managers/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ active }),
-    });
-
-    const json = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      alert(json?.error || "담당자 상태 변경 실패");
-      return;
-    }
-
-    await loadManagers();
   }
 
   async function saveLead(id: string) {
@@ -837,6 +768,21 @@ export default function AdminLeadsClient() {
           </button>
 
           <button
+            onClick={goManagersPage}
+            style={{
+              padding: "8px 12px",
+              borderRadius: 10,
+              border: "1px solid #ddd",
+              background: "#111",
+              color: "#fff",
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            담당자 관리
+          </button>
+
+          <button
             onClick={() => signOut({ callbackUrl: `/${pageLK}/admin/login` })}
             style={{
               padding: "8px 12px",
@@ -995,21 +941,6 @@ export default function AdminLeadsClient() {
 
         {managerLoading && <span style={{ fontSize: 13, color: "#666" }}>담당자 불러오는 중...</span>}
       </div>
-
-      <ManagerBox
-        ownerLK={managerOwnerLK}
-        managers={managers}
-        managerLoading={managerLoading}
-        newManagerName={newManagerName}
-        setNewManagerName={setNewManagerName}
-        editingManagerId={editingManagerId}
-        editingManagerName={editingManagerName}
-        setEditingManagerId={setEditingManagerId}
-        setEditingManagerName={setEditingManagerName}
-        onAdd={addManager}
-        onUpdateName={updateManagerName}
-        onToggleActive={toggleManagerActive}
-      />
 
       {err && <p style={{ marginTop: 12, color: "crimson", whiteSpace: "pre-wrap" }}>{err}</p>}
 
@@ -1246,133 +1177,6 @@ export default function AdminLeadsClient() {
             )}
           </tbody>
         </table>
-      </div>
-    </div>
-  );
-}
-
-function ManagerBox({
-  ownerLK,
-  managers,
-  managerLoading,
-  newManagerName,
-  setNewManagerName,
-  editingManagerId,
-  editingManagerName,
-  setEditingManagerId,
-  setEditingManagerName,
-  onAdd,
-  onUpdateName,
-  onToggleActive,
-}: {
-  ownerLK: string;
-  managers: LeadManager[];
-  managerLoading: boolean;
-  newManagerName: string;
-  setNewManagerName: (v: string) => void;
-  editingManagerId: string | null;
-  editingManagerName: string;
-  setEditingManagerId: (v: string | null) => void;
-  setEditingManagerName: (v: string) => void;
-  onAdd: () => Promise<void>;
-  onUpdateName: (id: string) => Promise<void>;
-  onToggleActive: (id: string, active: boolean) => Promise<void>;
-}) {
-  return (
-    <div style={{ marginTop: 10, border: "1px solid #eee", borderRadius: 14, padding: 12, background: "#fff" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-        <h3 style={{ margin: 0, fontWeight: 900 }}>담당자 관리</h3>
-
-        <span style={{ fontSize: 13, color: "#666", fontWeight: 800 }}>
-          owner_landing_key: {ownerLK}
-        </span>
-      </div>
-
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-        <input
-          value={newManagerName}
-          onChange={(e) => setNewManagerName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") onAdd();
-          }}
-          placeholder="새 담당자 이름"
-          style={inp}
-        />
-
-        <button onClick={onAdd} disabled={managerLoading} style={blackBtn}>
-          추가
-        </button>
-      </div>
-
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-        {managers.map((m) => (
-          <div
-            key={m.id}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "8px 10px",
-              border: "1px solid #e5e7eb",
-              borderRadius: 12,
-              background: m.active ? "#f9fafb" : "#f3f4f6",
-              opacity: m.active ? 1 : 0.6,
-            }}
-          >
-            {editingManagerId === m.id ? (
-              <>
-                <input
-                  value={editingManagerName}
-                  onChange={(e) => setEditingManagerName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") onUpdateName(m.id);
-                  }}
-                  style={{ ...inp, width: 130, height: 34, padding: "0 8px" }}
-                />
-
-                <button onClick={() => onUpdateName(m.id)} style={blackBtn}>
-                  저장
-                </button>
-
-                <button
-                  onClick={() => {
-                    setEditingManagerId(null);
-                    setEditingManagerName("");
-                  }}
-                  style={smallBtn}
-                >
-                  취소
-                </button>
-              </>
-            ) : (
-              <>
-                <span style={{ fontWeight: 900 }}>{m.name}</span>
-
-                {!m.active && <span style={{ fontSize: 12, color: "#666" }}>비활성</span>}
-
-                <button
-                  onClick={() => {
-                    setEditingManagerId(m.id);
-                    setEditingManagerName(m.name);
-                  }}
-                  style={smallBtn}
-                >
-                  이름수정
-                </button>
-
-                <button onClick={() => onToggleActive(m.id, !m.active)} style={smallBtn}>
-                  {m.active ? "비활성" : "활성"}
-                </button>
-              </>
-            )}
-          </div>
-        ))}
-
-        {!managerLoading && managers.length === 0 && (
-          <div style={{ padding: 8, color: "#666", fontSize: 14 }}>
-            등록된 담당자가 없습니다. 새 담당자를 추가해주세요.
-          </div>
-        )}
       </div>
     </div>
   );

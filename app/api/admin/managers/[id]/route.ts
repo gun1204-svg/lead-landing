@@ -15,8 +15,15 @@ type AppSession = {
   user?: SessionUser | null;
 } | null;
 
+function normalizeLandingKey(v: unknown) {
+  const s = String(v ?? "").trim();
+  if (!s) return null;
+  if (/^\d{1,2}$/.test(s)) return s.padStart(2, "0");
+  return null;
+}
+
 function getSessionLandingKey(session: AppSession) {
-  return String(session?.user?.landing_key || "00");
+  return normalizeLandingKey(session?.user?.landing_key) || "00";
 }
 
 function isRootAdmin(userLK: string) {
@@ -44,6 +51,13 @@ export async function PATCH(
   const userLK = getSessionLandingKey(session);
   const { id } = await context.params;
   const body = await req.json().catch(() => ({}));
+
+  if (!id) {
+    return NextResponse.json(
+      { ok: false, error: "Missing id" },
+      { status: 400 }
+    );
+  }
 
   const { data: existing, error: existingError } = await supabaseAdmin
     .from("lead_managers")
@@ -106,9 +120,7 @@ export async function PATCH(
     .from("lead_managers")
     .update(patch)
     .eq("id", id)
-    .select(
-      "id, owner_landing_key, name, active, sort_order, created_at, updated_at"
-    )
+    .select("id, owner_landing_key, name, active, sort_order, created_at, updated_at")
     .single();
 
   if (error) {
