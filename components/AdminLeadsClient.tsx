@@ -165,23 +165,45 @@ function LandingBadge({ landingKey }: { landingKey: string | null }) {
   );
 }
 
-function SourceBadge({ source }: { source?: string | null }) {
+function getSourceLabel(source?: string | null) {
   const raw = String(source || "").trim();
   const s = raw.toLowerCase();
 
-  let label = raw || "-";
+  if (!raw) return "-";
 
   if (s.includes("meta") || s.includes("facebook") || s.includes("instagram")) {
-    label = "메타";
-  } else if (s.includes("karrot") || s.includes("daangn") || s.includes("danggeun")) {
-    label = "당근";
-  } else if (s.includes("naver")) {
-    label = "네이버";
-  } else if (s.includes("tiktok")) {
-    label = "틱톡";
-  } else if (s.includes("google")) {
-    label = "구글";
+    return "메타";
   }
+
+  if (s.includes("karrot") || s.includes("daangn") || s.includes("danggeun")) {
+    return "당근";
+  }
+
+  if (s.includes("naver")) {
+    return "네이버";
+  }
+
+  if (s.includes("tiktok")) {
+    return "틱톡";
+  }
+
+  if (s.includes("google")) {
+    return "구글";
+  }
+
+  return raw;
+}
+
+function csvCell(v: unknown) {
+  const s = String(v ?? "")
+    .replace(/\r?\n/g, " ")
+    .trim();
+
+  return `"${s.replace(/"/g, '""')}"`;
+}
+
+function SourceBadge({ source }: { source?: string | null }) {
+  const label = getSourceLabel(source);
 
   return (
     <span
@@ -341,6 +363,72 @@ export default function AdminLeadsClient() {
   function goManagersPage() {
     const q = canSwitchAny ? `?landing_key=${encodeURIComponent(selectedLK)}` : "";
     router.push(`/${pageLK}/admin/managers${q}`);
+  }
+
+  function downloadLeadsCsv() {
+    if (!displayRows.length) {
+      alert("다운로드할 리드가 없습니다.");
+      return;
+    }
+
+    const managerNameMap = new Map(
+      managers.map((manager) => [manager.id, manager.name])
+    );
+
+    const header = [
+      "접수시간",
+      "랜딩",
+      "유입",
+      "이름",
+      "전화",
+      "상태",
+      "담당자",
+      "메모",
+    ];
+
+    const lines = displayRows.map((lead) => {
+      const statusKey = String(lead.status ?? "NEW").toUpperCase() as StatusKey;
+      const statusLabel = STATUS_META[statusKey]?.label || statusKey || "-";
+      const managerName = lead.assigned_to
+        ? managerNameMap.get(lead.assigned_to) || "담당자 없음"
+        : "미지정";
+
+      return [
+        new Date(lead.created_at).toLocaleString("ko-KR"),
+        `${normalizeLK(lead.landing_key)}번`,
+        getSourceLabel(lead.utm_source),
+        lead.name || "-",
+        lead.phone || "-",
+        statusLabel,
+        managerName,
+        lead.memo || "",
+      ];
+    });
+
+    const csv =
+      "\uFEFF" +
+      [header, ...lines]
+        .map((row) => row.map(csvCell).join(","))
+        .join("\r\n");
+
+    const blob = new Blob([csv], {
+      type: "text/csv;charset=utf-8;",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+
+    const today = new Date().toISOString().slice(0, 10);
+    const keyText = isIntegratedAdmin ? allowedLandingKeys.join("-") : selectedLK;
+
+    a.href = url;
+    a.download = `leads_${keyText}_${today}.csv`;
+
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    URL.revokeObjectURL(url);
   }
 
   async function loadManagers(signal?: AbortSignal) {
@@ -780,6 +868,21 @@ export default function AdminLeadsClient() {
             }}
           >
             담당자 관리
+          </button>
+
+          <button
+            onClick={downloadLeadsCsv}
+            style={{
+              padding: "8px 12px",
+              borderRadius: 10,
+              border: "1px solid #ddd",
+              background: "#fff",
+              color: "#111",
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            엑셀 다운로드
           </button>
 
           <button
