@@ -42,12 +42,19 @@ export async function GET(req: Request) {
   const sessionAdminId = String(user?.email ?? "").trim();
 
   if (!sessionAdminId) {
-  return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: "Unauthorized" },
+      { status: 401 }
+    );
   }
 
   const userLK = normalizeLandingKey(user?.landing_key);
+
   if (!userLK) {
-    return NextResponse.json({ ok: false, error: "Missing landing_key" }, { status: 403 });
+    return NextResponse.json(
+      { ok: false, error: "Missing landing_key" },
+      { status: 403 }
+    );
   }
 
   const { searchParams } = new URL(req.url);
@@ -56,9 +63,7 @@ export async function GET(req: Request) {
   let allowedKeys: string[] | null;
 
   try {
-    const permissionAdminId =
-      userLK === "00" ? "admin" : `admin${userLK}`;
-
+    const permissionAdminId = userLK === "00" ? "admin" : `admin${userLK}`;
     allowedKeys = await getAllowedLandingKeys(permissionAdminId, userLK);
   } catch (e: any) {
     return NextResponse.json(
@@ -69,7 +74,19 @@ export async function GET(req: Request) {
 
   let q = supabaseAdmin
     .from("leads")
-    .select("id, created_at, name, phone, status, memo, landing_key, utm_source")
+    .select(
+      `
+      id,
+      created_at,
+      name,
+      phone,
+      status,
+      memo,
+      landing_key,
+      utm_source,
+      assigned_to
+    `
+    )
     .order("created_at", { ascending: false })
     .limit(300);
 
@@ -85,6 +102,7 @@ export async function GET(req: Request) {
           { status: 403 }
         );
       }
+
       q = q.eq("landing_key", requestedLK);
     } else {
       q = q.in("landing_key", allowedKeys ?? [userLK]);
@@ -94,7 +112,10 @@ export async function GET(req: Request) {
   const { data, error } = await q;
 
   if (error) {
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: error.message },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({

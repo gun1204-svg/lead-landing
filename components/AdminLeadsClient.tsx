@@ -13,6 +13,7 @@ type Lead = {
   memo: string | null;
   landing_key: string | null;
   utm_source?: string | null;
+  assigned_to?: string | null;
 };
 
 type Account = {
@@ -38,11 +39,22 @@ type ViewSetting = {
   updated_at?: string | null;
 };
 
+type LeadManager = {
+  id: string;
+  owner_landing_key: string;
+  name: string;
+  active: boolean;
+  sort_order: number;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
 const LK_KEYS = Array.from({ length: 21 }, (_, i) => String(i).padStart(2, "0"));
 
 const STATUS_OPTIONS = ["NEW", "BOOKED", "CALLED", "NO_ANSWER", "INVALID"] as const;
 type StatusKey = typeof STATUS_OPTIONS[number];
 type StatusFilter = "ALL" | StatusKey;
+type ManagerFilter = "ALL" | "UNASSIGNED" | string;
 
 const STATUS_META: Record<StatusKey, { label: string; bg: string; fg: string; bd: string }> = {
   NEW: { label: "신규", bg: "#EEF2FF", fg: "#3730A3", bd: "#C7D2FE" },
@@ -61,6 +73,17 @@ function normalizeLK(v: unknown) {
 function extractLKFromPath(pathname: string) {
   const m = pathname.match(/^\/(\d{1,2})(\/|$)/);
   return normalizeLK(m?.[1] ?? "00");
+}
+
+function getManagerOwnerLK(userLK: string, selectedLK: string) {
+  if (userLK !== "00") return userLK;
+
+  const lk = normalizeLK(selectedLK);
+
+  // 현재 02 어드민이 02/03/04를 통합 관리하므로 담당자도 02 기준으로 묶음
+  if (["02", "03", "04"].includes(lk)) return "02";
+
+  return lk;
 }
 
 function fmt(n: any) {
@@ -202,9 +225,18 @@ export default function AdminLeadsClient() {
 
   const [allowedLandingKeys, setAllowedLandingKeys] = useState<string[]>([pageLK]);
 
-  const [draft, setDraft] = useState<Record<string, { status?: string; memo?: string }>>({});
+  const [draft, setDraft] = useState<
+    Record<string, { status?: string; memo?: string; assigned_to?: string | null }>
+  >({});
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [deleting, setDeleting] = useState<Record<string, boolean>>({});
+
+  const [managers, setManagers] = useState<LeadManager[]>([]);
+  const [managerFilter, setManagerFilter] = useState<ManagerFilter>("ALL");
+  const [managerLoading, setManagerLoading] = useState(false);
+  const [newManagerName, setNewManagerName] = useState("");
+  const [editingManagerId, setEditingManagerId] = useState<string | null>(null);
+  const [editingManagerName, setEditingManagerName] = useState("");
 
   const [account, setAccount] = useState<Account | null>(null);
   const [integratedAccounts, setIntegratedAccounts] = useState<Account[]>([]);
@@ -224,6 +256,7 @@ export default function AdminLeadsClient() {
   const [permissionsLoading, setPermissionsLoading] = useState(false);
 
   const isIntegratedAdmin = !canSwitchAny && allowedLandingKeys.length > 1;
+  const managerOwnerLK = getManagerOwnerLK(userLK, selectedLK);
 
   const visibleKeys = useMemo(() => {
     if (canSwitchAny) return LK_KEYS;
@@ -257,9 +290,34 @@ export default function AdminLeadsClient() {
   }, [rows]);
 
   const displayRows = useMemo(() => {
-    if (statusFilter === "ALL") return rows;
-    return rows.filter((r) => String(r.status ?? "NEW").toUpperCase() === statusFilter);
-  }, [rows, statusFilter]);
+    let list = rows;
+
+    if (statusFilter !== "ALL") {
+      list = list.filter((r) => String(r.status ?? "NEW").toUpperCase() === statusFilter);
+    }
+
+    if (managerFilter === "UNASSIGNED") {
+      list = list.filter((r) => !r.assigned_to);
+    } else if (managerFilter !== "ALL") {
+      list = list.filter((r) => r.assigned_to === managerFilter);
+    }
+
+    return list;
+  }, [rows, statusFilter, managerFilter]);
+
+  const managerCounts = useMemo(() => {
+    const base: Record<string, number> = { UNASSIGNED: 0 };
+
+    for (const r of rows) {
+      if (r.assigned_to) {
+        base[r.assigned_to] = (base[r.assigned_to] ?? 0) + 1;
+      } else {
+        base.UNASSIGNED += 1;
+      }
+    }
+
+    return base;
+  }, [rows]);
 
   const todayCount = useMemo(() => countToday(rows), [rows]);
   const monthCount = useMemo(() => countMonth(rows), [rows]);
@@ -283,12 +341,117 @@ export default function AdminLeadsClient() {
     router.push(`/${pageLK}/admin/account-logs${q}`);
   }
 
+  async function loadManagers(signal?: AbortSignal) {
+    if (!managerOwnerLK) return;
+
+    setManagerLoading(true);
+
+    try {
+      const res = await fetch(
+        `/api/admin/managers?owner_landing_key=${encodeURIComponent(managerOwnerLK)}`,
+        { cache: "no-store", signal }
+      );
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setManagers([]);
+        if (!signal?.aborted) {
+          setErr(`${res.status} ${json?.error || "담당자 목록 불러오기 실패"}`);
+        }
+        return;
+      }
+
+      setManagers((json.items || []) as LeadManager[]);
+    } catch (e: any) {
+      if (e?.name !== "AbortError") {
+        console.error(e);
+        setManagers([]);
+        setErr("MANAGER_NETWORK_ERROR");
+      }
+    } finally {
+      if (!signal?.aborted) setManagerLoading(false);
+    }
+  }
+
+  async function addManager() {
+    const name = newManagerName.trim();
+
+    if (!name) {
+      alert("담당자 이름을 입력해주세요.");
+      return;
+    }
+
+    const res = await fetch("/api/admin/managers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        owner_landing_key: managerOwnerLK,
+        name,
+      }),
+    });
+
+    const json = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      alert(json?.error || "담당자 추가 실패");
+      return;
+    }
+
+    setNewManagerName("");
+    await loadManagers();
+  }
+
+  async function updateManagerName(id: string) {
+    const name = editingManagerName.trim();
+
+    if (!name) {
+      alert("담당자 이름을 입력해주세요.");
+      return;
+    }
+
+    const res = await fetch(`/api/admin/managers/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+
+    const json = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      alert(json?.error || "담당자 이름 수정 실패");
+      return;
+    }
+
+    setEditingManagerId(null);
+    setEditingManagerName("");
+    await loadManagers();
+  }
+
+  async function toggleManagerActive(id: string, active: boolean) {
+    const res = await fetch(`/api/admin/managers/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ active }),
+    });
+
+    const json = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      alert(json?.error || "담당자 상태 변경 실패");
+      return;
+    }
+
+    await loadManagers();
+  }
+
   async function saveLead(id: string) {
     const d = draft[id] || {};
     const body: any = {};
 
     if (typeof d.status === "string") body.status = d.status;
     if (typeof d.memo === "string") body.memo = d.memo;
+    if (typeof d.assigned_to !== "undefined") body.assigned_to = d.assigned_to || null;
     if (Object.keys(body).length === 0) return;
 
     setSaving((m) => ({ ...m, [id]: true }));
@@ -355,6 +518,17 @@ export default function AdminLeadsClient() {
       setDeleting((m) => ({ ...m, [id]: false }));
     }
   }
+
+  useEffect(() => {
+    if (authStatus !== "authenticated") return;
+
+    setManagerFilter("ALL");
+
+    const ac = new AbortController();
+    loadManagers(ac.signal);
+
+    return () => ac.abort();
+  }, [authStatus, managerOwnerLK]);
 
   useEffect(() => {
     if (authStatus === "unauthenticated") {
@@ -794,6 +968,49 @@ export default function AdminLeadsClient() {
         })}
       </div>
 
+      <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <strong>담당자</strong>
+
+        <select
+          value={managerFilter}
+          onChange={(e) => setManagerFilter(e.target.value)}
+          style={{
+            height: 36,
+            padding: "0 10px",
+            border: "1px solid #ddd",
+            borderRadius: 10,
+            background: "#fff",
+          }}
+        >
+          <option value="ALL">전체 ({rows.length})</option>
+          <option value="UNASSIGNED">미지정 ({managerCounts.UNASSIGNED || 0})</option>
+
+          {managers.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.name}
+              {!m.active ? " (비활성)" : ""} ({managerCounts[m.id] || 0})
+            </option>
+          ))}
+        </select>
+
+        {managerLoading && <span style={{ fontSize: 13, color: "#666" }}>담당자 불러오는 중...</span>}
+      </div>
+
+      <ManagerBox
+        ownerLK={managerOwnerLK}
+        managers={managers}
+        managerLoading={managerLoading}
+        newManagerName={newManagerName}
+        setNewManagerName={setNewManagerName}
+        editingManagerId={editingManagerId}
+        editingManagerName={editingManagerName}
+        setEditingManagerId={setEditingManagerId}
+        setEditingManagerName={setEditingManagerName}
+        onAdd={addManager}
+        onUpdateName={updateManagerName}
+        onToggleActive={toggleManagerActive}
+      />
+
       {err && <p style={{ marginTop: 12, color: "crimson", whiteSpace: "pre-wrap" }}>{err}</p>}
 
       {userLK === "00" && (
@@ -873,6 +1090,7 @@ export default function AdminLeadsClient() {
               <th style={th}>이름</th>
               <th style={th}>전화</th>
               <th style={th}>상태</th>
+              <th style={th}>담당자</th>
               <th style={th}>메모</th>
               <th style={th}>저장</th>
               {isMainAdmin && <th style={th}>삭제</th>}
@@ -884,10 +1102,12 @@ export default function AdminLeadsClient() {
               const d = draft[l.id] || {};
               const curStatus = (d.status ?? l.status ?? "NEW") as StatusKey;
               const curMemo = (d.memo ?? l.memo ?? "") as string;
+              const curAssignedTo = d.assigned_to !== undefined ? d.assigned_to : l.assigned_to || "";
 
               const changed =
                 (d.status !== undefined && d.status !== (l.status ?? "NEW")) ||
-                (d.memo !== undefined && d.memo !== (l.memo ?? ""));
+                (d.memo !== undefined && d.memo !== (l.memo ?? "")) ||
+                (d.assigned_to !== undefined && d.assigned_to !== (l.assigned_to || null));
 
               return (
                 <tr key={l.id}>
@@ -917,6 +1137,39 @@ export default function AdminLeadsClient() {
                         ))}
                       </select>
                     </div>
+                  </td>
+
+                  <td style={tdTop}>
+                    <select
+                      value={curAssignedTo || ""}
+                      onChange={(e) => {
+                        const value = e.target.value || null;
+
+                        setDraft((prev) => ({
+                          ...prev,
+                          [l.id]: { ...prev[l.id], assigned_to: value },
+                        }));
+                      }}
+                      style={{
+                        width: 130,
+                        height: 34,
+                        padding: "0 8px",
+                        border: "1px solid #ddd",
+                        borderRadius: 10,
+                        background: "#fff",
+                      }}
+                    >
+                      <option value="">미지정</option>
+
+                      {managers
+                        .filter((m) => m.active || m.id === l.assigned_to || m.id === curAssignedTo)
+                        .map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name}
+                            {!m.active ? " (비활성)" : ""}
+                          </option>
+                        ))}
+                    </select>
                   </td>
 
                   <td style={{ ...tdTop, minWidth: 320 }}>
@@ -986,13 +1239,140 @@ export default function AdminLeadsClient() {
 
             {!loadingRows && displayRows.length === 0 && (
               <tr>
-                <td colSpan={isMainAdmin ? 9 : 8} style={{ padding: 14, color: "#666" }}>
+                <td colSpan={isMainAdmin ? 10 : 9} style={{ padding: 14, color: "#666" }}>
                   데이터 없음
                 </td>
               </tr>
             )}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+
+function ManagerBox({
+  ownerLK,
+  managers,
+  managerLoading,
+  newManagerName,
+  setNewManagerName,
+  editingManagerId,
+  editingManagerName,
+  setEditingManagerId,
+  setEditingManagerName,
+  onAdd,
+  onUpdateName,
+  onToggleActive,
+}: {
+  ownerLK: string;
+  managers: LeadManager[];
+  managerLoading: boolean;
+  newManagerName: string;
+  setNewManagerName: (v: string) => void;
+  editingManagerId: string | null;
+  editingManagerName: string;
+  setEditingManagerId: (v: string | null) => void;
+  setEditingManagerName: (v: string) => void;
+  onAdd: () => Promise<void>;
+  onUpdateName: (id: string) => Promise<void>;
+  onToggleActive: (id: string, active: boolean) => Promise<void>;
+}) {
+  return (
+    <div style={{ marginTop: 10, border: "1px solid #eee", borderRadius: 14, padding: 12, background: "#fff" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+        <h3 style={{ margin: 0, fontWeight: 900 }}>담당자 관리</h3>
+
+        <span style={{ fontSize: 13, color: "#666", fontWeight: 800 }}>
+          owner_landing_key: {ownerLK}
+        </span>
+      </div>
+
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+        <input
+          value={newManagerName}
+          onChange={(e) => setNewManagerName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") onAdd();
+          }}
+          placeholder="새 담당자 이름"
+          style={inp}
+        />
+
+        <button onClick={onAdd} disabled={managerLoading} style={blackBtn}>
+          추가
+        </button>
+      </div>
+
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+        {managers.map((m) => (
+          <div
+            key={m.id}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 10px",
+              border: "1px solid #e5e7eb",
+              borderRadius: 12,
+              background: m.active ? "#f9fafb" : "#f3f4f6",
+              opacity: m.active ? 1 : 0.6,
+            }}
+          >
+            {editingManagerId === m.id ? (
+              <>
+                <input
+                  value={editingManagerName}
+                  onChange={(e) => setEditingManagerName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") onUpdateName(m.id);
+                  }}
+                  style={{ ...inp, width: 130, height: 34, padding: "0 8px" }}
+                />
+
+                <button onClick={() => onUpdateName(m.id)} style={blackBtn}>
+                  저장
+                </button>
+
+                <button
+                  onClick={() => {
+                    setEditingManagerId(null);
+                    setEditingManagerName("");
+                  }}
+                  style={smallBtn}
+                >
+                  취소
+                </button>
+              </>
+            ) : (
+              <>
+                <span style={{ fontWeight: 900 }}>{m.name}</span>
+
+                {!m.active && <span style={{ fontSize: 12, color: "#666" }}>비활성</span>}
+
+                <button
+                  onClick={() => {
+                    setEditingManagerId(m.id);
+                    setEditingManagerName(m.name);
+                  }}
+                  style={smallBtn}
+                >
+                  이름수정
+                </button>
+
+                <button onClick={() => onToggleActive(m.id, !m.active)} style={smallBtn}>
+                  {m.active ? "비활성" : "활성"}
+                </button>
+              </>
+            )}
+          </div>
+        ))}
+
+        {!managerLoading && managers.length === 0 && (
+          <div style={{ padding: 8, color: "#666", fontSize: 14 }}>
+            등록된 담당자가 없습니다. 새 담당자를 추가해주세요.
+          </div>
+        )}
       </div>
     </div>
   );
