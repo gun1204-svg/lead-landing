@@ -194,14 +194,6 @@ function getSourceLabel(source?: string | null) {
   return raw;
 }
 
-function csvCell(v: unknown) {
-  const s = String(v ?? "")
-    .replace(/\r?\n/g, " ")
-    .trim();
-
-  return `"${s.replace(/"/g, '""')}"`;
-}
-
 function SourceBadge({ source }: { source?: string | null }) {
   const label = getSourceLabel(source);
 
@@ -241,7 +233,6 @@ export default function AdminLeadsClient() {
   const selectedLK = normalizeLK(sp.get("landing_key") ?? pageLK);
 
   const [rows, setRows] = useState<Lead[]>([]);
-  const [allRows, setAllRows] = useState<Lead[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [loadingRows, setLoadingRows] = useState(false);
 
@@ -262,6 +253,18 @@ export default function AdminLeadsClient() {
   const [stats, setStats] = useState<any | null>(null);
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+  const [totalRows, setTotalRows] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [summary, setSummary] = useState<any>({
+    total: 0,
+    today: 0,
+    month: 0,
+    status_counts: {},
+    manager_counts: { UNASSIGNED: 0 },
+    landing_counts: {},
+  });
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [topupAdminId, setTopupAdminId] = useState("");
@@ -289,64 +292,17 @@ export default function AdminLeadsClient() {
     return safeNumber(account?.balance, 0);
   }, [isIntegratedAdmin, integratedAccounts, account]);
 
-  const leadsByLanding = useMemo(() => {
-    const map: Record<string, Lead[]> = {};
-    for (const r of rows) {
-      const lk = normalizeLK(r.landing_key);
-      if (!map[lk]) map[lk] = [];
-      map[lk].push(r);
-    }
-    return map;
-  }, [rows]);
+  const displayRows = rows;
 
-  const statusCounts = useMemo(() => {
-    const base: Record<string, number> = {};
-    for (const r of rows) {
-      const k = String(r.status ?? "NEW").toUpperCase();
-      base[k] = (base[k] ?? 0) + 1;
-    }
-    return base;
-  }, [rows]);
-
-  const displayRows = useMemo(() => {
-    let list = rows;
-
-    if (statusFilter !== "ALL") {
-      list = list.filter((r) => String(r.status ?? "NEW").toUpperCase() === statusFilter);
-    }
-
-    if (managerFilter === "UNASSIGNED") {
-      list = list.filter((r) => !r.assigned_to);
-    } else if (managerFilter !== "ALL") {
-      list = list.filter((r) => r.assigned_to === managerFilter);
-    }
-
-    return list;
-  }, [rows, statusFilter, managerFilter]);
-
-  const managerCounts = useMemo(() => {
-    const base: Record<string, number> = { UNASSIGNED: 0 };
-
-    for (const r of rows) {
-      if (r.assigned_to) {
-        base[r.assigned_to] = (base[r.assigned_to] ?? 0) + 1;
-      } else {
-        base.UNASSIGNED += 1;
-      }
-    }
-
-    return base;
-  }, [rows]);
-
-  const todayCount = useMemo(() => countToday(rows), [rows]);
-  const monthCount = useMemo(() => countMonth(rows), [rows]);
-
-  const totalTodayCount = useMemo(() => countToday(allRows), [allRows]);
-  const totalMonthCount = useMemo(() => countMonth(allRows), [allRows]);
-  const totalAllCount = useMemo(() => allRows.length, [allRows]);
+  const statusCounts = summary?.status_counts || {};
+  const managerCounts = summary?.manager_counts || { UNASSIGNED: 0 };
+  const todayCount = safeNumber(summary?.today, 0);
+  const monthCount = safeNumber(summary?.month, 0);
+  const totalAllCount = safeNumber(summary?.total, totalRows);
 
   function setLandingKey(k: string) {
     const nk = normalizeLK(k);
+    setPage(1);
 
     const p = new URLSearchParams(sp.toString());
     p.set("landing_key", nk);
@@ -366,69 +322,13 @@ export default function AdminLeadsClient() {
   }
 
   function downloadLeadsCsv() {
-    if (!displayRows.length) {
-      alert("다운로드할 리드가 없습니다.");
-      return;
-    }
+    const p = new URLSearchParams();
 
-    const managerNameMap = new Map(
-      managers.map((manager) => [manager.id, manager.name])
-    );
+    if (canSwitchAny) p.set("landing_key", selectedLK);
+    if (statusFilter !== "ALL") p.set("status", statusFilter);
+    if (managerFilter !== "ALL") p.set("manager", managerFilter);
 
-    const header = [
-      "접수시간",
-      "랜딩",
-      "유입",
-      "이름",
-      "전화",
-      "상태",
-      "담당자",
-      "메모",
-    ];
-
-    const lines = displayRows.map((lead) => {
-      const statusKey = String(lead.status ?? "NEW").toUpperCase() as StatusKey;
-      const statusLabel = STATUS_META[statusKey]?.label || statusKey || "-";
-      const managerName = lead.assigned_to
-        ? managerNameMap.get(lead.assigned_to) || "담당자 없음"
-        : "미지정";
-
-      return [
-        new Date(lead.created_at).toLocaleString("ko-KR"),
-        `${normalizeLK(lead.landing_key)}번`,
-        getSourceLabel(lead.utm_source),
-        lead.name || "-",
-        lead.phone || "-",
-        statusLabel,
-        managerName,
-        lead.memo || "",
-      ];
-    });
-
-    const csv =
-      "\uFEFF" +
-      [header, ...lines]
-        .map((row) => row.map(csvCell).join(","))
-        .join("\r\n");
-
-    const blob = new Blob([csv], {
-      type: "text/csv;charset=utf-8;",
-    });
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-
-    const today = new Date().toISOString().slice(0, 10);
-    const keyText = isIntegratedAdmin ? allowedLandingKeys.join("-") : selectedLK;
-
-    a.href = url;
-    a.download = `leads_${keyText}_${today}.csv`;
-
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-
-    URL.revokeObjectURL(url);
+    window.location.href = `/api/admin/leads/export?${p.toString()}`;
   }
 
   async function loadManagers(signal?: AbortSignal) {
@@ -492,7 +392,6 @@ export default function AdminLeadsClient() {
       const item: Lead | undefined = json?.item;
       if (item?.id) {
         setRows((prev) => prev.map((r) => (r.id === item.id ? item : r)));
-        setAllRows((prev) => prev.map((r) => (r.id === item.id ? item : r)));
       }
 
       setDraft((prev) => {
@@ -529,7 +428,6 @@ export default function AdminLeadsClient() {
       }
 
       setRows((prev) => prev.filter((r) => r.id !== id));
-      setAllRows((prev) => prev.filter((r) => r.id !== id));
     } catch (e) {
       console.error(e);
       setErr("NETWORK_ERROR");
@@ -565,7 +463,14 @@ export default function AdminLeadsClient() {
 
       try {
         if (!canSwitchAny) {
-          const leadsRes = await fetch("/api/admin/leads", {
+          const leadParams = new URLSearchParams({
+            page: String(page),
+            page_size: String(pageSize),
+          });
+          if (statusFilter !== "ALL") leadParams.set("status", statusFilter);
+          if (managerFilter !== "ALL") leadParams.set("manager", managerFilter);
+
+          const leadsRes = await fetch(`/api/admin/leads?${leadParams.toString()}`, {
             cache: "no-store",
             signal: ac.signal,
           });
@@ -589,6 +494,9 @@ export default function AdminLeadsClient() {
 
           setAllowedLandingKeys(uniqueKeys);
           setRows((leadsJson.items || leadsJson.data || []) as Lead[]);
+          setTotalRows(safeNumber(leadsJson.total, 0));
+          setTotalPages(Math.max(1, safeNumber(leadsJson.total_pages, 1)));
+          setSummary(leadsJson.summary || {});
           setDraft({});
           setStats(null);
 
@@ -617,7 +525,13 @@ export default function AdminLeadsClient() {
         }
 
         const [leadsRes, statsRes, accRes] = await Promise.all([
-          fetch(`/api/admin/leads?landing_key=${encodeURIComponent(selectedLK)}`, {
+          fetch(`/api/admin/leads?${new URLSearchParams({
+            landing_key: selectedLK,
+            page: String(page),
+            page_size: String(pageSize),
+            ...(statusFilter !== "ALL" ? { status: statusFilter } : {}),
+            ...(managerFilter !== "ALL" ? { manager: managerFilter } : {}),
+          }).toString()}`, {
             cache: "no-store",
             signal: ac.signal,
           }),
@@ -640,6 +554,9 @@ export default function AdminLeadsClient() {
           setRows([]);
         } else {
           setRows((leadsJson.items || leadsJson.data || []) as Lead[]);
+          setTotalRows(safeNumber(leadsJson.total, 0));
+          setTotalPages(Math.max(1, safeNumber(leadsJson.total_pages, 1)));
+          setSummary(leadsJson.summary || {});
           setDraft({});
         }
 
@@ -662,37 +579,17 @@ export default function AdminLeadsClient() {
     })();
 
     return () => ac.abort();
-  }, [authStatus, router, selectedLK, pageLK, canSwitchAny]);
-
-  useEffect(() => {
-    if (authStatus !== "authenticated") return;
-    if (!isMainAdmin) return;
-
-    const ac = new AbortController();
-
-    (async () => {
-      try {
-        const res = await fetch("/api/admin/leads", {
-          cache: "no-store",
-          signal: ac.signal,
-        });
-
-        const json = await res.json().catch(() => ({}));
-        if (res.ok) {
-          setAllRows((json.items || json.data || []) as Lead[]);
-        } else {
-          setAllRows([]);
-        }
-      } catch (e: any) {
-        if (e?.name !== "AbortError") {
-          console.error(e);
-          setAllRows([]);
-        }
-      }
-    })();
-
-    return () => ac.abort();
-  }, [authStatus, isMainAdmin]);
+  }, [
+    authStatus,
+    router,
+    selectedLK,
+    pageLK,
+    canSwitchAny,
+    page,
+    pageSize,
+    statusFilter,
+    managerFilter,
+  ]);
 
   useEffect(() => {
     if (authStatus !== "authenticated") return;
@@ -939,13 +836,13 @@ export default function AdminLeadsClient() {
           <>
             {allowedLandingKeys.map((lk) => {
               const acc = integratedAccounts.find((a) => normalizeLK(a.landing_key) === lk);
-              const leadRows = leadsByLanding[lk] || [];
+              const leadSummary = summary?.landing_counts?.[lk] || { today: 0, month: 0, total: 0 };
 
               return (
                 <div key={lk} style={card}>
                   {lk} 리드
                   <div style={cardBig}>
-                    오늘 {fmt(countToday(leadRows))} / 월 {fmt(countMonth(leadRows))}
+                    오늘 {fmt(leadSummary.today)} / 월 {fmt(leadSummary.month)}
                   </div>
                   <div style={{ marginTop: 6, fontSize: 12, color: "#666" }}>
                     단가 {fmt(acc?.price_per_lead)}
@@ -976,12 +873,12 @@ export default function AdminLeadsClient() {
         <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
           <div style={card}>
             전체 오늘 리드
-            <div style={cardBig}>{fmt(totalTodayCount)}</div>
+            <div style={cardBig}>{fmt(todayCount)}</div>
           </div>
 
           <div style={card}>
             전체 이번달 리드
-            <div style={cardBig}>{fmt(totalMonthCount)}</div>
+            <div style={cardBig}>{fmt(monthCount)}</div>
           </div>
 
           <div style={card}>
@@ -995,12 +892,15 @@ export default function AdminLeadsClient() {
         {(["ALL", ...STATUS_OPTIONS] as const).map((s) => {
           const active = statusFilter === (s as any);
           const label = s === "ALL" ? "전체" : STATUS_META[s].label;
-          const count = s === "ALL" ? rows.length : statusCounts?.[s] ?? 0;
+          const count = s === "ALL" ? totalAllCount : statusCounts?.[s] ?? 0;
 
           return (
             <button
               key={s}
-              onClick={() => setStatusFilter(s as StatusFilter)}
+              onClick={() => {
+                setStatusFilter(s as StatusFilter);
+                setPage(1);
+              }}
               style={{
                 padding: "6px 10px",
                 borderRadius: 999,
@@ -1022,7 +922,10 @@ export default function AdminLeadsClient() {
 
         <select
           value={managerFilter}
-          onChange={(e) => setManagerFilter(e.target.value)}
+          onChange={(e) => {
+            setManagerFilter(e.target.value);
+            setPage(1);
+          }}
           style={{
             height: 36,
             padding: "0 10px",
@@ -1031,7 +934,7 @@ export default function AdminLeadsClient() {
             background: "#fff",
           }}
         >
-          <option value="ALL">전체 ({rows.length})</option>
+          <option value="ALL">전체 ({totalAllCount})</option>
           <option value="UNASSIGNED">미지정 ({managerCounts.UNASSIGNED || 0})</option>
 
           {managers.map((m) => (
@@ -1111,8 +1014,8 @@ export default function AdminLeadsClient() {
       <div style={{ marginTop: 12, border: "1px solid #eee", borderRadius: 14, overflow: "hidden" }}>
         <div style={{ padding: 12, borderBottom: "1px solid #eee", fontWeight: 800 }}>
           {isIntegratedAdmin
-            ? `landing_key: ${allowedLandingKeys.join(" + ")} 통합 • ${loadingRows ? "불러오는 중..." : `${displayRows.length}건`}`
-            : `landing_key: ${selectedLK} • ${loadingRows ? "불러오는 중..." : `${displayRows.length}건`}`}
+            ? `landing_key: ${allowedLandingKeys.join(" + ")} 통합 • ${loadingRows ? "불러오는 중..." : `전체 ${totalRows}건 / ${page}페이지`}`
+            : `landing_key: ${selectedLK} • ${loadingRows ? "불러오는 중..." : `전체 ${totalRows}건 / ${page}페이지`}`}
         </div>
 
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -1280,6 +1183,52 @@ export default function AdminLeadsClient() {
             )}
           </tbody>
         </table>
+      </div>
+
+      <div
+        style={{
+          marginTop: 12,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 10,
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ fontSize: 13, color: "#555" }}>
+          전체 {fmt(totalRows)}건 · {page} / {totalPages}페이지
+        </div>
+
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <select
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value));
+              setPage(1);
+            }}
+            style={{ height: 36, border: "1px solid #ddd", borderRadius: 10, padding: "0 8px" }}
+          >
+            <option value={25}>25개씩</option>
+            <option value={50}>50개씩</option>
+            <option value={100}>100개씩</option>
+          </select>
+
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1 || loadingRows}
+            style={smallBtn}
+          >
+            이전
+          </button>
+
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages || loadingRows}
+            style={smallBtn}
+          >
+            다음
+          </button>
+        </div>
       </div>
     </div>
   );
