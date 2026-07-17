@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useRef, useState } from "react";
 
 const LINE_ADD_FRIEND_URL = "https://line.me/ti/p/Dtxp_6EXKQ";
 
@@ -39,6 +39,7 @@ export default function Landing09Client() {
   const [agreed, setAgreed] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const formRef = useRef<HTMLFormElement | null>(null);
 
   const selectedOptions = useMemo(() => {
     return SELF_CHECK_OPTIONS.filter((option) =>
@@ -60,6 +61,13 @@ export default function Landing09Client() {
     });
 
     setErrorMessage("");
+  }
+
+  function scrollToForm() {
+    formRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -165,6 +173,7 @@ export default function Landing09Client() {
         width: "100%",
         minHeight: "100vh",
         background: "#f3f5f4",
+        paddingBottom: "88px",
       }}
     >
       <div
@@ -392,6 +401,7 @@ export default function Landing09Client() {
           </div>
 
           <form
+            ref={formRef}
             onSubmit={handleSubmit}
             style={{
               display: "grid",
@@ -596,6 +606,46 @@ export default function Landing09Client() {
             height: "auto",
           }}
         />
+      </div>
+
+      <div
+        style={{
+          position: "fixed",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 100,
+          padding: "10px 14px",
+          paddingBottom:
+            "calc(10px + env(safe-area-inset-bottom))",
+          background: "rgba(255, 255, 255, 0.95)",
+          borderTop: "1px solid rgba(0, 0, 0, 0.08)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+        }}
+      >
+        <button
+          type="button"
+          onClick={scrollToForm}
+          style={{
+            display: "block",
+            width: "100%",
+            maxWidth: "600px",
+            minHeight: "54px",
+            margin: "0 auto",
+            border: 0,
+            borderRadius: "14px",
+            background: "#06c755",
+            color: "#ffffff",
+            fontSize: "17px",
+            fontWeight: 900,
+            cursor: "pointer",
+            boxShadow:
+              "0 10px 24px rgba(6, 199, 85, 0.25)",
+          }}
+        >
+          LINEで無料相談する
+        </button>
       </div>
     </main>
   );
