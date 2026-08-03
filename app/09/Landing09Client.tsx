@@ -2,7 +2,7 @@
 
 import { FormEvent, useMemo, useRef, useState } from "react";
 
-const LINE_ADD_FRIEND_URL = "https://line.me/ti/p/Dtxp_6EXKQ";
+const LINE_OFFICIAL_ACCOUNT_ID = "@mihops";
 
 const SELF_CHECK_OPTIONS = [
   {
@@ -32,13 +32,35 @@ const SELF_CHECK_OPTIONS = [
   },
 ];
 
+function createLineMessageUrl({
+  name,
+  selectedText,
+  receiptNumber,
+}: {
+  name: string;
+  selectedText: string;
+  receiptNumber: string;
+}) {
+  const message = [
+    "広告を見て申し込みました。",
+    `お名前：${name}`,
+    `ご相談内容：${selectedText}`,
+    `受付番号：${receiptNumber}`,
+    "無料相談を希望します。",
+  ].join("\n");
+
+  return `https://line.me/R/oaMessage/${encodeURIComponent(
+    LINE_OFFICIAL_ACCOUNT_ID
+  )}/?${encodeURIComponent(message)}`;
+}
+
 export default function Landing09Client() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [name, setName] = useState("");
-  const [lineId, setLineId] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
   const formRef = useRef<HTMLFormElement | null>(null);
 
   const selectedOptions = useMemo(() => {
@@ -71,100 +93,99 @@ export default function Landing09Client() {
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-  event.preventDefault();
+    event.preventDefault();
 
-  if (selectedIds.length === 0) {
-    setErrorMessage("気になる項目を1つ以上選択してください。");
-    return;
-  }
-
-  if (!name.trim()) {
-    setErrorMessage("お名前を入力してください。");
-    return;
-  }
-
-  const cleanLineId = lineId.trim().toLowerCase();
-
-  if (!cleanLineId) {
-    setErrorMessage("LINE IDを入力してください。");
-    return;
-  }
-
-  if (!/^[a-z0-9._-]+$/.test(cleanLineId)) {
-    setErrorMessage(
-    "LINE IDは半角英小文字・数字・「.」「-」「_」で入力してください。"
-    );
-    return;
-  }
-
-  if (!agreed) {
-    setErrorMessage("個人情報の取り扱いに同意してください。");
-    return;
-  }
-
-  setErrorMessage("");
-  setIsSubmitting(true);
-
-  try {
-    const params = new URLSearchParams(window.location.search);
-
-    const response = await fetch("/api/leads/09", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: name.trim(),
-        line_id: cleanLineId,
-        line_name: cleanLineId,
-        selected_labels: selectedOptions.map(
-          (option) => option.title
-        ),
-        utm_source: params.get("utm_source") || "",
-        utm_campaign: params.get("utm_campaign") || "",
-        utm_term: params.get("utm_term") || "",
-        utm_content: params.get("utm_content") || "",
-      }),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok || result.ok === false) {
-      if (result.error === "INSUFFICIENT_BALANCE") {
-        setErrorMessage(
-          "現在、オンライン受付を一時停止しています。"
-        );
-        return;
-      }
-
-      throw new Error(result.error || "LEAD_CREATE_FAILED");
+    if (selectedIds.length === 0) {
+      setErrorMessage("気になる項目を1つ以上選択してください。");
+      return;
     }
 
-    alert(
-      [
-        "お申し込みありがとうございます。",
-        "",
-        "続けてLINE公式アカウントから",
-        "メッセージをお送りください。",
-      ].join("\n")
-    );
+    const cleanName = name.trim();
 
-    setName("");
-    setLineId("");
-    setSelectedIds([]);
-    setAgreed(false);
+    if (!cleanName) {
+      setErrorMessage("お名前を入力してください。");
+      return;
+    }
 
-    window.location.href = LINE_ADD_FRIEND_URL;
-  } catch (error) {
-    console.error("09 lead submit error:", error);
+    if (!agreed) {
+      setErrorMessage("個人情報の取り扱いに同意してください。");
+      return;
+    }
 
-    setErrorMessage(
-      "送信できませんでした。時間をおいて再度お試しください。"
-    );
-  } finally {
-    setIsSubmitting(false);
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      const params = new URLSearchParams(window.location.search);
+
+      const response = await fetch("/api/leads/09", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: cleanName,
+          selected_labels: selectedOptions.map(
+            (option) => option.title
+          ),
+          utm_source: params.get("utm_source") || "",
+          utm_campaign: params.get("utm_campaign") || "",
+          utm_term: params.get("utm_term") || "",
+          utm_content: params.get("utm_content") || "",
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || result.ok === false) {
+        if (result.error === "INSUFFICIENT_BALANCE") {
+          setErrorMessage(
+            "現在、オンライン受付を一時停止しています。"
+          );
+          return;
+        }
+
+        throw new Error(result.error || "LEAD_CREATE_FAILED");
+      }
+
+      const receiptNumber = String(
+        result.receipt_number || ""
+      ).trim();
+
+      if (!receiptNumber) {
+        throw new Error("RECEIPT_NUMBER_MISSING");
+      }
+
+      const lineMessageUrl = createLineMessageUrl({
+        name: cleanName,
+        selectedText,
+        receiptNumber,
+      });
+
+      setName("");
+      setSelectedIds([]);
+      setAgreed(false);
+
+      alert(
+        [
+          "お申し込みありがとうございます。",
+          "",
+          "LINEのトーク画面にメッセージが入力されています。",
+          "内容を確認して送信ボタンを押してください。",
+        ].join("\n")
+      );
+
+      window.location.assign(lineMessageUrl);
+    } catch (error) {
+      console.error("09 lead submit error:", error);
+
+      setErrorMessage(
+        "送信できませんでした。時間をおいて再度お試しください。"
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
-}
 
   return (
     <main
@@ -266,7 +287,9 @@ export default function Landing09Client() {
                     border: selected
                       ? "2px solid #06c755"
                       : "1px solid #dfe8e2",
-                    background: selected ? "#effff5" : "#ffffff",
+                    background: selected
+                      ? "#effff5"
+                      : "#ffffff",
                     color: "#17201b",
                     textAlign: "left",
                     cursor: "pointer",
@@ -287,7 +310,9 @@ export default function Landing09Client() {
                       border: selected
                         ? "2px solid #06c755"
                         : "2px solid #cbd6cf",
-                      background: selected ? "#06c755" : "#ffffff",
+                      background: selected
+                        ? "#06c755"
+                        : "#ffffff",
                       color: "#ffffff",
                       fontSize: "15px",
                       fontWeight: 900,
@@ -413,6 +438,38 @@ export default function Landing09Client() {
               background: "#f5faf7",
             }}
           >
+            <div
+              style={{
+                padding: "15px",
+                borderRadius: "13px",
+                background: "#effff5",
+                border: "1px solid #c9f3d9",
+              }}
+            >
+              <strong
+                style={{
+                  display: "block",
+                  marginBottom: "5px",
+                  color: "#056b32",
+                  fontSize: "14px",
+                }}
+              >
+                お申し込み後、LINEに移動します
+              </strong>
+
+              <p
+                style={{
+                  margin: 0,
+                  color: "#486054",
+                  fontSize: "12px",
+                  lineHeight: 1.7,
+                }}
+              >
+                LINEのトーク画面にメッセージが入力されています。
+                内容を確認して送信ボタンを押すと相談受付が完了します。
+              </p>
+            </div>
+
             <label
               style={{
                 display: "grid",
@@ -438,6 +495,7 @@ export default function Landing09Client() {
                 }}
                 placeholder="例：山田 花子"
                 maxLength={50}
+                autoComplete="name"
                 style={{
                   width: "100%",
                   height: "52px",
@@ -451,60 +509,6 @@ export default function Landing09Client() {
                   outline: "none",
                 }}
               />
-            </label>
-
-            <label
-              style={{
-                display: "grid",
-                gap: "8px",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: "14px",
-                  fontWeight: 800,
-                  color: "#17201b",
-                }}
-              >
-                LINE ID
-              </span>
-
-              <input
-                type="text"
-                value={lineId}
-                onChange={(event) => {
-                  setLineId(event.target.value.toLowerCase());
-                  setErrorMessage("");
-                }}
-                placeholder="例：yamada_123"
-                maxLength={50}
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                style={{
-                  width: "100%",
-                  height: "52px",
-                  boxSizing: "border-box",
-                  padding: "0 15px",
-                  borderRadius: "13px",
-                  border: "1px solid #cad7cf",
-                  background: "#ffffff",
-                  fontSize: "16px",
-                  color: "#17201b",
-                  outline: "none",
-                }}
-              />
-
-              <small
-                style={{
-                  color: "#667168",
-                  fontSize: "11px",
-                  lineHeight: 1.7,
-                }}
-              >
-                LINEの「設定 → プロフィール」からIDをご確認ください。
-                ID検索による友だち追加を許可した状態でお申し込みください。
-              </small>
             </label>
 
             <label
@@ -534,7 +538,9 @@ export default function Landing09Client() {
                 }}
               />
 
-              <span>個人情報の収集および利用に同意します。</span>
+              <span>
+                個人情報の収集および利用に同意します。
+              </span>
             </label>
 
             {errorMessage && (
@@ -568,10 +574,13 @@ export default function Landing09Client() {
                 fontWeight: 900,
                 cursor: isSubmitting ? "wait" : "pointer",
                 opacity: isSubmitting ? 0.65 : 1,
-                boxShadow: "0 10px 24px rgba(6, 199, 85, 0.23)",
+                boxShadow:
+                  "0 10px 24px rgba(6, 199, 85, 0.23)",
               }}
             >
-             {isSubmitting ? "送信中..." : "LINEで無料相談する"}
+              {isSubmitting
+                ? "送信中..."
+                : "申し込んでLINE相談を続ける"}
             </button>
 
             <p
@@ -580,9 +589,12 @@ export default function Landing09Client() {
                 textAlign: "center",
                 color: "#667168",
                 fontSize: "11px",
+                lineHeight: 1.7,
               }}
             >
-              お申し込み内容を確認後、LINEでご案内いたします。
+              お申し込み後、LINEのトーク画面に移動します。
+              <br />
+              入力済みのメッセージを確認して送信してください。
             </p>
           </form>
         </section>

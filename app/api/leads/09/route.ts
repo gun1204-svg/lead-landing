@@ -8,11 +8,6 @@ const LANDING_KEY = "09";
 
 type RequestBody = {
   name?: unknown;
-  line_id?: unknown;
-
-  // 기존 프론트 코드와의 임시 호환용
-  line_name?: unknown;
-
   selected_labels?: unknown;
   utm_source?: unknown;
   utm_campaign?: unknown;
@@ -56,37 +51,71 @@ function getRpcResult(data: unknown): Record<string, unknown> {
   return {};
 }
 
+function getJapanDateParts() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date());
+
+  const values = Object.fromEntries(
+    parts.map((part) => [part.type, part.value])
+  );
+
+  return {
+    year: values.year,
+    month: values.month,
+    day: values.day,
+    hour: values.hour,
+    minute: values.minute,
+    second: values.second,
+  };
+}
+
+/*
+ * 일본 시간 기준 접수번호
+ *
+ * 예:
+ * JP09-20260804-043915-A7K3
+ */
+function createReceiptNumber() {
+  const {
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    second,
+  } = getJapanDateParts();
+
+  const randomCode = crypto
+    .randomUUID()
+    .replace(/-/g, "")
+    .slice(0, 4)
+    .toUpperCase();
+
+  return `JP09-${year}${month}${day}-${hour}${minute}${second}-${randomCode}`;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as RequestBody;
 
     const name = cleanText(body.name, 50);
-
-    /*
-     * line_id를 우선 사용하고,
-     * 기존 Landing09Client와의 호환을 위해 line_name도 허용한다.
-     */
-    const lineId = cleanText(
-      body.line_id ?? body.line_name,
-      50
-    ).toLowerCase();
-
     const selectedLabels = getSelectedLabels(
       body.selected_labels
     );
 
     /*
-     * LINE ID 허용 문자:
-     * 영문 소문자, 숫자, 마침표, 하이픈, 언더바
+     * 이름과 고민 선택값만 필수로 검사한다.
+     * LINE ID는 더 이상 수집하지 않는다.
      */
-    const isValidLineId = /^[a-z0-9._-]+$/.test(lineId);
-
-    if (
-      !name ||
-      !lineId ||
-      !isValidLineId ||
-      selectedLabels.length === 0
-    ) {
+    if (!name || selectedLabels.length === 0) {
       return NextResponse.json(
         {
           ok: false,
@@ -99,17 +128,18 @@ export async function POST(request: NextRequest) {
     }
 
     /*
-     * 기존 leads.phone 컬럼을 그대로 사용한다.
-     * 09번 일본어 리드는 아래 형식으로 저장된다.
+     * 실제 연락처 대신 접수번호를 phone 컬럼에 저장한다.
      *
-     * LINE_ID:yamada_123
+     * 예:
+     * LINE_FOLLOW_UP:JP09-20260804-043915-A7K3
      */
-    const contact = `LINE_ID:${lineId}`;
+    const receiptNumber = createReceiptNumber();
+    const contact = `LINE_FOLLOW_UP:${receiptNumber}`;
 
     /*
-     * 기존 source 컬럼에 유입 방식과 SELF CHECK 결과를 저장한다.
+     * source 컬럼에는 유입 방식과 선택한 고민을 저장한다.
      */
-    const source = `JP-LINE-ID | ${selectedLabels.join(
+    const source = `JP-LINE-FOLLOW-UP | ${selectedLabels.join(
       " | "
     )}`;
 
@@ -136,14 +166,21 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error("09 lead RPC error:", error);
 
+      const rpcError = cleanText(
+        error.message || "LEAD_CREATE_FAILED",
+        200
+      );
+
       return NextResponse.json(
         {
           ok: false,
-          error:
-            error.message || "LEAD_CREATE_FAILED",
+          error: rpcError,
         },
         {
-          status: 500,
+          status:
+            rpcError === "INSUFFICIENT_BALANCE"
+              ? 402
+              : 500,
         }
       );
     }
@@ -172,8 +209,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    /*
+     * 프론트에서 이 접수번호를 받아
+     * LINE 미리 작성 메시지에 포함한다.
+     */
     return NextResponse.json({
       ok: true,
+      receipt_number: receiptNumber,
     });
   } catch (error) {
     console.error("09 lead API error:", error);
