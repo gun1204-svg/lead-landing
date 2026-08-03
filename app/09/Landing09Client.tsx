@@ -2,7 +2,7 @@
 
 import { FormEvent, useMemo, useRef, useState } from "react";
 
-const LINE_OFFICIAL_ACCOUNT_ID = "@mihops";
+const LINE_OFFICIAL_ACCOUNT_ID = "@mihops_jp";
 
 const SELF_CHECK_OPTIONS = [
   {
