@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { getLandingConfig } from "@/lib/landing";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const LANDING_KEY = "09";
+
+/*
+ * 09번 리드 텔레그램 알림은
+ * 02번 랜딩이 사용하는 텔레그램 방으로 보낸다.
+ */
+const TELEGRAM_LANDING_KEY = "02";
 
 type RequestBody = {
   name?: unknown;
@@ -103,49 +110,42 @@ function createReceiptNumber() {
 }
 
 /*
- * 텔레그램 알림 전송
- *
- * 텔레그램 전송이 실패하더라도
- * 리드 접수 자체에는 영향을 주지 않는다.
+ * 기존 랜딩과 동일한 텔레그램 전송 방식
  */
-async function sendTelegramNotification(message: string) {
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
+async function sendTelegram(
+  text: string,
+  chatId?: string
+) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
 
-  if (!botToken || !chatId) {
-    console.error(
-      "09 Telegram env missing: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID"
-    );
+  if (!token || !chatId) {
+    console.log("09 telegram env/chat id missing");
     return;
   }
 
-  try {
-    const response = await fetch(
-      `https://api.telegram.org/bot${botToken}/sendMessage`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: message,
-        }),
-        cache: "no-store",
-      }
-    );
-
-    if (!response.ok) {
-      const responseText = await response.text();
-
-      console.error(
-        "09 Telegram send failed:",
-        response.status,
-        responseText
-      );
+  const res = await fetch(
+    `https://api.telegram.org/bot${token}/sendMessage`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text,
+      }),
+      cache: "no-store",
     }
-  } catch (error) {
-    console.error("09 Telegram error:", error);
+  );
+
+  if (!res.ok) {
+    const responseBody = await res
+      .text()
+      .catch(() => "");
+
+    throw new Error(
+      `telegram send failed: ${res.status} ${responseBody}`
+    );
   }
 }
 
@@ -180,8 +180,8 @@ export async function POST(request: NextRequest) {
     );
 
     /*
-     * 이름과 고민 선택값만 필수로 검사한다.
-     * LINE ID는 더 이상 수집하지 않는다.
+     * 이름과 고민 선택값만 필수.
+     * LINE ID는 수집하지 않는다.
      */
     if (!name || selectedLabels.length === 0) {
       return NextResponse.json(
@@ -196,10 +196,7 @@ export async function POST(request: NextRequest) {
     }
 
     /*
-     * 실제 연락처 대신 접수번호를 phone 컬럼에 저장한다.
-     *
-     * 예:
-     * LINE_FOLLOW_UP:JP09-20260804-043915-A7K3
+     * 실제 연락처 대신 접수번호를 phone 컬럼에 저장
      */
     const receiptNumber = createReceiptNumber();
 
@@ -207,7 +204,7 @@ export async function POST(request: NextRequest) {
       `LINE_FOLLOW_UP:${receiptNumber}`;
 
     /*
-     * source 컬럼에는 유입 방식과 선택한 고민을 저장한다.
+     * source에는 선택한 고민 저장
      */
     const source =
       `JP-LINE-FOLLOW-UP | ${selectedLabels.join(
@@ -251,8 +248,8 @@ export async function POST(request: NextRequest) {
     }
 
     /*
-     * Supabase 함수가 배열 또는 객체로 반환되는 경우를
-     * 모두 처리한다.
+     * Supabase 함수가 배열 또는 객체로 반환되는 경우
+     * 모두 처리
      */
     const result = getRpcResult(data);
 
@@ -280,48 +277,66 @@ export async function POST(request: NextRequest) {
     }
 
     /*
-     * 여기까지 왔으면 DB 리드 등록 성공.
-     * 그 이후 텔레그램 알림을 전송한다.
+     * DB 등록 성공 후
+     * 02번 텔레그램 방으로 알림
      */
-    const {
-      year,
-      month,
-      day,
-      hour,
-      minute,
-      second,
-    } = getJapanDateParts();
+    try {
+      const telegramConfig = getLandingConfig(
+        TELEGRAM_LANDING_KEY
+      );
 
-    const japanTime =
-      `${year}-${month}-${day} ` +
-      `${hour}:${minute}:${second}`;
+      const {
+        year,
+        month,
+        day,
+        hour,
+        minute,
+        second,
+      } = getJapanDateParts();
 
-    const telegramMessage = [
-      "🇯🇵 09번 일본 신규 상담",
-      "",
-      `👤 이름: ${name}`,
-      `📝 고민: ${selectedLabels.join(", ")}`,
-      "",
-      `🔖 접수번호: ${receiptNumber}`,
-      "💬 상담방식: LINE 친구추가",
-      "",
-      "📊 광고 정보",
-      `utm_source: ${utmSource || "-"}`,
-      `utm_campaign: ${utmCampaign || "-"}`,
-      `utm_term: ${utmTerm || "-"}`,
-      `utm_content: ${utmContent || "-"}`,
-      "",
-      `🕒 일본시간: ${japanTime}`,
-    ].join("\n");
+      const japanTime =
+        `${year}-${month}-${day} ` +
+        `${hour}:${minute}:${second}`;
 
-    await sendTelegramNotification(
-      telegramMessage
-    );
+      const telegramMessage = [
+        "🇯🇵 일본 신규 상담 리드",
+        "",
+        "🏥 랜딩: 09 일본 코상담",
+        `👤 이름: ${name}`,
+        "",
+        "📝 체크한 고민",
+        ...selectedLabels.map(
+          (label) => `- ${label}`
+        ),
+        "",
+        `🔖 접수번호: ${receiptNumber}`,
+        "💬 상담방식: LINE 친구추가",
+        "",
+        "📊 광고 정보",
+        `utm_source: ${utmSource || "-"}`,
+        `utm_campaign: ${utmCampaign || "-"}`,
+        `utm_term: ${utmTerm || "-"}`,
+        `utm_content: ${utmContent || "-"}`,
+        "",
+        "🕒 접수시간 (일본)",
+        japanTime,
+      ].join("\n");
 
-    /*
-     * 프론트에서 이 접수번호를 받아
-     * LINE 미리 작성 메시지에 포함한다.
-     */
+      await sendTelegram(
+        telegramMessage,
+        telegramConfig.telegramChatId
+      );
+    } catch (tgErr) {
+      /*
+       * 텔레그램 전송 실패가
+       * 리드 접수 실패로 이어지지 않게 한다.
+       */
+      console.error(
+        "09 telegram alert error:",
+        tgErr
+      );
+    }
+
     return NextResponse.json({
       ok: true,
       receipt_number: receiptNumber,
