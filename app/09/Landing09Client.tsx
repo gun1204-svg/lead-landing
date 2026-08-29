@@ -32,6 +32,84 @@ const SELF_CHECK_OPTIONS = [
   },
 ];
 
+function getCookie(name: string) {
+  if (typeof document === "undefined") {
+    return "";
+  }
+
+  const cookies = document.cookie.split("; ");
+
+  for (const cookie of cookies) {
+    const separatorIndex = cookie.indexOf("=");
+
+    if (separatorIndex === -1) {
+      continue;
+    }
+
+    const key = cookie.slice(0, separatorIndex);
+
+    if (key !== name) {
+      continue;
+    }
+
+    return decodeURIComponent(
+      cookie.slice(separatorIndex + 1)
+    );
+  }
+
+  return "";
+}
+
+function getMetaFbc(params: URLSearchParams) {
+  const existingFbc = getCookie("_fbc");
+
+  if (existingFbc) {
+    return existingFbc;
+  }
+
+  const fbclid = params.get("fbclid");
+
+  if (!fbclid) {
+    return "";
+  }
+
+  return `fb.1.${Date.now()}.${fbclid}`;
+}
+
+function trackMetaLead(eventId: string) {
+  try {
+    const metaWindow = window as typeof window & {
+      fbq?: (...args: unknown[]) => void;
+    };
+
+    if (typeof metaWindow.fbq !== "function") {
+      console.warn(
+        "09 Meta Pixel Lead skipped: fbq not found"
+      );
+      return;
+    }
+
+    metaWindow.fbq(
+      "track",
+      "Lead",
+      {},
+      {
+        eventID: eventId,
+      }
+    );
+
+    console.log(
+      "09 Meta Browser Lead sent:",
+      eventId
+    );
+  } catch (error) {
+    console.error(
+      "09 Meta Browser Lead error:",
+      error
+    );
+  }
+}
+
 function createLineMessageUrl({
   name,
   selectedText,
@@ -76,7 +154,9 @@ export default function Landing09Client() {
   function toggleOption(id: string) {
     setSelectedIds((current) => {
       if (current.includes(id)) {
-        return current.filter((value) => value !== id);
+        return current.filter(
+          (value) => value !== id
+        );
       }
 
       return [...current, id];
@@ -92,23 +172,31 @@ export default function Landing09Client() {
     });
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>
+  ) {
     event.preventDefault();
 
     if (selectedIds.length === 0) {
-      setErrorMessage("気になる項目を1つ以上選択してください。");
+      setErrorMessage(
+        "気になる項目を1つ以上選択してください。"
+      );
       return;
     }
 
     const cleanName = name.trim();
 
     if (!cleanName) {
-      setErrorMessage("お名前を入力してください。");
+      setErrorMessage(
+        "お名前を入力してください。"
+      );
       return;
     }
 
     if (!agreed) {
-      setErrorMessage("個人情報の取り扱いに同意してください。");
+      setErrorMessage(
+        "個人情報の取り扱いに同意してください。"
+      );
       return;
     }
 
@@ -116,36 +204,86 @@ export default function Landing09Client() {
     setIsSubmitting(true);
 
     try {
-      const params = new URLSearchParams(window.location.search);
+      const params = new URLSearchParams(
+        window.location.search
+      );
 
-      const response = await fetch("/api/leads/09", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: cleanName,
-          selected_labels: selectedOptions.map(
-            (option) => option.title
-          ),
-          utm_source: params.get("utm_source") || "",
-          utm_campaign: params.get("utm_campaign") || "",
-          utm_term: params.get("utm_term") || "",
-          utm_content: params.get("utm_content") || "",
-        }),
-      });
+      /*
+       * Browser Pixel / Server CAPI
+       * 중복 제거를 위해 동일한 event_id 사용
+       */
+      const eventId = crypto.randomUUID();
 
-      const result = await response.json();
+      const fbp = getCookie("_fbp");
+      const fbc = getMetaFbc(params);
 
-      if (!response.ok || result.ok === false) {
-        if (result.error === "INSUFFICIENT_BALANCE") {
+      const response = await fetch(
+        "/api/leads/09",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            name: cleanName,
+
+            selected_labels:
+              selectedOptions.map(
+                (option) => option.title
+              ),
+
+            utm_source:
+              params.get("utm_source") ||
+              "",
+
+            utm_campaign:
+              params.get(
+                "utm_campaign"
+              ) || "",
+
+            utm_term:
+              params.get("utm_term") ||
+              "",
+
+            utm_content:
+              params.get(
+                "utm_content"
+              ) || "",
+
+            /*
+             * Meta Pixel / CAPI
+             */
+            event_id: eventId,
+            fbp,
+            fbc,
+            event_source_url:
+              window.location.href,
+          }),
+        }
+      );
+
+      const result =
+        await response.json();
+
+      if (
+        !response.ok ||
+        result.ok === false
+      ) {
+        if (
+          result.error ===
+          "INSUFFICIENT_BALANCE"
+        ) {
           setErrorMessage(
             "現在、オンライン受付を一時停止しています。"
           );
           return;
         }
 
-        throw new Error(result.error || "LEAD_CREATE_FAILED");
+        throw new Error(
+          result.error ||
+            "LEAD_CREATE_FAILED"
+        );
       }
 
       const receiptNumber = String(
@@ -153,14 +291,26 @@ export default function Landing09Client() {
       ).trim();
 
       if (!receiptNumber) {
-        throw new Error("RECEIPT_NUMBER_MISSING");
+        throw new Error(
+          "RECEIPT_NUMBER_MISSING"
+        );
       }
 
-      const lineMessageUrl = createLineMessageUrl({
-        name: cleanName,
-        selectedText,
-        receiptNumber,
-      });
+      const lineMessageUrl =
+        createLineMessageUrl({
+          name: cleanName,
+          selectedText,
+          receiptNumber,
+        });
+
+      /*
+       * DB 등록 + 서버 CAPI 성공 이후
+       * Browser Pixel Lead 전송
+       *
+       * 서버와 동일한 eventId를 사용하므로
+       * Meta에서 중복 제거된다.
+       */
+      trackMetaLead(eventId);
 
       setName("");
       setSelectedIds([]);
@@ -175,9 +325,14 @@ export default function Landing09Client() {
         ].join("\n")
       );
 
-      window.location.assign(lineMessageUrl);
+      window.location.assign(
+        lineMessageUrl
+      );
     } catch (error) {
-      console.error("09 lead submit error:", error);
+      console.error(
+        "09 lead submit error:",
+        error
+      );
 
       setErrorMessage(
         "送信できませんでした。時間をおいて再度お試しください。"
@@ -233,7 +388,8 @@ export default function Landing09Client() {
                 color: "#06c755",
                 fontSize: "13px",
                 fontWeight: 800,
-                letterSpacing: "0.15em",
+                letterSpacing:
+                  "0.15em",
               }}
             >
               SELF CHECK
@@ -264,91 +420,125 @@ export default function Landing09Client() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "1fr",
+              gridTemplateColumns:
+                "1fr",
               gap: "12px",
             }}
           >
-            {SELF_CHECK_OPTIONS.map((option) => {
-              const selected = selectedIds.includes(option.id);
+            {SELF_CHECK_OPTIONS.map(
+              (option) => {
+                const selected =
+                  selectedIds.includes(
+                    option.id
+                  );
 
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => toggleOption(option.id)}
-                  aria-pressed={selected}
-                  style={{
-                    display: "flex",
-                    width: "100%",
-                    alignItems: "flex-start",
-                    gap: "13px",
-                    padding: "17px",
-                    borderRadius: "15px",
-                    border: selected
-                      ? "2px solid #06c755"
-                      : "1px solid #dfe8e2",
-                    background: selected
-                      ? "#effff5"
-                      : "#ffffff",
-                    color: "#17201b",
-                    textAlign: "left",
-                    cursor: "pointer",
-                    boxShadow: selected
-                      ? "0 8px 22px rgba(6, 199, 85, 0.12)"
-                      : "none",
-                  }}
-                >
-                  <span
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() =>
+                      toggleOption(
+                        option.id
+                      )
+                    }
+                    aria-pressed={
+                      selected
+                    }
                     style={{
                       display: "flex",
-                      flexShrink: 0,
-                      width: "25px",
-                      height: "25px",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderRadius: "7px",
+                      width: "100%",
+                      alignItems:
+                        "flex-start",
+                      gap: "13px",
+                      padding: "17px",
+                      borderRadius:
+                        "15px",
                       border: selected
                         ? "2px solid #06c755"
-                        : "2px solid #cbd6cf",
-                      background: selected
-                        ? "#06c755"
-                        : "#ffffff",
-                      color: "#ffffff",
-                      fontSize: "15px",
-                      fontWeight: 900,
+                        : "1px solid #dfe8e2",
+                      background:
+                        selected
+                          ? "#effff5"
+                          : "#ffffff",
+                      color: "#17201b",
+                      textAlign: "left",
+                      cursor: "pointer",
+                      boxShadow:
+                        selected
+                          ? "0 8px 22px rgba(6, 199, 85, 0.12)"
+                          : "none",
                     }}
                   >
-                    {selected ? "✓" : ""}
-                  </span>
-
-                  <span
-                    style={{
-                      display: "grid",
-                      gap: "6px",
-                    }}
-                  >
-                    <strong
+                    <span
                       style={{
-                        fontSize: "16px",
-                        lineHeight: 1.4,
+                        display: "flex",
+                        flexShrink: 0,
+                        width: "25px",
+                        height: "25px",
+                        alignItems:
+                          "center",
+                        justifyContent:
+                          "center",
+                        borderRadius:
+                          "7px",
+                        border: selected
+                          ? "2px solid #06c755"
+                          : "2px solid #cbd6cf",
+                        background:
+                          selected
+                            ? "#06c755"
+                            : "#ffffff",
+                        color:
+                          "#ffffff",
+                        fontSize:
+                          "15px",
+                        fontWeight:
+                          900,
                       }}
                     >
-                      {option.title}
-                    </strong>
+                      {selected
+                        ? "✓"
+                        : ""}
+                    </span>
 
-                    <small
+                    <span
                       style={{
-                        color: "#667168",
-                        fontSize: "12px",
-                        lineHeight: 1.6,
+                        display: "grid",
+                        gap: "6px",
                       }}
                     >
-                      {option.description}
-                    </small>
-                  </span>
-                </button>
-              );
-            })}
+                      <strong
+                        style={{
+                          fontSize:
+                            "16px",
+                          lineHeight:
+                            1.4,
+                        }}
+                      >
+                        {
+                          option.title
+                        }
+                      </strong>
+
+                      <small
+                        style={{
+                          color:
+                            "#667168",
+                          fontSize:
+                            "12px",
+                          lineHeight:
+                            1.6,
+                        }}
+                      >
+                        {
+                          option.description
+                        }
+                      </small>
+                    </span>
+                  </button>
+                );
+              }
+            )}
           </div>
 
           <div
@@ -377,7 +567,8 @@ export default function Landing09Client() {
                 lineHeight: 1.6,
               }}
             >
-              {selectedText || "気になる項目を選択してください"}
+              {selectedText ||
+                "気になる項目を選択してください"}
             </strong>
           </div>
 
@@ -386,7 +577,8 @@ export default function Landing09Client() {
               marginTop: "22px",
               padding: "18px",
               borderRadius: "15px",
-              border: "1px solid #eadfce",
+              border:
+                "1px solid #eadfce",
               background: "#fffaf3",
               color: "#554635",
             }}
@@ -434,7 +626,8 @@ export default function Landing09Client() {
               marginTop: "22px",
               padding: "20px",
               borderRadius: "18px",
-              border: "1px solid #dfe8e2",
+              border:
+                "1px solid #dfe8e2",
               background: "#f5faf7",
             }}
           >
@@ -443,13 +636,15 @@ export default function Landing09Client() {
                 padding: "15px",
                 borderRadius: "13px",
                 background: "#effff5",
-                border: "1px solid #c9f3d9",
+                border:
+                  "1px solid #c9f3d9",
               }}
             >
               <strong
                 style={{
                   display: "block",
-                  marginBottom: "5px",
+                  marginBottom:
+                    "5px",
                   color: "#056b32",
                   fontSize: "14px",
                 }}
@@ -489,9 +684,17 @@ export default function Landing09Client() {
               <input
                 type="text"
                 value={name}
-                onChange={(event) => {
-                  setName(event.target.value);
-                  setErrorMessage("");
+                onChange={(
+                  event
+                ) => {
+                  setName(
+                    event.target
+                      .value
+                  );
+
+                  setErrorMessage(
+                    ""
+                  );
                 }}
                 placeholder="例：山田 花子"
                 maxLength={50}
@@ -499,13 +702,20 @@ export default function Landing09Client() {
                 style={{
                   width: "100%",
                   height: "52px",
-                  boxSizing: "border-box",
-                  padding: "0 15px",
-                  borderRadius: "13px",
-                  border: "1px solid #cad7cf",
-                  background: "#ffffff",
-                  fontSize: "16px",
-                  color: "#17201b",
+                  boxSizing:
+                    "border-box",
+                  padding:
+                    "0 15px",
+                  borderRadius:
+                    "13px",
+                  border:
+                    "1px solid #cad7cf",
+                  background:
+                    "#ffffff",
+                  fontSize:
+                    "16px",
+                  color:
+                    "#17201b",
                   outline: "none",
                 }}
               />
@@ -514,7 +724,8 @@ export default function Landing09Client() {
             <label
               style={{
                 display: "flex",
-                alignItems: "flex-start",
+                alignItems:
+                  "flex-start",
                 gap: "9px",
                 color: "#4c5850",
                 fontSize: "12px",
@@ -525,16 +736,25 @@ export default function Landing09Client() {
               <input
                 type="checkbox"
                 checked={agreed}
-                onChange={(event) => {
-                  setAgreed(event.target.checked);
-                  setErrorMessage("");
+                onChange={(
+                  event
+                ) => {
+                  setAgreed(
+                    event.target
+                      .checked
+                  );
+
+                  setErrorMessage(
+                    ""
+                  );
                 }}
                 style={{
                   width: "20px",
                   height: "20px",
                   flexShrink: 0,
                   margin: 0,
-                  accentColor: "#06c755",
+                  accentColor:
+                    "#06c755",
                 }}
               />
 
@@ -547,10 +767,14 @@ export default function Landing09Client() {
               <p
                 style={{
                   margin: 0,
-                  padding: "11px 13px",
-                  borderRadius: "11px",
-                  border: "1px solid #fecaca",
-                  background: "#fff1f2",
+                  padding:
+                    "11px 13px",
+                  borderRadius:
+                    "11px",
+                  border:
+                    "1px solid #fecaca",
+                  background:
+                    "#fff1f2",
                   color: "#b42318",
                   fontSize: "13px",
                   lineHeight: 1.5,
@@ -572,8 +796,14 @@ export default function Landing09Client() {
                 color: "#ffffff",
                 fontSize: "17px",
                 fontWeight: 900,
-                cursor: isSubmitting ? "wait" : "pointer",
-                opacity: isSubmitting ? 0.65 : 1,
+                cursor:
+                  isSubmitting
+                    ? "wait"
+                    : "pointer",
+                opacity:
+                  isSubmitting
+                    ? 0.65
+                    : 1,
                 boxShadow:
                   "0 10px 24px rgba(6, 199, 85, 0.23)",
               }}
@@ -630,10 +860,14 @@ export default function Landing09Client() {
           padding: "10px 14px",
           paddingBottom:
             "calc(10px + env(safe-area-inset-bottom))",
-          background: "rgba(255, 255, 255, 0.95)",
-          borderTop: "1px solid rgba(0, 0, 0, 0.08)",
-          backdropFilter: "blur(10px)",
-          WebkitBackdropFilter: "blur(10px)",
+          background:
+            "rgba(255, 255, 255, 0.95)",
+          borderTop:
+            "1px solid rgba(0, 0, 0, 0.08)",
+          backdropFilter:
+            "blur(10px)",
+          WebkitBackdropFilter:
+            "blur(10px)",
         }}
       >
         <button
