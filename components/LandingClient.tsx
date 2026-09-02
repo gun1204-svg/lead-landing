@@ -752,7 +752,9 @@ function LandingSpecialContent({
         </section>
       )}
 
-      <InlineCTA text="상담 신청하기" onClick={onOpenForm} />
+      {!isLanding05 && (
+        <InlineCTA text="상담 신청하기" onClick={onOpenForm} />
+      )}
 
       {isLanding10 && (
         <section className="bg-white px-4 pb-2 pt-8">
