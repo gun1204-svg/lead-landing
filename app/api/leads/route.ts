@@ -14,6 +14,24 @@ function normalizeLandingKey(v: unknown) {
   return "00";
 }
 
+function getLandingLabel(landingKey: string) {
+  const names: Record<string, string> = {
+    "02": "눈밑",
+    "03": "첫코",
+    "04": "코재수술",
+    "09": "일본 코수술",
+    "10": "브이타이팅",
+  };
+
+  const name = names[landingKey];
+
+  if (!name) {
+    return landingKey;
+  }
+
+  return `${name} (${landingKey})`;
+}
+
 function normalizePhoneForMeta(phone?: string | null) {
   if (!phone) return undefined;
   const digits = phone.replace(/[^\d]/g, "");
@@ -215,14 +233,18 @@ export async function POST(req: Request) {
     const cleanPhone = normalizePhone(phone);
 
     if (!cleanName || !cleanPhone) {
-      return NextResponse.json({ ok: false, error: "INVALID" }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "INVALID" },
+        { status: 400 }
+      );
     }
 
     const lk = normalizeLandingKey(landing_key);
     const landingConfig = getLandingConfig(lk);
 
     const eventId = String(event_id ?? "").trim();
-    const pageUrl = String(page_url ?? "").trim() || getDefaultPageUrl(req, lk);
+    const pageUrl =
+      String(page_url ?? "").trim() || getDefaultPageUrl(req, lk);
 
     // 같은 전화번호 + 같은 랜딩 + 최근 7일 중복 차단
     const sevenDaysAgo = new Date(
@@ -331,14 +353,16 @@ export async function POST(req: Request) {
 
       const concernText =
         concerns.length > 0
-          ? `\n📝 체크한 고민\n${concerns.map((v) => `- ${v}`).join("\n")}\n`
+          ? `\n📝 체크한 고민\n${concerns
+              .map((v) => `- ${v}`)
+              .join("\n")}\n`
           : "\n";
 
       await sendTelegram(
 `🔥 새 상담 리드 접수
 
 🏥 병원: ${landingConfig.hospitalName}
-🗂 랜딩: ${lk}
+🗂 랜딩: ${getLandingLabel(lk)}
 👤 이름: ${cleanName}
 📞 전화: ${cleanPhone}${concernText}
 📊 광고 정보

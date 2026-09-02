@@ -680,7 +680,7 @@ export async function POST(
       const telegramMessage = [
         "🇯🇵 일본 신규 상담 리드",
         "",
-        "🏥 랜딩: 09 일본 코상담",
+        "🏥 랜딩: 일본 코수술 (09)",
         `👤 이름: ${name}`,
         "",
         "📝 체크한 고민",
