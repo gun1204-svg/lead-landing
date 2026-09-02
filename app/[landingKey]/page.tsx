@@ -14,7 +14,7 @@ function normalizeLandingKey(v: string) {
 }
 
 function getLandingSeo(lk: string) {
-  const baseUrl = "https://bienptns.com";
+  const baseUrl = "https://www.bienptns.com";
 
   const fallbackImage = `${baseUrl}/intro/${lk}/01.jpg`;
   const ogImage = `${baseUrl}/og/${lk}.jpg`;
@@ -37,6 +37,31 @@ function getLandingSeo(lk: string) {
       ogDescription:
         "이중턱, 볼처짐, 얼굴라인 고민이 있다면 지금 상담 신청하고 개선 방향을 확인해보세요.",
       siteName: "예롬성형외과의원",
+      image: fallbackImage,
+      fallbackImage,
+    };
+  }
+
+  if (lk === "05") {
+    return {
+      title: "윤석호 대표원장 코재수술 상담 | 미호성형외과",
+      description:
+        "코재수술, 현재 상태와 첫 수술의 문제점을 확인하고 윤석호 대표원장에게 상담받아보세요.",
+      keywords: [
+        "윤석호 대표원장",
+        "미호성형외과",
+        "코재수술",
+        "코재수술 상담",
+        "코성형 재수술",
+        "코끝 재수술",
+        "보형물 재수술",
+        "구축코 재수술",
+        "휜 코 재수술",
+      ],
+      ogTitle: "윤석호 대표원장 코재수술 상담",
+      ogDescription:
+        "코수술 후 모양, 코끝, 보형물, 구축코, 비대칭 고민이 있다면 지금 상담 신청하세요.",
+      siteName: "미호성형외과의원",
       image: fallbackImage,
       fallbackImage,
     };
@@ -144,7 +169,7 @@ export async function generateMetadata({
   const { landingKey } = await params;
   const lk = normalizeLandingKey(landingKey);
   const seo = getLandingSeo(lk);
-  const url = `https://bienptns.com/${lk}`;
+  const url = `https://www.bienptns.com/${lk}`;
 
   return {
     title: seo.title,
