@@ -116,6 +116,33 @@ const concernOptions04 = [
   },
 ];
 
+const concernOptions05 = [
+  {
+    title: "첫 수술 결과가 마음에 들지 않아요",
+    desc: "첫 코수술 후 전체적인 모양이나 인상이 기대와 달라 재수술을 고민하는 경우",
+  },
+  {
+    title: "코 모양이 비뚤어지거나 휘어 보여요",
+    desc: "정면에서 코 중심선이 틀어져 보이거나 좌우 비대칭이 신경 쓰이는 경우",
+  },
+  {
+    title: "코끝 모양이 마음에 들지 않아요",
+    desc: "코끝이 처지거나 들려 보이거나 모양과 높이가 만족스럽지 않은 경우",
+  },
+  {
+    title: "보형물 비침·움직임이 걱정돼요",
+    desc: "보형물 경계가 비치거나 움직이는 느낌, 위치 변화가 걱정되는 경우",
+  },
+  {
+    title: "구축코·들린코가 고민이에요",
+    desc: "코가 짧아지거나 들려 보이는 변화로 재수술 상담이 필요한 경우",
+  },
+  {
+    title: "재수술 시기와 방법을 상담받고 싶어요",
+    desc: "현재 상태에서 가능한 재수술 방법과 적절한 시기를 먼저 확인하고 싶은 경우",
+  },
+];
+
 const concernOptions10 = [
   {
     title: "전체적으로 밋밋하게 큰 얼굴 고민",
@@ -357,7 +384,7 @@ function LandingSpecialContent({
   handleSubmit,
   handleFormStarted,
 }: {
-  landingKey: "02" | "03" | "04" | "10";
+  landingKey: "02" | "03" | "04" | "05" | "10";
   concerns: string[];
   toggleConcern: (item: string) => void;
   onOpenForm: () => void;
@@ -377,19 +404,22 @@ function LandingSpecialContent({
 
   const isLanding02 = landingKey === "02";
   const isLanding04 = landingKey === "04";
+  const isLanding05 = landingKey === "05";
   const isLanding10 = landingKey === "10";
 
   const options = isLanding02
     ? concernOptions02
     : isLanding04
       ? concernOptions04
-      : isLanding10
-        ? concernOptions10
-        : concernOptions03;
+      : isLanding05
+        ? concernOptions05
+        : isLanding10
+          ? concernOptions10
+          : concernOptions03;
 
   const heading = isLanding02
     ? "눈밑 고민,"
-    : isLanding04
+    : isLanding04 || isLanding05
       ? "코재수술 고민,"
       : isLanding10
         ? ""
@@ -399,7 +429,7 @@ function LandingSpecialContent({
 
   const helperText = isLanding02
     ? "현재 가장 신경 쓰이는 고민을 선택해 주세요."
-    : isLanding04
+    : isLanding04 || isLanding05
       ? "현재 가장 고민되는 재수술 부분을 선택해 주세요."
       : isLanding10
         ? "현재 가장 신경 쓰이는 고민을 선택해 주세요."
@@ -407,7 +437,7 @@ function LandingSpecialContent({
 
   const selectedBoxText = isLanding02
     ? "선택하신 내용으로 상담 안내가 진행됩니다."
-    : isLanding04
+    : isLanding04 || isLanding05
       ? "선택하신 재수술 고민 기준으로 상담 안내가 진행됩니다."
       : isLanding10
         ? "선택하신 얼굴 고민 기준으로 상담 안내가 진행됩니다."
@@ -430,7 +460,24 @@ function LandingSpecialContent({
 
   return (
     <>
-      {(landingKey === "03" || landingKey === "04" || landingKey === "10") && (
+      {isLanding05 ? (
+        <>
+          {["01", "02", "03"].map((imageNo) => (
+            <section key={imageNo}>
+              <img
+                src={`/intro/05/${imageNo}.jpg`}
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = `/intro/05/${imageNo}.png`;
+                }}
+                alt={`윤석호 대표원장 코재수술 ${imageNo}`}
+                className="block w-full"
+                draggable={false}
+              />
+            </section>
+          ))}
+        </>
+      ) : (landingKey === "03" || landingKey === "04" || landingKey === "10") ? (
         <section>
           <img
             src={
@@ -460,7 +507,7 @@ function LandingSpecialContent({
             draggable={false}
           />
         </section>
-      )}
+      ) : null}
 
       <section className="bg-[#f7faf8] px-4 py-10">
         <div className="mx-auto w-full max-w-[760px]">
@@ -611,7 +658,7 @@ function LandingSpecialContent({
         </div>
       </section>
 
-      {!isLanding10 && (
+      {!isLanding10 && !isLanding05 && (
         <section className="bg-white px-4 py-8">
           <div className="mx-auto w-full max-w-[760px]">
             <div className="mb-6 text-center">
@@ -727,9 +774,11 @@ function LandingSpecialContent({
               ? "/intro/02/02.jpg"
               : landingKey === "04"
                 ? "/intro/04/02.jpg"
-                : landingKey === "10"
-                  ? "/intro/10/02.jpg"
-                  : "/intro/03/02.jpg"
+                : landingKey === "05"
+                  ? "/intro/05/04.jpg"
+                  : landingKey === "10"
+                    ? "/intro/10/02.jpg"
+                    : "/intro/03/02.jpg"
           }
           onError={(e) => {
             e.currentTarget.onerror = null;
@@ -738,18 +787,22 @@ function LandingSpecialContent({
                 ? "/intro/02/02.png"
                 : landingKey === "04"
                   ? "/intro/04/02.png"
-                  : landingKey === "10"
-                    ? "/intro/10/02.png"
-                    : "/intro/03/02.png";
+                  : landingKey === "05"
+                    ? "/intro/05/04.png"
+                    : landingKey === "10"
+                      ? "/intro/10/02.png"
+                      : "/intro/03/02.png";
           }}
           alt={
             landingKey === "02"
               ? "02 랜딩 하단"
               : landingKey === "04"
                 ? "04 랜딩 하단"
-                : landingKey === "10"
-                  ? "예롬성형외과 하단"
-                  : "03 랜딩 하단"
+                : landingKey === "05"
+                  ? "윤석호 대표원장 코재수술 하단"
+                  : landingKey === "10"
+                    ? "예롬성형외과 하단"
+                    : "03 랜딩 하단"
           }
           className="block w-full"
           draggable={false}
@@ -773,11 +826,12 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
   const isLanding02 = config.key === "02";
   const isLanding03 = config.key === "03";
   const isLanding04 = config.key === "04";
+  const isLanding05 = config.key === "05";
   const isLanding10 = config.key === "10";
   const isSpecialLanding =
-    isLanding02 || isLanding03 || isLanding04 || isLanding10;
+    isLanding02 || isLanding03 || isLanding04 || isLanding05 || isLanding10;
   const showRequiredVisitNotice =
-    isLanding02 || isLanding03 || isLanding04 || isLanding10;
+    isLanding02 || isLanding03 || isLanding04 || isLanding05 || isLanding10;
 
   const pages = useMemo(() => {
     const count = config.pageCount ?? 10;
@@ -798,6 +852,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
   const [concerns02, setConcerns02] = useState<string[]>([]);
   const [concerns03, setConcerns03] = useState<string[]>([]);
   const [concerns04, setConcerns04] = useState<string[]>([]);
+  const [concerns05, setConcerns05] = useState<string[]>([]);
   const [concerns10, setConcerns10] = useState<string[]>([]);
   const [submitError, setSubmitError] = useState("");
   const [submitInfo, setSubmitInfo] = useState("");
@@ -819,6 +874,12 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
   function toggleConcern04(item: string) {
     setConcerns04((prev) =>
+      prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item],
+    );
+  }
+
+  function toggleConcern05(item: string) {
+    setConcerns05((prev) =>
       prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item],
     );
   }
@@ -943,9 +1004,11 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
           ? concerns03
           : isLanding04
             ? concerns04
-            : isLanding10
-              ? concerns10
-              : [];
+            : isLanding05
+              ? concerns05
+              : isLanding10
+                ? concerns10
+                : [];
 
       const res = await fetch("/api/leads", {
         method: "POST",
@@ -1033,6 +1096,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       setConcerns02([]);
       setConcerns03([]);
       setConcerns04([]);
+      setConcerns05([]);
       setConcerns10([]);
       setOpen(false);
       formStartedRef.current = false;
@@ -1049,6 +1113,22 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       window.clearTimeout(timeoutId);
       setSubmitInfo("");
       setSubmitting(false);
+    }
+  }
+
+  function handleKakaoChatClick() {
+    trackCTA("kakao_chat_success", getTrackingPayload());
+
+    try {
+      const fbq = (window as any).fbq;
+      if (typeof fbq === "function") {
+        fbq("track", "Contact", {
+          content_name: "kakao_chat",
+          landing_key: config.key,
+        });
+      }
+    } catch (error) {
+      console.warn("[Kakao Contact] Meta Pixel event failed:", error);
     }
   }
 
@@ -1077,27 +1157,33 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                     ? "02"
                     : isLanding04
                       ? "04"
-                      : isLanding10
-                        ? "10"
-                        : "03"
+                      : isLanding05
+                        ? "05"
+                        : isLanding10
+                          ? "10"
+                          : "03"
                 }
                 concerns={
                   isLanding02
                     ? concerns02
                     : isLanding04
                       ? concerns04
-                      : isLanding10
-                        ? concerns10
-                        : concerns03
+                      : isLanding05
+                        ? concerns05
+                        : isLanding10
+                          ? concerns10
+                          : concerns03
                 }
                 toggleConcern={
                   isLanding02
                     ? toggleConcern02
                     : isLanding04
                       ? toggleConcern04
-                      : isLanding10
-                        ? toggleConcern10
-                        : toggleConcern03
+                      : isLanding05
+                        ? toggleConcern05
+                        : isLanding10
+                          ? toggleConcern10
+                          : toggleConcern03
                 }
                 onOpenForm={() => openFormWithTracking("inline_cta")}
                 name={name}
@@ -1333,14 +1419,39 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
             <p className="mt-3 text-[14px] leading-6 text-gray-600">
               신청이 정상적으로 접수되었습니다.
               <br />
-              확인 후 빠르게 연락드리겠습니다.
+              {isLanding05
+                ? "카카오톡으로 문의하시면 더욱 빠르게 상담받으실 수 있습니다."
+                : "확인 후 빠르게 연락드리겠습니다."}
             </p>
-            <button
-              onClick={() => setSuccessOpen(false)}
-              className="mt-5 h-11 w-full rounded-xl bg-black text-white"
-            >
-              확인
-            </button>
+
+            {isLanding05 ? (
+              <>
+                <a
+                  href="https://pf.kakao.com/_yxmexod/chat"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={handleKakaoChatClick}
+                  className="mt-5 flex h-12 w-full items-center justify-center rounded-xl bg-[#FEE500] text-[15px] font-bold text-[#191919] shadow-sm transition hover:brightness-95"
+                >
+                  카카오톡으로 바로 상담하기
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setSuccessOpen(false)}
+                  className="mt-3 h-11 w-full rounded-xl border border-gray-300 bg-white text-[14px] font-semibold text-gray-700"
+                >
+                  닫기
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setSuccessOpen(false)}
+                className="mt-5 h-11 w-full rounded-xl bg-black text-white"
+              >
+                확인
+              </button>
+            )}
           </div>
         </div>
       )}
