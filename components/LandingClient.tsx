@@ -811,6 +811,21 @@ function LandingSpecialContent({
         />
       </section>
 
+      {landingKey === "03" && (
+        <section>
+          <img
+            src="/intro/03/03.jpg"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = "/intro/03/03.png";
+            }}
+            alt="03 랜딩 추가 이미지"
+            className="block w-full"
+            draggable={false}
+          />
+        </section>
+      )}
+
       <InlineCTA text="상담 신청하기" onClick={onOpenForm} />
     </>
   );
