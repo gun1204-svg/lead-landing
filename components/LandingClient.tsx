@@ -145,24 +145,20 @@ const concernOptions05 = [
 
 const concernOptions06 = [
   {
-    title: "눈꺼풀 처짐으로 눈이 답답해 보여요",
-    desc: "눈꺼풀이 처지면서 눈매가 무겁고 답답해 보이는 것이 고민인 경우",
+    title: "처진 눈꺼풀",
+    desc: "눈꺼풀이 내려오면서 눈이 작아 보이거나, 답답하고 피곤한 인상으로 보여 신경 쓰이는 경우",
   },
   {
-    title: "눈썹과 눈 사이가 좁아 보여요",
-    desc: "눈썹 아래쪽 처짐으로 눈 주변이 좁고 답답한 인상으로 느껴지는 경우",
+    title: "불룩한 눈 밑 지방",
+    desc: "눈 밑이 도드라져 보여 실제 나이보다 더 피곤하고 나이 들어 보이는 인상이 고민인 경우",
   },
   {
-    title: "쌍꺼풀 라인이 처져 보이거나 가려져요",
-    desc: "눈꺼풀 처짐 때문에 기존 쌍꺼풀 라인이 덮이거나 흐려져 보이는 경우",
+    title: "눈 밑이 꺼져 피곤하고 나이 들어 보이는 인상",
+    desc: "눈 밑 볼륨이 꺼지면서 그늘져 보이고, 전체적으로 생기 없고 피곤한 인상이 고민인 경우",
   },
   {
-    title: "이마에 힘을 줘서 눈을 뜨게 돼요",
-    desc: "눈을 뜰 때 이마나 눈썹을 자주 들어 올리는 습관이 신경 쓰이는 경우",
-  },
-  {
-    title: "눈가가 무겁고 피곤한 인상이 고민이에요",
-    desc: "눈 주변 처짐으로 실제보다 피곤하거나 나이 들어 보이는 인상이 고민인 경우",
+    title: "더 어려 보이고 싶어요, 원장님이 추천해주세요",
+    desc: "처짐이나 눈 밑 고민은 있지만 어떤 수술이 필요한지 모르겠다면, 현재 상태에 맞는 방법을 상담받고 싶은 경우",
   },
 ];
 
@@ -955,6 +951,9 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
     isLanding06 ||
     isLanding10;
 
+  const showKakaoAfterSuccess =
+    isLanding02 || isLanding03 || isLanding05 || isLanding06;
+
   const pages = useMemo(() => {
     const count = config.pageCount ?? 10;
     return Array.from({ length: count }, (_, i) => {
@@ -1557,12 +1556,12 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
             <p className="mt-3 text-[14px] leading-6 text-gray-600">
               신청이 정상적으로 접수되었습니다.
               <br />
-              {isLanding05
+              {showKakaoAfterSuccess
                 ? "카카오톡으로 문의하시면 더욱 빠르게 상담받으실 수 있습니다."
                 : "확인 후 빠르게 연락드리겠습니다."}
             </p>
 
-            {isLanding05 ? (
+            {showKakaoAfterSuccess ? (
               <>
                 <a
                   href="https://pf.kakao.com/_yxmexod/chat"
@@ -1596,4 +1595,3 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
     </>
   );
 }
-
