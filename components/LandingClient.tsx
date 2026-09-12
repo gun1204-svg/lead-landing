@@ -143,6 +143,29 @@ const concernOptions05 = [
   },
 ];
 
+const concernOptions06 = [
+  {
+    title: "눈꺼풀 처짐으로 눈이 답답해 보여요",
+    desc: "눈꺼풀이 처지면서 눈매가 무겁고 답답해 보이는 것이 고민인 경우",
+  },
+  {
+    title: "눈썹과 눈 사이가 좁아 보여요",
+    desc: "눈썹 아래쪽 처짐으로 눈 주변이 좁고 답답한 인상으로 느껴지는 경우",
+  },
+  {
+    title: "쌍꺼풀 라인이 처져 보이거나 가려져요",
+    desc: "눈꺼풀 처짐 때문에 기존 쌍꺼풀 라인이 덮이거나 흐려져 보이는 경우",
+  },
+  {
+    title: "이마에 힘을 줘서 눈을 뜨게 돼요",
+    desc: "눈을 뜰 때 이마나 눈썹을 자주 들어 올리는 습관이 신경 쓰이는 경우",
+  },
+  {
+    title: "눈가가 무겁고 피곤한 인상이 고민이에요",
+    desc: "눈 주변 처짐으로 실제보다 피곤하거나 나이 들어 보이는 인상이 고민인 경우",
+  },
+];
+
 const concernOptions10 = [
   {
     title: "전체적으로 밋밋하게 큰 얼굴 고민",
@@ -384,7 +407,7 @@ function LandingSpecialContent({
   handleSubmit,
   handleFormStarted,
 }: {
-  landingKey: "02" | "03" | "04" | "05" | "10";
+  landingKey: "02" | "03" | "04" | "05" | "06" | "10";
   concerns: string[];
   toggleConcern: (item: string) => void;
   onOpenForm: () => void;
@@ -405,6 +428,7 @@ function LandingSpecialContent({
   const isLanding02 = landingKey === "02";
   const isLanding04 = landingKey === "04";
   const isLanding05 = landingKey === "05";
+  const isLanding06 = landingKey === "06";
   const isLanding10 = landingKey === "10";
 
   const options = isLanding02
@@ -413,17 +437,21 @@ function LandingSpecialContent({
       ? concernOptions04
       : isLanding05
         ? concernOptions05
-        : isLanding10
-          ? concernOptions10
-          : concernOptions03;
+        : isLanding06
+          ? concernOptions06
+          : isLanding10
+            ? concernOptions10
+            : concernOptions03;
 
   const heading = isLanding02
     ? "눈밑 고민,"
     : isLanding04 || isLanding05
       ? "코재수술 고민,"
-      : isLanding10
-        ? ""
-        : "코 고민,";
+      : isLanding06
+        ? "눈썹거상 고민,"
+        : isLanding10
+          ? ""
+          : "코 고민,";
 
   const headingSub = "어떤 유형에 가까우신가요?";
 
@@ -431,17 +459,21 @@ function LandingSpecialContent({
     ? "현재 가장 신경 쓰이는 고민을 선택해 주세요."
     : isLanding04 || isLanding05
       ? "현재 가장 고민되는 재수술 부분을 선택해 주세요."
-      : isLanding10
-        ? "현재 가장 신경 쓰이는 고민을 선택해 주세요."
-        : "현재 가장 신경 쓰이는 코 고민을 선택해 주세요.";
+      : isLanding06
+        ? "현재 가장 신경 쓰이는 눈가 처짐 고민을 선택해 주세요."
+        : isLanding10
+          ? "현재 가장 신경 쓰이는 고민을 선택해 주세요."
+          : "현재 가장 신경 쓰이는 코 고민을 선택해 주세요.";
 
   const selectedBoxText = isLanding02
     ? "선택하신 내용으로 상담 안내가 진행됩니다."
     : isLanding04 || isLanding05
       ? "선택하신 재수술 고민 기준으로 상담 안내가 진행됩니다."
-      : isLanding10
-        ? "선택하신 얼굴 고민 기준으로 상담 안내가 진행됩니다."
-        : "선택하신 코 고민 기준으로 상담 안내가 진행됩니다.";
+      : isLanding06
+        ? "선택하신 눈썹거상 고민 기준으로 상담 안내가 진행됩니다."
+        : isLanding10
+          ? "선택하신 얼굴 고민 기준으로 상담 안내가 진행됩니다."
+          : "선택하신 코 고민 기준으로 상담 안내가 진행됩니다.";
 
   function handleConcernClick(item: string) {
     const wasSelected = concerns.includes(item);
@@ -471,6 +503,23 @@ function LandingSpecialContent({
                   e.currentTarget.src = `/intro/05/${imageNo}.png`;
                 }}
                 alt={`윤석호 대표원장 코재수술 ${imageNo}`}
+                className="block w-full"
+                draggable={false}
+              />
+            </section>
+          ))}
+        </>
+      ) : isLanding06 ? (
+        <>
+          {["01", "02"].map((imageNo) => (
+            <section key={imageNo}>
+              <img
+                src={`/intro/06/${imageNo}.jpg`}
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = `/intro/06/${imageNo}.png`;
+                }}
+                alt={`미호성형외과 눈썹거상 ${imageNo}`}
                 className="block w-full"
                 draggable={false}
               />
@@ -626,6 +675,34 @@ function LandingSpecialContent({
                 showRequiredVisitNotice={true}
               />
             )}
+            {isLanding06 && (
+              <section className="mt-6 rounded-[24px] border border-[#dce9e3] bg-white px-4 py-6 shadow-[0_12px_30px_rgba(0,0,0,0.06)]">
+                <div className="mb-5 text-center">
+                  <p className="text-[13px] font-semibold tracking-[0.12em] text-[#0f766e]">
+                    EYEBROW LIFT SHORTS
+                  </p>
+
+                  <h2 className="mt-2 text-[24px] font-bold leading-tight text-black">
+                    눈썹거상 상담 전
+                    <br />
+                    짧은 영상으로 먼저 확인해보세요
+                  </h2>
+
+                  <p className="mt-2 text-[14px] leading-6 text-gray-600">
+                    영상은 소리 없이 자동 재생되며,
+                    <br className="sm:hidden" /> 상담 전 내용을 편하게 확인하실 수 있습니다.
+                  </p>
+                </div>
+
+                <ShortsCard
+                  title="미호성형외과 눈썹거상"
+                  desc="눈썹거상 관련 영상을 확인해보세요."
+                  src="https://www.youtube.com/embed/KaUHdGEbp98?start=8&autoplay=1&mute=1&playsinline=1&loop=1&playlist=KaUHdGEbp98&rel=0"
+                  iframeTitle="미호성형외과 눈썹거상 영상"
+                />
+              </section>
+            )}
+
             {isLanding10 && (
               <section className="mt-6 rounded-[24px] border border-[#dce9e3] bg-white px-4 py-6 shadow-[0_12px_30px_rgba(0,0,0,0.06)]">
                 <div className="mb-5 text-center">
@@ -658,7 +735,7 @@ function LandingSpecialContent({
         </div>
       </section>
 
-      {!isLanding10 && !isLanding05 && (
+      {!isLanding10 && !isLanding05 && !isLanding06 && (
         <section className="bg-white px-4 py-8">
           <div className="mx-auto w-full max-w-[760px]">
             <div className="mb-6 text-center">
@@ -752,7 +829,7 @@ function LandingSpecialContent({
         </section>
       )}
 
-      {!isLanding05 && (
+      {!isLanding05 && !isLanding06 && (
         <InlineCTA text="상담 신청하기" onClick={onOpenForm} />
       )}
 
@@ -769,10 +846,11 @@ function LandingSpecialContent({
         </section>
       )}
 
-      <section>
-        <img
-          src={
-            landingKey === "02"
+      {!isLanding06 && (
+        <section>
+          <img
+            src={
+              landingKey === "02"
               ? "/intro/02/02.jpg"
               : landingKey === "04"
                 ? "/intro/04/02.jpg"
@@ -806,10 +884,26 @@ function LandingSpecialContent({
                     ? "예롬성형외과 하단"
                     : "03 랜딩 하단"
           }
-          className="block w-full"
-          draggable={false}
-        />
-      </section>
+            className="block w-full"
+            draggable={false}
+          />
+        </section>
+      )}
+
+      {isLanding06 && (
+        <section>
+          <img
+            src="/intro/06/03.jpg"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = "/intro/06/03.png";
+            }}
+            alt="미호성형외과 눈썹거상 03"
+            className="block w-full"
+            draggable={false}
+          />
+        </section>
+      )}
 
       {landingKey === "03" && (
         <section>
@@ -844,11 +938,22 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
   const isLanding03 = config.key === "03";
   const isLanding04 = config.key === "04";
   const isLanding05 = config.key === "05";
+  const isLanding06 = config.key === "06";
   const isLanding10 = config.key === "10";
   const isSpecialLanding =
-    isLanding02 || isLanding03 || isLanding04 || isLanding05 || isLanding10;
+    isLanding02 ||
+    isLanding03 ||
+    isLanding04 ||
+    isLanding05 ||
+    isLanding06 ||
+    isLanding10;
   const showRequiredVisitNotice =
-    isLanding02 || isLanding03 || isLanding04 || isLanding05 || isLanding10;
+    isLanding02 ||
+    isLanding03 ||
+    isLanding04 ||
+    isLanding05 ||
+    isLanding06 ||
+    isLanding10;
 
   const pages = useMemo(() => {
     const count = config.pageCount ?? 10;
@@ -870,6 +975,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
   const [concerns03, setConcerns03] = useState<string[]>([]);
   const [concerns04, setConcerns04] = useState<string[]>([]);
   const [concerns05, setConcerns05] = useState<string[]>([]);
+  const [concerns06, setConcerns06] = useState<string[]>([]);
   const [concerns10, setConcerns10] = useState<string[]>([]);
   const [submitError, setSubmitError] = useState("");
   const [submitInfo, setSubmitInfo] = useState("");
@@ -897,6 +1003,12 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
   function toggleConcern05(item: string) {
     setConcerns05((prev) =>
+      prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item],
+    );
+  }
+
+  function toggleConcern06(item: string) {
+    setConcerns06((prev) =>
       prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item],
     );
   }
@@ -1023,9 +1135,11 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
             ? concerns04
             : isLanding05
               ? concerns05
-              : isLanding10
-                ? concerns10
-                : [];
+              : isLanding06
+                ? concerns06
+                : isLanding10
+                  ? concerns10
+                  : [];
 
       const res = await fetch("/api/leads", {
         method: "POST",
@@ -1114,6 +1228,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       setConcerns03([]);
       setConcerns04([]);
       setConcerns05([]);
+      setConcerns06([]);
       setConcerns10([]);
       setOpen(false);
       formStartedRef.current = false;
@@ -1176,9 +1291,11 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                       ? "04"
                       : isLanding05
                         ? "05"
-                        : isLanding10
-                          ? "10"
-                          : "03"
+                        : isLanding06
+                          ? "06"
+                          : isLanding10
+                            ? "10"
+                            : "03"
                 }
                 concerns={
                   isLanding02
@@ -1187,9 +1304,11 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                       ? concerns04
                       : isLanding05
                         ? concerns05
-                        : isLanding10
-                          ? concerns10
-                          : concerns03
+                        : isLanding06
+                          ? concerns06
+                          : isLanding10
+                            ? concerns10
+                            : concerns03
                 }
                 toggleConcern={
                   isLanding02
@@ -1198,9 +1317,11 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                       ? toggleConcern04
                       : isLanding05
                         ? toggleConcern05
-                        : isLanding10
-                          ? toggleConcern10
-                          : toggleConcern03
+                        : isLanding06
+                          ? toggleConcern06
+                          : isLanding10
+                            ? toggleConcern10
+                            : toggleConcern03
                 }
                 onOpenForm={() => openFormWithTracking("inline_cta")}
                 name={name}
@@ -1475,3 +1596,4 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
     </>
   );
 }
+

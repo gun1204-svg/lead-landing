@@ -81,7 +81,7 @@ function getManagerOwnerLK(userLK: string, selectedLK: string) {
   const lk = normalizeLK(selectedLK);
 
   // 현재 02 어드민이 02/03/04/05/09를 통합 관리하므로 담당자도 02 기준으로 묶음
-  if (["02", "03", "04", "05", "09"].includes(lk)) return "02";
+  if (["02", "03", "04", "05", "06", "09"].includes(lk)) return "02";
 
   return lk;
 }

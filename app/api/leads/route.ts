@@ -20,6 +20,7 @@ function getLandingLabel(landingKey: string) {
     "03": "첫코",
     "04": "코재수술",
     "05": "윤석호 대표원장 코재수술",
+    "06": "눈썹거상",
     "09": "일본 코수술",
     "10": "브이타이팅",
   };
@@ -41,27 +42,36 @@ function normalizePhoneForMeta(phone?: string | null) {
   if (digits.startsWith("0")) {
     return `82${digits.slice(1)}`;
   }
+
   if (digits.startsWith("82")) {
     return digits;
   }
+
   return digits;
 }
 
 function sha256(value?: string | null) {
   if (!value) return undefined;
+
   const normalized = String(value).trim().toLowerCase();
+
   if (!normalized) return undefined;
+
   return crypto.createHash("sha256").update(normalized).digest("hex");
 }
 
 function getClientIp(req: Request) {
   const xForwardedFor = req.headers.get("x-forwarded-for");
+
   if (xForwardedFor) {
     return xForwardedFor.split(",")[0]?.trim();
   }
 
   const xRealIp = req.headers.get("x-real-ip");
-  if (xRealIp) return xRealIp;
+
+  if (xRealIp) {
+    return xRealIp;
+  }
 
   return undefined;
 }
@@ -70,12 +80,18 @@ function getDefaultPageUrl(req: Request, landingKey: string) {
   const proto = req.headers.get("x-forwarded-proto") || "https";
   const host = req.headers.get("host");
 
-  if (!host) return `https://bienptns.com/${landingKey}`;
+  if (!host) {
+    return `https://bienptns.com/${landingKey}`;
+  }
+
   return `${proto}://${host}/${landingKey}`;
 }
 
 function normalizeConcerns(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
   return value
     .map((v) => String(v ?? "").trim())
     .filter(Boolean)
@@ -83,15 +99,24 @@ function normalizeConcerns(value: unknown): string[] {
 }
 
 function buildConcernMemo(concerns: string[]) {
-  if (!concerns.length) return "";
-  return `[상담 체크 항목]\n${concerns.map((v) => `- ${v}`).join("\n")}`;
+  if (!concerns.length) {
+    return "";
+  }
+
+  return `[상담 체크 항목]\n${concerns
+    .map((v) => `- ${v}`)
+    .join("\n")}`;
 }
 
 function pickUtmValue(...values: unknown[]) {
   for (const value of values) {
     const s = String(value ?? "").trim();
-    if (s) return s;
+
+    if (s) {
+      return s;
+    }
   }
+
   return "";
 }
 
@@ -103,18 +128,26 @@ async function sendTelegram(text: string, chatId?: string) {
     return;
   }
 
-  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text,
-    }),
-  });
+  const res = await fetch(
+    `https://api.telegram.org/bot${token}/sendMessage`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text,
+      }),
+    },
+  );
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`telegram send failed: ${res.status} ${body}`);
+
+    throw new Error(
+      `telegram send failed: ${res.status} ${body}`,
+    );
   }
 }
 
@@ -136,12 +169,16 @@ async function sendMetaLeadEvent(input: {
 
   if (!pixelId || !accessToken) {
     console.log("meta env missing");
-    return { ok: false, skipped: true as const };
+
+    return {
+      ok: false,
+      skipped: true as const,
+    };
   }
 
-  const endpoint = `https://graph.facebook.com/v23.0/${pixelId}/events?access_token=${encodeURIComponent(
-    accessToken
-  )}`;
+  const endpoint =
+    `https://graph.facebook.com/v23.0/${pixelId}/events` +
+    `?access_token=${encodeURIComponent(accessToken)}`;
 
   const payload: Record<string, unknown> = {
     data: [
@@ -151,6 +188,7 @@ async function sendMetaLeadEvent(input: {
         action_source: "website",
         event_source_url: input.pageUrl,
         event_id: input.eventId,
+
         user_data: {
           client_ip_address: input.clientIpAddress,
           client_user_agent: input.clientUserAgent,
@@ -158,8 +196,11 @@ async function sendMetaLeadEvent(input: {
           fbc: input.fbc,
           external_id: sha256(input.leadId),
           fn: sha256(input.name),
-          ph: sha256(normalizePhoneForMeta(input.phone)),
+          ph: sha256(
+            normalizePhoneForMeta(input.phone),
+          ),
         },
+
         custom_data: {
           content_name: `landing_${input.landingKey}`,
           landing_key: input.landingKey,
@@ -174,7 +215,9 @@ async function sendMetaLeadEvent(input: {
 
   const res = await fetch(endpoint, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(payload),
     cache: "no-store",
   });
@@ -183,10 +226,17 @@ async function sendMetaLeadEvent(input: {
 
   if (!res.ok) {
     console.error("meta capi error:", result);
-    return { ok: false, error: result };
+
+    return {
+      ok: false,
+      error: result,
+    };
   }
 
-  return { ok: true, data: result };
+  return {
+    ok: true,
+    data: result,
+  };
 }
 
 export async function POST(req: Request) {
@@ -200,34 +250,41 @@ export async function POST(req: Request) {
     const page_url = body?.page_url;
     const fbp = body?.fbp;
     const fbc = body?.fbc;
-    const concerns = normalizeConcerns(body?.concerns);
+
+    const concerns = normalizeConcerns(
+      body?.concerns,
+    );
 
     const utmObj = body?.utm ?? {};
 
     const utmSource = pickUtmValue(
       body?.utm_source,
       utmObj?.utm_source,
-      utmObj?.source
+      utmObj?.source,
     );
+
     const utmMedium = pickUtmValue(
       body?.utm_medium,
       utmObj?.utm_medium,
-      utmObj?.medium
+      utmObj?.medium,
     );
+
     const utmCampaign = pickUtmValue(
       body?.utm_campaign,
       utmObj?.utm_campaign,
-      utmObj?.campaign
+      utmObj?.campaign,
     );
+
     const utmTerm = pickUtmValue(
       body?.utm_term,
       utmObj?.utm_term,
-      utmObj?.term
+      utmObj?.term,
     );
+
     const utmContent = pickUtmValue(
       body?.utm_content,
       utmObj?.utm_content,
-      utmObj?.content
+      utmObj?.content,
     );
 
     const cleanName = name;
@@ -235,24 +292,41 @@ export async function POST(req: Request) {
 
     if (!cleanName || !cleanPhone) {
       return NextResponse.json(
-        { ok: false, error: "INVALID" },
-        { status: 400 }
+        {
+          ok: false,
+          error: "INVALID",
+        },
+        {
+          status: 400,
+        },
       );
     }
 
-    const lk = normalizeLandingKey(landing_key);
-    const landingConfig = getLandingConfig(lk);
+    const lk = normalizeLandingKey(
+      landing_key,
+    );
 
-    const eventId = String(event_id ?? "").trim();
+    const landingConfig =
+      getLandingConfig(lk);
+
+    const eventId = String(
+      event_id ?? "",
+    ).trim();
+
     const pageUrl =
-      String(page_url ?? "").trim() || getDefaultPageUrl(req, lk);
+      String(page_url ?? "").trim() ||
+      getDefaultPageUrl(req, lk);
 
     // 같은 전화번호 + 같은 랜딩 + 최근 7일 중복 차단
     const sevenDaysAgo = new Date(
-      Date.now() - 7 * 24 * 60 * 60 * 1000
+      Date.now() -
+        7 * 24 * 60 * 60 * 1000,
     ).toISOString();
 
-    const { data: existing, error: existingError } = await supabaseAdmin
+    const {
+      data: existing,
+      error: existingError,
+    } = await supabaseAdmin
       .from("leads")
       .select("id")
       .eq("phone", cleanPhone)
@@ -262,13 +336,25 @@ export async function POST(req: Request) {
 
     if (existingError) {
       return NextResponse.json(
-        { ok: false, error: existingError.message },
-        { status: 500 }
+        {
+          ok: false,
+          error: existingError.message,
+        },
+        {
+          status: 500,
+        },
       );
     }
 
-    if (existing && existing.length > 0) {
-      console.log("duplicate lead blocked:", cleanPhone, lk);
+    if (
+      existing &&
+      existing.length > 0
+    ) {
+      console.log(
+        "duplicate lead blocked:",
+        cleanPhone,
+        lk,
+      );
 
       return NextResponse.json({
         ok: true,
@@ -276,57 +362,97 @@ export async function POST(req: Request) {
       });
     }
 
-    const { data, error } = await supabaseAdmin.rpc("create_lead_and_charge", {
-      p_name: cleanName,
-      p_phone: cleanPhone,
-      p_landing_key: lk,
-      p_source: utmSource || null,
-      p_utm_source: utmSource || null,
-      p_utm_campaign: utmCampaign || null,
-      p_utm_term: utmTerm || null,
-      p_utm_content: utmContent || null,
-    });
+    const {
+      data,
+      error,
+    } = await supabaseAdmin.rpc(
+      "create_lead_and_charge",
+      {
+        p_name: cleanName,
+        p_phone: cleanPhone,
+        p_landing_key: lk,
+        p_source: utmSource || null,
+        p_utm_source: utmSource || null,
+        p_utm_campaign:
+          utmCampaign || null,
+        p_utm_term: utmTerm || null,
+        p_utm_content:
+          utmContent || null,
+      },
+    );
 
     if (error) {
       return NextResponse.json(
-        { ok: false, error: error.message },
-        { status: 500 }
+        {
+          ok: false,
+          error: error.message,
+        },
+        {
+          status: 500,
+        },
       );
     }
 
     if (!data?.ok) {
-      const code = data?.error === "INSUFFICIENT_BALANCE" ? 402 : 400;
-      return NextResponse.json(data, { status: code });
+      const code =
+        data?.error ===
+        "INSUFFICIENT_BALANCE"
+          ? 402
+          : 400;
+
+      return NextResponse.json(
+        data,
+        {
+          status: code,
+        },
+      );
     }
 
-    const leadId = data?.lead_id ? String(data.lead_id) : undefined;
+    const leadId = data?.lead_id
+      ? String(data.lead_id)
+      : undefined;
 
-    // concerns를 memo에 추가 저장
-    if (leadId && concerns.length > 0) {
-      const concernMemo = buildConcernMemo(concerns);
+    // SELF CHECK 선택값을 memo에 저장
+    if (
+      leadId &&
+      concerns.length > 0
+    ) {
+      const concernMemo =
+        buildConcernMemo(concerns);
 
-      const { data: leadRow } = await supabaseAdmin
-        .from("leads")
-        .select("memo")
-        .eq("id", leadId)
-        .maybeSingle();
+      const { data: leadRow } =
+        await supabaseAdmin
+          .from("leads")
+          .select("memo")
+          .eq("id", leadId)
+          .maybeSingle();
 
-      const prevMemo = String(leadRow?.memo ?? "").trim();
+      const prevMemo = String(
+        leadRow?.memo ?? "",
+      ).trim();
+
       const nextMemo = prevMemo
         ? `${prevMemo}\n\n${concernMemo}`
         : concernMemo;
 
-      const { error: memoUpdateError } = await supabaseAdmin
+      const {
+        error: memoUpdateError,
+      } = await supabaseAdmin
         .from("leads")
-        .update({ memo: nextMemo })
+        .update({
+          memo: nextMemo,
+        })
         .eq("id", leadId);
 
       if (memoUpdateError) {
-        console.error("memo update error:", memoUpdateError);
+        console.error(
+          "memo update error:",
+          memoUpdateError,
+        );
       }
     }
 
-    // Meta Conversion API 전송
+    // Meta Conversion API
     try {
       if (eventId) {
         await sendMetaLeadEvent({
@@ -336,26 +462,50 @@ export async function POST(req: Request) {
           phone: cleanPhone,
           landingKey: lk,
           leadId,
-          fbp: typeof fbp === "string" ? fbp : undefined,
-          fbc: typeof fbc === "string" ? fbc : undefined,
-          clientIpAddress: getClientIp(req),
-          clientUserAgent: req.headers.get("user-agent") ?? undefined,
+
+          fbp:
+            typeof fbp === "string"
+              ? fbp
+              : undefined,
+
+          fbc:
+            typeof fbc === "string"
+              ? fbc
+              : undefined,
+
+          clientIpAddress:
+            getClientIp(req),
+
+          clientUserAgent:
+            req.headers.get(
+              "user-agent",
+            ) ?? undefined,
         });
       }
     } catch (metaErr) {
-      console.error("meta capi send error:", metaErr);
+      console.error(
+        "meta capi send error:",
+        metaErr,
+      );
     }
 
     // 텔레그램 알림
     try {
-      const now = new Date().toLocaleString("ko-KR", {
-        timeZone: "Asia/Seoul",
-      });
+      const now =
+        new Date().toLocaleString(
+          "ko-KR",
+          {
+            timeZone:
+              "Asia/Seoul",
+          },
+        );
 
       const concernText =
         concerns.length > 0
           ? `\n📝 체크한 고민\n${concerns
-              .map((v) => `- ${v}`)
+              .map(
+                (v) => `- ${v}`,
+              )
               .join("\n")}\n`
           : "\n";
 
@@ -375,10 +525,13 @@ utm_content: ${utmContent}
 
 🕒 접수시간
 ${now}`,
-        landingConfig.telegramChatId
+        landingConfig.telegramChatId,
       );
     } catch (tgErr) {
-      console.error("telegram alert error:", tgErr);
+      console.error(
+        "telegram alert error:",
+        tgErr,
+      );
     }
 
     return NextResponse.json({
@@ -387,8 +540,15 @@ ${now}`,
     });
   } catch (err: any) {
     return NextResponse.json(
-      { ok: false, error: err?.message || "UNKNOWN_ERROR" },
-      { status: 500 }
+      {
+        ok: false,
+        error:
+          err?.message ||
+          "UNKNOWN_ERROR",
+      },
+      {
+        status: 500,
+      },
     );
   }
 }

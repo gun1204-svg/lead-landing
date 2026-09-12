@@ -128,7 +128,7 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     privacyEmail: "",
   },
 
-   "05": {
+  "05": {
     key: "05",
     hospitalName: "미호성형외과의원",
     title: "윤석호 대표원장 코재수술 상담 신청",
@@ -139,6 +139,31 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     pageCount: 4,
 
     // 05번 리드도 02번과 동일한 텔레그램 방으로 전송
+    telegramChatId: process.env.TELEGRAM_CHAT_ID_02,
+
+    businessName: "미호성형외과의원",
+    address:
+      "서울시 강남구 강남대로 492 HM타워 7,8,9층 (신논현역 3번출구 도보 3분)",
+    businessNumber: "848-79-00072",
+    representativeName: "윤석호",
+    phone: "02-595-5503",
+    privacyManager: "미호성형외과의원",
+    privacyContact: "02-595-5503",
+    privacyEmail: "",
+  },
+
+  "06": {
+    key: "06",
+    hospitalName: "미호성형외과의원",
+    title: "미호성형외과 눈썹거상 상담 신청",
+    description:
+      "처진 눈매와 눈썹 주변 고민, 눈썹거상 상담을 받아보세요",
+    introPath: "/intro/06",
+    submitLabel: "상담 신청하기",
+    mobileSubmitLabel: "상담 신청하기",
+    pageCount: 3,
+
+    // 06번 리드도 02번과 동일한 텔레그램 방으로 전송
     telegramChatId: process.env.TELEGRAM_CHAT_ID_02,
 
     businessName: "미호성형외과의원",
