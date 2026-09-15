@@ -161,7 +161,7 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     introPath: "/intro/06",
     submitLabel: "상담 신청하기",
     mobileSubmitLabel: "상담 신청하기",
-    pageCount: 3,
+    pageCount: 4,
 
     // 06번 리드도 02번과 동일한 텔레그램 방으로 전송
     telegramChatId: process.env.TELEGRAM_CHAT_ID_02,

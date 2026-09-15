@@ -507,7 +507,7 @@ function LandingSpecialContent({
         </>
       ) : isLanding06 ? (
         <>
-          {["01", "02"].map((imageNo) => (
+          {["01", "02", "03"].map((imageNo) => (
             <section key={imageNo}>
               <img
                 src={`/intro/06/${imageNo}.jpg`}
@@ -889,12 +889,12 @@ function LandingSpecialContent({
       {isLanding06 && (
         <section>
           <img
-            src="/intro/06/03.jpg"
+            src="/intro/06/04.jpg"
             onError={(e) => {
               e.currentTarget.onerror = null;
-              e.currentTarget.src = "/intro/06/03.png";
+              e.currentTarget.src = "/intro/06/04.png";
             }}
-            alt="미호성형외과 눈썹거상 03"
+            alt="미호성형외과 눈썹거상 04"
             className="block w-full"
             draggable={false}
           />
