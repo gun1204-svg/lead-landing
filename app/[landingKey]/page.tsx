@@ -42,6 +42,32 @@ function getLandingSeo(lk: string) {
     };
   }
 
+  if (lk === "07") {
+    return {
+      title: "미호성형외과 기능코 상담",
+      description:
+        "코막힘, 비염, 비중격 등 코 기능 고민이 있다면 미호성형외과 기능코 상담을 받아보세요.",
+      keywords: [
+        "미호성형외과",
+        "기능코",
+        "기능코 상담",
+        "코막힘",
+        "비염",
+        "비중격",
+        "비중격만곡증",
+        "코막힘 상담",
+        "강남 기능코",
+        "신논현 기능코",
+      ],
+      ogTitle: "미호성형외과 기능코 상담",
+      ogDescription:
+        "코막힘, 비염, 비중격 등 코 기능 고민이 있다면 지금 상담 신청하세요.",
+      siteName: "미호성형외과의원",
+      image: fallbackImage,
+      fallbackImage,
+    };
+  }
+
   if (lk === "06") {
     return {
       title: "미호성형외과 눈썹거상 상담",
