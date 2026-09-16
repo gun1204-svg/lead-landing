@@ -851,7 +851,7 @@ function LandingSpecialContent({
               : landingKey === "04"
                 ? "/intro/04/02.jpg"
                 : landingKey === "05"
-                  ? "/intro/05/04.jpg"
+                  ? "/intro/05/03.jpg"
                   : landingKey === "10"
                     ? "/intro/10/02.jpg"
                     : "/intro/03/02.jpg"

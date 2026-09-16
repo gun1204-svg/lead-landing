@@ -28,7 +28,7 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     introPath: "/intro/00",
     submitLabel: "문의 사례 받아보기",
     mobileSubmitLabel: "문의 사례 받아보기",
-    pageCount: 7,
+    pageCount: 5,
     telegramChatId: process.env.TELEGRAM_CHAT_ID_00,
 
     businessName: "비엔파트너스",
