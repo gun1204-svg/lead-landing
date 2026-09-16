@@ -51,6 +51,23 @@ type LeadManager = {
 
 const LK_KEYS = Array.from({ length: 21 }, (_, i) => String(i).padStart(2, "0"));
 
+const LANDING_LABELS: Record<string, string> = {
+  "02": "눈밑",
+  "03": "첫코",
+  "04": "코재수술",
+  "05": "윤석호 코재수술",
+  "06": "눈썹거상",
+  "07": "기능코",
+  "09": "일본 코수술",
+  "10": "브이타이팅",
+};
+
+function getLandingDisplayName(landingKey: string) {
+  const lk = normalizeLK(landingKey);
+  const label = LANDING_LABELS[lk];
+  return label ? `${lk} ${label}` : lk;
+}
+
 const STATUS_OPTIONS = ["NEW", "BOOKED", "CALLED", "NO_ANSWER", "INVALID"] as const;
 type StatusKey = typeof STATUS_OPTIONS[number];
 type StatusFilter = "ALL" | StatusKey;
@@ -80,8 +97,8 @@ function getManagerOwnerLK(userLK: string, selectedLK: string) {
 
   const lk = normalizeLK(selectedLK);
 
-  // 현재 02 어드민이 02/03/04/05/09를 통합 관리하므로 담당자도 02 기준으로 묶음
-  if (["02", "03", "04", "05", "06", "09"].includes(lk)) return "02";
+  // 현재 02 어드민이 02/03/04/05/06/07/09를 통합 관리하므로 담당자도 02 기준으로 묶음
+  if (["02", "03", "04", "05", "06", "07", "09"].includes(lk)) return "02";
 
   return lk;
 }
@@ -160,7 +177,7 @@ function LandingBadge({ landingKey }: { landingKey: string | null }) {
         border: lk === "03" ? "1px solid #FED7AA" : "1px solid #99F6E4",
       }}
     >
-      {lk}번
+      {getLandingDisplayName(lk)}
     </span>
   );
 }
@@ -812,7 +829,7 @@ export default function AdminLeadsClient() {
               cursor: "pointer",
             }}
           >
-            {k}
+            {getLandingDisplayName(k)}
           </button>
         ))}
       </div>
@@ -840,7 +857,7 @@ export default function AdminLeadsClient() {
 
               return (
                 <div key={lk} style={card}>
-                  {lk} 리드
+                  {getLandingDisplayName(lk)} 리드
                   <div style={cardBig}>
                     오늘 {fmt(leadSummary.today)} / 월 {fmt(leadSummary.month)}
                   </div>
@@ -1014,7 +1031,7 @@ export default function AdminLeadsClient() {
       <div style={{ marginTop: 12, border: "1px solid #eee", borderRadius: 14, overflow: "hidden" }}>
         <div style={{ padding: 12, borderBottom: "1px solid #eee", fontWeight: 800 }}>
           {isIntegratedAdmin
-            ? `landing_key: ${allowedLandingKeys.join(" + ")} 통합 • ${loadingRows ? "불러오는 중..." : `전체 ${totalRows}건 / ${page}페이지`}`
+            ? `landing_key: ${allowedLandingKeys.map(getLandingDisplayName).join(" + ")} 통합 • ${loadingRows ? "불러오는 중..." : `전체 ${totalRows}건 / ${page}페이지`}`
             : `landing_key: ${selectedLK} • ${loadingRows ? "불러오는 중..." : `전체 ${totalRows}건 / ${page}페이지`}`}
         </div>
 
