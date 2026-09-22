@@ -189,6 +189,33 @@ const concernOptions07 = [
   },
 ];
 
+const concernOptions08 = [
+  {
+    title: "코 모양은 바꾸고 싶지만 절개 흉터가 걱정돼요",
+    desc: "겉으로 보이는 절개 부위에 대한 부담이 있어 비개방 수술 가능 여부가 궁금한 경우",
+  },
+  {
+    title: "자연스럽게 콧대와 코끝 라인을 개선하고 싶어요",
+    desc: "과한 변화보다는 현재 얼굴과 조화를 이루는 자연스러운 코 라인을 원하는 경우",
+  },
+  {
+    title: "비개방으로 수술이 가능한 코인지 궁금해요",
+    desc: "현재 코 상태에서 비개방 방식으로 원하는 개선이 가능한지 먼저 확인하고 싶은 경우",
+  },
+  {
+    title: "코수술 후 회복 과정이 걱정돼요",
+    desc: "수술 방법에 따른 회복 과정과 주의사항을 충분히 상담받은 뒤 결정하고 싶은 경우",
+  },
+  {
+    title: "콧대·코끝 등 필요한 부분만 개선하고 싶어요",
+    desc: "전체적인 변화보다 신경 쓰이는 부분을 중심으로 개선 방향을 상담받고 싶은 경우",
+  },
+  {
+    title: "제 코에 맞는 수술 방법부터 상담받고 싶어요",
+    desc: "비개방과 개방 방식 중 어떤 방법이 현재 코 상태에 적합한지 먼저 상담받고 싶은 경우",
+  },
+];
+
 const concernOptions10 = [
   {
     title: "전체적으로 밋밋하게 큰 얼굴 고민",
@@ -430,7 +457,7 @@ function LandingSpecialContent({
   handleSubmit,
   handleFormStarted,
 }: {
-  landingKey: "02" | "03" | "04" | "05" | "06" | "07" | "10";
+  landingKey: "02" | "03" | "04" | "05" | "06" | "07" | "08" | "10";
   concerns: string[];
   toggleConcern: (item: string) => void;
   onOpenForm: () => void;
@@ -453,6 +480,7 @@ function LandingSpecialContent({
   const isLanding05 = landingKey === "05";
   const isLanding06 = landingKey === "06";
   const isLanding07 = landingKey === "07";
+  const isLanding08 = landingKey === "08";
   const isLanding10 = landingKey === "10";
 
   const options = isLanding02
@@ -465,9 +493,11 @@ function LandingSpecialContent({
           ? concernOptions06
           : isLanding07
             ? concernOptions07
-            : isLanding10
-              ? concernOptions10
-              : concernOptions03;
+            : isLanding08
+              ? concernOptions08
+              : isLanding10
+                ? concernOptions10
+                : concernOptions03;
 
   const heading = isLanding02
     ? "눈밑 고민,"
@@ -477,9 +507,11 @@ function LandingSpecialContent({
         ? "눈썹거상 고민,"
         : isLanding07
           ? "기능코 고민,"
-          : isLanding10
-            ? ""
-            : "코 고민,";
+          : isLanding08
+            ? "비개방 코성형 고민,"
+            : isLanding10
+              ? ""
+              : "코 고민,";
 
   const headingSub = "어떤 유형에 가까우신가요?";
 
@@ -491,9 +523,11 @@ function LandingSpecialContent({
         ? "현재 가장 신경 쓰이는 눈가 처짐 고민을 선택해 주세요."
         : isLanding07
           ? "현재 가장 불편하거나 신경 쓰이는 코 증상을 선택해 주세요."
-          : isLanding10
-            ? "현재 가장 신경 쓰이는 고민을 선택해 주세요."
-            : "현재 가장 신경 쓰이는 코 고민을 선택해 주세요.";
+          : isLanding08
+            ? "비개방 코성형에서 가장 궁금하거나 개선하고 싶은 부분을 선택해 주세요."
+            : isLanding10
+              ? "현재 가장 신경 쓰이는 고민을 선택해 주세요."
+              : "현재 가장 신경 쓰이는 코 고민을 선택해 주세요.";
 
   const selectedBoxText = isLanding02
     ? "선택하신 내용으로 상담 안내가 진행됩니다."
@@ -503,9 +537,11 @@ function LandingSpecialContent({
         ? "선택하신 눈썹거상 고민 기준으로 상담 안내가 진행됩니다."
         : isLanding07
           ? "선택하신 기능코 고민 기준으로 상담 안내가 진행됩니다."
-          : isLanding10
-            ? "선택하신 얼굴 고민 기준으로 상담 안내가 진행됩니다."
-            : "선택하신 코 고민 기준으로 상담 안내가 진행됩니다.";
+          : isLanding08
+            ? "선택하신 비개방 코성형 고민 기준으로 상담 안내가 진행됩니다."
+            : isLanding10
+              ? "선택하신 얼굴 고민 기준으로 상담 안내가 진행됩니다."
+              : "선택하신 코 고민 기준으로 상담 안내가 진행됩니다.";
 
   function handleConcernClick(item: string) {
     const wasSelected = concerns.includes(item);
@@ -524,7 +560,20 @@ function LandingSpecialContent({
 
   return (
     <>
-      {isLanding07 ? (
+      {isLanding08 ? (
+        <section>
+          <img
+            src="/intro/08/01.jpg"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = "/intro/08/01.png";
+            }}
+            alt="비개방 코성형 상담 01"
+            className="block w-full"
+            draggable={false}
+          />
+        </section>
+      ) : isLanding07 ? (
         <>
           {["01", "02", "03", "04"].map((imageNo) => (
             <section key={imageNo}>
@@ -784,7 +833,26 @@ function LandingSpecialContent({
         </div>
       </section>
 
-      {!isLanding10 && !isLanding05 && !isLanding06 && !isLanding07 && (
+      {isLanding08 && (
+        <>
+          {["02", "03", "04", "05", "06", "07"].map((imageNo) => (
+            <section key={imageNo}>
+              <img
+                src={`/intro/08/${imageNo}.jpg`}
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = `/intro/08/${imageNo}.png`;
+                }}
+                alt={`비개방 코성형 상담 ${imageNo}`}
+                className="block w-full"
+                draggable={false}
+              />
+            </section>
+          ))}
+        </>
+      )}
+
+      {!isLanding10 && !isLanding05 && !isLanding06 && !isLanding07 && !isLanding08 && (
         <section className="bg-white px-4 py-8">
           <div className="mx-auto w-full max-w-[760px]">
             <div className="mb-6 text-center">
@@ -878,7 +946,7 @@ function LandingSpecialContent({
         </section>
       )}
 
-      {!isLanding05 && !isLanding06 && !isLanding07 && (
+      {!isLanding05 && !isLanding06 && !isLanding07 && !isLanding08 && (
         <InlineCTA text="상담 신청하기" onClick={onOpenForm} />
       )}
 
@@ -895,7 +963,7 @@ function LandingSpecialContent({
         </section>
       )}
 
-      {!isLanding06 && (
+      {!isLanding06 && !isLanding08 && (
         <section>
           <img
             src={
@@ -995,6 +1063,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
   const isLanding05 = config.key === "05";
   const isLanding06 = config.key === "06";
   const isLanding07 = config.key === "07";
+  const isLanding08 = config.key === "08";
   const isLanding10 = config.key === "10";
   const isSpecialLanding =
     isLanding02 ||
@@ -1003,6 +1072,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
     isLanding05 ||
     isLanding06 ||
     isLanding07 ||
+    isLanding08 ||
     isLanding10;
   const showRequiredVisitNotice =
     isLanding02 ||
@@ -1011,10 +1081,11 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
     isLanding05 ||
     isLanding06 ||
     isLanding07 ||
+    isLanding08 ||
     isLanding10;
 
   const showKakaoAfterSuccess =
-    isLanding02 || isLanding03 || isLanding05 || isLanding06 || isLanding07;
+    isLanding02 || isLanding03 || isLanding05 || isLanding06 || isLanding07 || isLanding08;
 
   const pages = useMemo(() => {
     const count = config.pageCount ?? 10;
@@ -1038,6 +1109,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
   const [concerns05, setConcerns05] = useState<string[]>([]);
   const [concerns06, setConcerns06] = useState<string[]>([]);
   const [concerns07, setConcerns07] = useState<string[]>([]);
+  const [concerns08, setConcerns08] = useState<string[]>([]);
   const [concerns10, setConcerns10] = useState<string[]>([]);
   const [submitError, setSubmitError] = useState("");
   const [submitInfo, setSubmitInfo] = useState("");
@@ -1077,6 +1149,12 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
   function toggleConcern07(item: string) {
     setConcerns07((prev) =>
+      prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item],
+    );
+  }
+
+  function toggleConcern08(item: string) {
+    setConcerns08((prev) =>
       prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item],
     );
   }
@@ -1207,9 +1285,11 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                 ? concerns06
                 : isLanding07
                   ? concerns07
-                  : isLanding10
-                    ? concerns10
-                    : [];
+                  : isLanding08
+                    ? concerns08
+                    : isLanding10
+                      ? concerns10
+                      : [];
 
       const res = await fetch("/api/leads", {
         method: "POST",
@@ -1300,6 +1380,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       setConcerns05([]);
       setConcerns06([]);
       setConcerns07([]);
+      setConcerns08([]);
       setConcerns10([]);
       setOpen(false);
       formStartedRef.current = false;
@@ -1366,9 +1447,11 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                           ? "06"
                           : isLanding07
                             ? "07"
-                            : isLanding10
-                              ? "10"
-                              : "03"
+                            : isLanding08
+                              ? "08"
+                              : isLanding10
+                                ? "10"
+                                : "03"
                 }
                 concerns={
                   isLanding02
@@ -1381,9 +1464,11 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                           ? concerns06
                           : isLanding07
                             ? concerns07
-                            : isLanding10
-                              ? concerns10
-                              : concerns03
+                            : isLanding08
+                              ? concerns08
+                              : isLanding10
+                                ? concerns10
+                                : concerns03
                 }
                 toggleConcern={
                   isLanding02
@@ -1396,9 +1481,11 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                           ? toggleConcern06
                           : isLanding07
                             ? toggleConcern07
-                            : isLanding10
-                              ? toggleConcern10
-                              : toggleConcern03
+                            : isLanding08
+                              ? toggleConcern08
+                              : isLanding10
+                                ? toggleConcern10
+                                : toggleConcern03
                 }
                 onOpenForm={() => openFormWithTracking("inline_cta")}
                 name={name}

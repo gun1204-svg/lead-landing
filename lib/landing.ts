@@ -202,6 +202,30 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     privacyEmail: "",
   },
 
+  "08": {
+    key: "08",
+    hospitalName: "미호성형외과의원",
+    title: "미호성형외과 비개방 코성형 상담 신청",
+    description:
+      "흉터 부담을 줄이고 자연스러운 코 라인을 위한 비개방 코성형 상담을 받아보세요",
+    introPath: "/intro/08",
+    submitLabel: "상담 신청하기",
+    mobileSubmitLabel: "상담 신청하기",
+    pageCount: 7,
+
+    telegramChatId: process.env.TELEGRAM_CHAT_ID_02,
+
+    businessName: "미호성형외과의원",
+    address:
+      "서울시 강남구 강남대로 492 HM타워 7,8,9층 (신논현역 3번출구 도보 3분)",
+    businessNumber: "848-79-00072",
+    representativeName: "윤석호",
+    phone: "02-595-5503",
+    privacyManager: "미호성형외과의원",
+    privacyContact: "02-595-5503",
+    privacyEmail: "",
+  },
+
   "10": {
     key: "10",
     hospitalName: "예롬성형외과의원",

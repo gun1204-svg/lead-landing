@@ -58,6 +58,7 @@ const LANDING_LABELS: Record<string, string> = {
   "05": "윤석호 코재수술",
   "06": "눈썹거상",
   "07": "기능코",
+  "08": "비개방 코성형",
   "09": "일본 코수술",
   "10": "브이타이팅",
 };
@@ -97,8 +98,8 @@ function getManagerOwnerLK(userLK: string, selectedLK: string) {
 
   const lk = normalizeLK(selectedLK);
 
-  // 현재 02 어드민이 02/03/04/05/06/07/09를 통합 관리하므로 담당자도 02 기준으로 묶음
-  if (["02", "03", "04", "05", "06", "07", "09"].includes(lk)) return "02";
+  // 현재 02 어드민이 02/03/04/05/06/07/08/09를 통합 관리하므로 담당자도 02 기준으로 묶음
+  if (["02", "03", "04", "05", "06", "07", "08", "09"].includes(lk)) return "02";
 
   return lk;
 }
@@ -853,7 +854,13 @@ export default function AdminLeadsClient() {
           <>
             {allowedLandingKeys.map((lk) => {
               const acc = integratedAccounts.find((a) => normalizeLK(a.landing_key) === lk);
+              const chargeAccount02 = integratedAccounts.find(
+                (a) => normalizeLK(a.landing_key) === "02",
+              );
               const leadSummary = summary?.landing_counts?.[lk] || { today: 0, month: 0, total: 0 };
+              const displayPrice =
+                acc?.price_per_lead ??
+                (lk === "08" ? chargeAccount02?.price_per_lead : undefined);
 
               return (
                 <div key={lk} style={card}>
@@ -862,7 +869,7 @@ export default function AdminLeadsClient() {
                     오늘 {fmt(leadSummary.today)} / 월 {fmt(leadSummary.month)}
                   </div>
                   <div style={{ marginTop: 6, fontSize: 12, color: "#666" }}>
-                    단가 {fmt(acc?.price_per_lead)}
+                    단가 {fmt(displayPrice)}
                   </div>
                 </div>
               );
@@ -1573,3 +1580,4 @@ const tdTop: React.CSSProperties = {
   fontSize: 14,
   verticalAlign: "top",
 };
+
