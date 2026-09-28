@@ -1,6 +1,7 @@
 import NextAuth, { type NextAuthOptions } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type AdminUser = {
   username: string;
@@ -11,10 +12,15 @@ function readUsersFromEnv(envKey: string): AdminUser[] {
   try {
     const raw = process.env[envKey];
     if (!raw) return [];
+
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
+
     return parsed.filter(
-      (u) => u && typeof u.username === "string" && typeof u.passwordHash === "string"
+      (u) =>
+        u &&
+        typeof u.username === "string" &&
+        typeof u.passwordHash === "string"
     );
   } catch {
     return [];
@@ -54,6 +60,28 @@ function normalizeUsername(v: unknown) {
   return String(v ?? "").trim().toLowerCase();
 }
 
+async function getHospitalAdminPasswordHash(username: string, envHash: string) {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("admin_accounts")
+      .select("password_hash")
+      .eq("admin_id", username)
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error("admin password lookup error:", error);
+      return envHash;
+    }
+
+    const dbHash = String(data?.password_hash ?? "").trim();
+    return dbHash || envHash;
+  } catch (e) {
+    console.error("admin password lookup exception:", e);
+    return envHash;
+  }
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     Credentials({
@@ -69,18 +97,23 @@ export const authOptions: NextAuthOptions = {
       async authorize(creds) {
         const username = normalizeUsername((creds as any)?.email);
         const password = String((creds as any)?.password ?? "");
-        const mode = String((creds as any)?.mode ?? "admin").trim().toLowerCase();
+        const mode = String((creds as any)?.mode ?? "admin")
+          .trim()
+          .toLowerCase();
 
         if (!username || !password) return null;
 
         // =========================
         // 내부 전용 로그인
+        // INTERNAL_ADMIN_USERS는 기존 ENV 방식 유지
         // =========================
         if (mode === "internal") {
           const users = readInternalAdminUsers();
           if (!users.length) return null;
 
-          const found = users.find((u) => u.username.toLowerCase() === username);
+          const found = users.find(
+            (u) => u.username.toLowerCase() === username
+          );
           if (!found) return null;
 
           const ok = await bcrypt.compare(password, found.passwordHash);
@@ -96,20 +129,32 @@ export const authOptions: NextAuthOptions = {
         }
 
         // =========================
-        // 기존 병원용 로그인
+        // 병원용 로그인
+        // 1) ADMIN_USERS에서 계정 존재 여부 확인
+        // 2) admin_accounts.password_hash가 있으면 DB 비밀번호 우선
+        // 3) 아직 변경 전이면 ENV 비밀번호 사용
         // =========================
         const users = readAdminUsers();
         if (!users.length) return null;
 
-        const found = users.find((u) => u.username.toLowerCase() === username);
+        const found = users.find(
+          (u) => u.username.toLowerCase() === username
+        );
         if (!found) return null;
 
-        const ok = await bcrypt.compare(password, found.passwordHash);
+        const passwordHash = await getHospitalAdminPasswordHash(
+          username,
+          found.passwordHash
+        );
+
+        const ok = await bcrypt.compare(password, passwordHash);
         if (!ok) return null;
 
         // landing_key 결정: landingKey(폼) > callbackUrl > "00"
         const lk1 = normalizeLandingKey((creds as any)?.landingKey);
-        const lk2 = getLandingKeyFromCallbackUrl((creds as any)?.callbackUrl);
+        const lk2 = getLandingKeyFromCallbackUrl(
+          (creds as any)?.callbackUrl
+        );
         const landing_key = lk1 ?? lk2 ?? "00";
 
         // 규칙 강제
@@ -152,11 +197,13 @@ export const authOptions: NextAuthOptions = {
             normalizeLandingKey((user as any).landing_key) ?? "00";
         }
       }
+
       return token;
     },
 
     async session({ session, token }) {
       session.user = session.user || ({} as any);
+
       (session.user as any).name = token.name;
       (session.user as any).email = token.email;
       (session.user as any).role = (token as any).role ?? "admin";
@@ -174,4 +221,5 @@ export const authOptions: NextAuthOptions = {
 };
 
 const handler = NextAuth(authOptions);
+
 export { handler as GET, handler as POST };

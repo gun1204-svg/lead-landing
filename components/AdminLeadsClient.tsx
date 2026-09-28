@@ -295,6 +295,12 @@ export default function AdminLeadsClient() {
   const [viewSettings, setViewSettings] = useState<ViewSetting[]>([]);
   const [permissionsLoading, setPermissionsLoading] = useState(false);
 
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changePasswordLoading, setChangePasswordLoading] = useState(false);
+
   const isIntegratedAdmin = !canSwitchAny && allowedLandingKeys.length > 1;
   const managerOwnerLK = getManagerOwnerLK(userLK, selectedLK);
 
@@ -733,6 +739,77 @@ export default function AdminLeadsClient() {
     await refreshAccountsList();
   }
 
+  async function changePassword() {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      alert("현재 비밀번호와 새 비밀번호를 모두 입력해주세요.");
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      alert("새 비밀번호는 8자 이상으로 입력해주세요.");
+      return;
+    }
+
+    if (newPassword.length > 72) {
+      alert("새 비밀번호는 72자 이하로 입력해주세요.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      alert("새 비밀번호 확인이 일치하지 않습니다.");
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      alert("새 비밀번호는 현재 비밀번호와 다르게 입력해주세요.");
+      return;
+    }
+
+    setChangePasswordLoading(true);
+
+    try {
+      const res = await fetch("/api/admin/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword,
+        }),
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        if (json?.error === "INVALID_CURRENT_PASSWORD") {
+          alert("현재 비밀번호가 올바르지 않습니다.");
+          return;
+        }
+
+        if (json?.error === "ACCOUNT_NOT_FOUND") {
+          alert("관리자 계정 정보를 찾을 수 없습니다.");
+          return;
+        }
+
+        alert(json?.error || "비밀번호 변경에 실패했습니다.");
+        return;
+      }
+
+      alert("비밀번호가 변경되었습니다. 새 비밀번호로 다시 로그인해주세요.");
+
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setChangePasswordOpen(false);
+
+      await signOut({ callbackUrl: `/${pageLK}/admin/login` });
+    } catch (e) {
+      console.error(e);
+      alert("네트워크 오류로 비밀번호 변경에 실패했습니다.");
+    } finally {
+      setChangePasswordLoading(false);
+    }
+  }
+
   if (!authStatus || authStatus === "loading") {
     return <div style={{ padding: 20 }}>loading...</div>;
   }
@@ -798,6 +875,21 @@ export default function AdminLeadsClient() {
             }}
           >
             엑셀 다운로드
+          </button>
+
+          <button
+            onClick={() => setChangePasswordOpen(true)}
+            style={{
+              padding: "8px 12px",
+              borderRadius: 10,
+              border: "1px solid #ddd",
+              background: "#fff",
+              color: "#111",
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            비밀번호 변경
           </button>
 
           <button
@@ -1254,6 +1346,131 @@ export default function AdminLeadsClient() {
           </button>
         </div>
       </div>
+
+      {changePasswordOpen && (
+        <div
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget && !changePasswordLoading) {
+              setChangePasswordOpen(false);
+            }
+          }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1000,
+            background: "rgba(0,0,0,0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 420,
+              background: "#fff",
+              borderRadius: 16,
+              padding: 20,
+              boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 20, fontWeight: 900 }}>비밀번호 변경</h3>
+                <div style={{ marginTop: 5, fontSize: 13, color: "#666" }}>
+                  {(session?.user as any)?.email}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                disabled={changePasswordLoading}
+                onClick={() => setChangePasswordOpen(false)}
+                style={{
+                  border: 0,
+                  background: "transparent",
+                  fontSize: 24,
+                  lineHeight: 1,
+                  cursor: changePasswordLoading ? "not-allowed" : "pointer",
+                  color: "#666",
+                }}
+                aria-label="닫기"
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
+              <label style={{ display: "grid", gap: 6 }}>
+                <span style={{ fontSize: 13, fontWeight: 800 }}>현재 비밀번호</span>
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  disabled={changePasswordLoading}
+                  style={{ ...inp, width: "100%", boxSizing: "border-box" }}
+                />
+              </label>
+
+              <label style={{ display: "grid", gap: 6 }}>
+                <span style={{ fontSize: 13, fontWeight: 800 }}>새 비밀번호</span>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  disabled={changePasswordLoading}
+                  placeholder="8자 이상"
+                  style={{ ...inp, width: "100%", boxSizing: "border-box" }}
+                />
+              </label>
+
+              <label style={{ display: "grid", gap: 6 }}>
+                <span style={{ fontSize: 13, fontWeight: 800 }}>새 비밀번호 확인</span>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !changePasswordLoading) {
+                      changePassword();
+                    }
+                  }}
+                  disabled={changePasswordLoading}
+                  style={{ ...inp, width: "100%", boxSizing: "border-box" }}
+                />
+              </label>
+            </div>
+
+            <div style={{ marginTop: 18, display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => setChangePasswordOpen(false)}
+                disabled={changePasswordLoading}
+                style={smallBtn}
+              >
+                취소
+              </button>
+
+              <button
+                type="button"
+                onClick={changePassword}
+                disabled={changePasswordLoading}
+                style={{
+                  ...blackBtn,
+                  opacity: changePasswordLoading ? 0.6 : 1,
+                  cursor: changePasswordLoading ? "not-allowed" : "pointer",
+                }}
+              >
+                {changePasswordLoading ? "변경중..." : "변경하기"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
