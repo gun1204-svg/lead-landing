@@ -560,7 +560,20 @@ function LandingSpecialContent({
 
   return (
     <>
-      {isLanding08 ? (
+      {isLanding02 ? (
+      <section>
+        <img
+          src="/intro/02/01.jpg"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = "/intro/02/01.png";
+          }}
+          alt="미호성형외과 눈밑지방재배치"
+          className="block w-full"
+          draggable={false}
+        />
+      </section>
+    ) : isLanding08 ? (
         <section>
           <img
             src="/intro/08/01.jpg"
