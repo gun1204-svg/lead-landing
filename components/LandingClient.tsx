@@ -559,20 +559,24 @@ function LandingSpecialContent({
   }
 
   return (
-    <>
-      {isLanding02 ? (
-      <section>
-        <img
-          src="/intro/02/01.jpg"
-          onError={(e) => {
-            e.currentTarget.onerror = null;
-            e.currentTarget.src = "/intro/02/01.png";
-          }}
-          alt="미호성형외과 눈밑지방재배치"
-          className="block w-full"
-          draggable={false}
-        />
-      </section>
+  <>
+    {isLanding02 ? (
+      <>
+        {["01", "02"].map((imageNo) => (
+          <section key={imageNo}>
+            <img
+              src={`/intro/02/${imageNo}.jpg`}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = `/intro/02/${imageNo}.png`;
+              }}
+              alt={`미호성형외과 눈밑지방재배치 ${imageNo}`}
+              className="block w-full"
+              draggable={false}
+            />
+          </section>
+        ))}
+      </>
     ) : isLanding08 ? (
         <section>
           <img
@@ -981,16 +985,16 @@ function LandingSpecialContent({
           <img
             src={
               landingKey === "02"
-              ? "/intro/02/02.jpg"
+              ? "/intro/02/03.jpg"
               : landingKey === "04"
-                ? "/intro/04/02.jpg"
+                ? "/intro/04/03.jpg"
                 : landingKey === "05"
                   ? "/intro/05/03.jpg"
                   : landingKey === "10"
-                    ? "/intro/10/02.jpg"
+                    ? "/intro/10/03.jpg"
                     : landingKey === "07"
                       ? "/intro/07/05.jpg"
-                      : "/intro/03/02.jpg"
+                      : "/intro/03/03.jpg"
           }
           onError={(e) => {
             e.currentTarget.onerror = null;
