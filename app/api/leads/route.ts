@@ -7,6 +7,24 @@ function normalizePhone(phone: string) {
   return phone.replace(/[^\d]/g, "");
 }
 
+function formatPhone(phone: string) {
+  const digits = phone.replace(/[^\d]/g, "");
+
+  if (digits.length === 11) {
+    return digits.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3");
+  }
+
+  if (digits.startsWith("02") && digits.length === 10) {
+    return digits.replace(/(\d{2})(\d{4})(\d{4})/, "$1-$2-$3");
+  }
+
+  if (digits.length === 10) {
+    return digits.replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3");
+  }
+
+  return phone;
+}
+
 function normalizeLandingKey(v: unknown) {
   const s = String(v ?? "").trim();
   if (!s) return "00";
@@ -517,7 +535,7 @@ export async function POST(req: Request) {
 🏥 병원: ${landingConfig.hospitalName}
 🗂 랜딩: ${getLandingLabel(lk)}
 👤 이름: ${cleanName}
-📞 전화: ${cleanPhone}${concernText}
+📞 전화: ${formatPhone(cleanPhone)}${concernText}
 📊 광고 정보
 utm_source: ${utmSource}
 utm_medium: ${utmMedium}
