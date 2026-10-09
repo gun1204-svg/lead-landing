@@ -51,7 +51,7 @@ export default function AccountLogsPageClient() {
   }
 
   return (
-    <div style={{ padding: 20, maxWidth: 1200, margin: "0 auto" }}>
+    <div className="admin-light-page" style={{ padding: 20, maxWidth: 1200, margin: "0 auto" }}>
       <div
         style={{
           display: "flex",

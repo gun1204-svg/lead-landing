@@ -63,7 +63,7 @@ export default function AdminMonthlyStatsClient() {
   const boxStyle: React.CSSProperties = {background:"white",border:"1px solid #e2e8f0",borderRadius:14,padding:20,marginTop:20};
   if(status==="loading")return <main style={{padding:24}}>로그인 확인 중...</main>;
   if(status==="unauthenticated")return <main style={{padding:24}}>로그인이 필요합니다. <a href={`/${pageLK}/admin/login`}>로그인</a></main>;
-  return <main style={{maxWidth:1100,margin:"0 auto",padding:"24px 16px 80px",color:"#0f172a"}}>
+  return <main className="admin-light-page" style={{maxWidth:1100,margin:"0 auto",padding:"24px 16px 80px",color:"#0f172a"}}>
     <a href={`/${pageLK}/admin/leads`} style={{color:"#2563eb",textDecoration:"none"}}>← 리드 관리로 돌아가기</a>
     <h1 style={{fontSize:28,margin:"20px 0 6px"}}>월별 리드 통계</h1>
     <p style={{color:"#64748b",margin:"0 0 20px"}}>선택한 월의 전체 및 랜딩별 상담 실적 · 한국 시간 기준</p>

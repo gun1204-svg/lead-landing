@@ -24,3 +24,58 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+
+/* admin-light-theme-20261010 */
+body:has(.admin-light-page) {
+  --background: #ffffff;
+  --foreground: #111827;
+  background: #ffffff !important;
+  color: #111827 !important;
+  color-scheme: light;
+}
+
+.admin-light-page {
+  background: #ffffff !important;
+  color: #111827 !important;
+  min-height: 100vh;
+  box-sizing: border-box;
+  color-scheme: light;
+}
+
+.admin-light-page h1,
+.admin-light-page h2,
+.admin-light-page h3,
+.admin-light-page label {
+  color: #111827 !important;
+}
+
+.admin-light-page section {
+  color: #111827;
+}
+
+.admin-light-page input,
+.admin-light-page select,
+.admin-light-page textarea {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  color-scheme: light;
+}
+
+.admin-light-page button {
+  color-scheme: light;
+}
+
+@media (max-width: 767px) {
+  .admin-light-page {
+    padding: 16px 14px 60px !important;
+  }
+
+  .admin-light-page input,
+  .admin-light-page select {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+}
