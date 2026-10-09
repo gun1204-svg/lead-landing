@@ -80,6 +80,13 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: "Missing landing_key" }, { status: 403 });
   }
 
+  if (sessionAdminId !== "admin" || userLK !== "00") {
+    return NextResponse.json(
+      { ok: false, error: "Root admin only" },
+      { status: 403 }
+    );
+  }
+
   const { searchParams } = new URL(req.url);
   const requestedLK = normalizeLandingKey(searchParams.get("landing_key"));
   const status = normalizeStatus(searchParams.get("status"));

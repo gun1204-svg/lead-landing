@@ -234,7 +234,11 @@ function SourceBadge({ source }: { source?: string | null }) {
   );
 }
 
-export default function AdminLeadsClient() {
+export default function AdminLeadsClient({
+  permissionsOnly = false,
+}: {
+  permissionsOnly?: boolean;
+}) {
   const router = useRouter();
   const sp = useSearchParams();
   const pathname = usePathname();
@@ -821,6 +825,34 @@ export default function AdminLeadsClient() {
     return <div style={{ padding: 20 }}>loading...</div>;
   }
 
+  if (permissionsOnly) {
+    if (
+      userLK !== "00" ||
+      (session?.user as any)?.email !== "admin"
+    ) {
+      return <div style={{ padding: 24 }}>?? ??? ????.</div>;
+    }
+
+    return (
+      <div style={{ padding: 20, maxWidth: 1200, margin: "0 auto" }}>
+        <button
+          onClick={() => router.push("/00/admin/leads")}
+          style={smallBtn}
+        >← 리드 관리로 돌아가기</button>
+
+        <h1 style={{ marginTop: 24, fontSize: 24, fontWeight: 900 }}>어드민 권한 설정</h1>
+
+        <RootPermissionsBox
+          accounts={accounts}
+          permissions={permissions}
+          viewSettings={viewSettings}
+          loading={permissionsLoading}
+          onRefresh={refreshPermissions}
+        />
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: 20, maxWidth: 1200, margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
@@ -854,6 +886,23 @@ export default function AdminLeadsClient() {
             월별 통계
           </button>
 
+          {userLK === "00" && (
+            <button
+              onClick={() => router.push("/00/admin/permissions")}
+              style={{
+                padding: "8px 12px",
+                borderRadius: 10,
+                border: "1px solid #ddd",
+                background: "#374151",
+                color: "#fff",
+                fontWeight: 800,
+                cursor: "pointer",
+              }}
+            >
+              어드민 권한 설정
+            </button>
+          )}
+
           <button
             onClick={goAccountLogsPage}
             style={{
@@ -884,6 +933,7 @@ export default function AdminLeadsClient() {
             담당자 관리
           </button>
 
+          {userLK === "00" && (
           <button
             onClick={downloadLeadsCsv}
             style={{
@@ -898,6 +948,7 @@ export default function AdminLeadsClient() {
           >
             엑셀 다운로드
           </button>
+          )}
 
           <button
             onClick={() => setChangePasswordOpen(true)}
@@ -1090,15 +1141,8 @@ export default function AdminLeadsClient() {
 
       {userLK === "00" && (
         <>
-          <RootPermissionsBox
-            accounts={accounts}
-            permissions={permissions}
-            viewSettings={viewSettings}
-            loading={permissionsLoading}
-            onRefresh={refreshPermissions}
-          />
 
-          <div style={{ marginTop: 18, border: "1px solid #eee", borderRadius: 14, padding: 12 }}>
+<div style={{ marginTop: 18, border: "1px solid #eee", borderRadius: 14, padding: 12 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
               <h3 style={{ margin: 0, fontWeight: 900 }}>Root: 충전 / 단가 설정</h3>
 
