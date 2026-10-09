@@ -55,8 +55,8 @@ export default function AccountLogsPageClient() {
       <div
         style={{
           display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
+          flexDirection: "column",
+          alignItems: "stretch",
           gap: 12,
           marginBottom: 14,
         }}
@@ -71,11 +71,23 @@ export default function AccountLogsPageClient() {
           </p>
         </div>
 
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            gap: 8,
+            alignItems: "center",
+            width: "100%",
+          }}
+        >
           <button
             onClick={() => router.push(`/${pageLK}/admin/leads${canSwitchAny ? `?landing_key=${selectedLK}` : ""}`)}
             style={{
-              padding: "8px 12px",
+              padding: "12px 6px",
+              whiteSpace: "nowrap",
+              minWidth: 0,
+              fontSize: 13,
+              color: "#111827",
               borderRadius: 10,
               border: "1px solid #ddd",
               background: "#fff",
@@ -89,7 +101,11 @@ export default function AccountLogsPageClient() {
           <button
             onClick={() => signOut({ callbackUrl: `/${pageLK}/admin/login` })}
             style={{
-              padding: "8px 12px",
+              padding: "12px 6px",
+              whiteSpace: "nowrap",
+              minWidth: 0,
+              fontSize: 13,
+              color: "#111827",
               borderRadius: 10,
               border: "1px solid #ddd",
               background: "#fff",

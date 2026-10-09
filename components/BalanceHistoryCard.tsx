@@ -161,6 +161,8 @@ export default function BalanceHistoryCard({ pageLK }: { pageLK?: string }) {
             fontWeight: 800,
             cursor: loading ? "not-allowed" : "pointer",
             color: "#111827",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
           }}
         >
           {loading ? "불러오는 중" : "새로고침"}
