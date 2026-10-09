@@ -854,8 +854,203 @@ export default function AdminLeadsClient({
   }
 
   return (
-    <div style={{ padding: 20, maxWidth: 1200, margin: "0 auto" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+    <div className="admin-leads-root" style={{ padding: 20, maxWidth: 1200, margin: "0 auto" }}>
+
+      <style>{`
+        .admin-leads-root {
+          background: #ffffff;
+          color: #111827;
+          min-height: 100vh;
+          box-sizing: border-box;
+          color-scheme: light;
+        }
+
+        .admin-leads-root input,
+        .admin-leads-root select,
+        .admin-leads-root textarea {
+          color: #111827;
+          background-color: #ffffff;
+          color-scheme: light;
+        }
+
+        .admin-leads-root button {
+          color-scheme: light;
+        }
+
+
+        .admin-mobile-leads {
+          display: none;
+        }
+
+        @media (max-width: 767px) {
+          .admin-leads-table-scroll {
+            display: none !important;
+          }
+
+          .admin-mobile-leads {
+            display: block;
+            margin-top: 16px;
+          }
+
+          .admin-mobile-lead-card {
+            background: #fff;
+            color: #111827;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            overflow-wrap: anywhere;
+          }
+
+          .admin-mobile-lead-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+          }
+
+          .admin-mobile-lead-details {
+            display: grid;
+            gap: 10px;
+            margin: 14px 0;
+            font-size: 13px;
+            color: #475569;
+          }
+
+          .admin-mobile-lead-fields {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+          }
+
+          .admin-mobile-lead-fields label,
+          .admin-mobile-memo {
+            display: grid;
+            gap: 6px;
+            min-width: 0;
+            font-size: 13px;
+            font-weight: 700;
+          }
+
+          .admin-mobile-lead-fields select,
+          .admin-mobile-memo textarea {
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 9px;
+            background: #fff;
+            color: #111827;
+            font-size: 14px;
+          }
+
+          .admin-mobile-memo {
+            margin-top: 14px;
+          }
+
+          .admin-mobile-save,
+          .admin-mobile-delete {
+            width: 100%;
+            padding: 12px;
+            margin-top: 12px;
+            border: 0;
+            border-radius: 9px;
+            font-weight: 800;
+            background: #2563eb;
+            color: #fff;
+          }
+
+          .admin-mobile-save:disabled {
+            background: #e5e7eb;
+            color: #6b7280;
+          }
+
+          .admin-mobile-delete {
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+          }
+        }
+
+        .admin-leads-table-scroll table {
+          min-width: 1100px;
+        }
+
+        .admin-leads-table-scroll th,
+        .admin-leads-table-scroll td {
+          white-space: nowrap;
+        }
+
+        .admin-leads-table-scroll textarea {
+          white-space: pre-wrap;
+        }
+
+        @media (max-width: 767px) {
+          .admin-leads-root {
+            padding: 14px !important;
+            width: 100%;
+            overflow-x: hidden;
+          }
+
+          .admin-leads-top {
+            flex-direction: column;
+            align-items: stretch !important;
+            gap: 16px !important;
+          }
+
+          .admin-leads-top > div {
+            min-width: 0;
+          }
+
+          .admin-leads-top > div:last-child {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            width: 100%;
+          }
+
+          .admin-leads-top > div:last-child button {
+            width: 100%;
+            min-width: 0;
+            padding: 10px 5px !important;
+            font-size: 13px;
+          }
+
+          .admin-leads-metrics {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .admin-leads-root-metrics {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .admin-leads-metrics > div,
+          .admin-leads-root-metrics > div {
+            min-width: 0;
+            overflow-wrap: anywhere;
+            font-size: 13px;
+          }
+
+          .admin-leads-metrics > div > div,
+          .admin-leads-root-metrics > div > div {
+            font-size: 16px !important;
+            overflow-wrap: anywhere;
+          }
+
+          .admin-leads-table-scroll {
+            max-width: 100%;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .admin-leads-table-scroll th,
+          .admin-leads-table-scroll td {
+            white-space: nowrap;
+          }
+        }
+      `}</style>
+
+      <div className="admin-leads-top" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>Admin Leads</h1>
 
@@ -1001,6 +1196,7 @@ export default function AdminLeadsClient({
       </div>
 
       <div
+        className="admin-leads-metrics"
         style={{
           marginTop: 12,
           display: "grid",
@@ -1059,7 +1255,7 @@ export default function AdminLeadsClient({
       </div>
 
       {isMainAdmin && (
-        <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
+        <div className="admin-leads-root-metrics" style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
           <div style={card}>
             전체 오늘 리드
             <div style={cardBig}>{fmt(todayCount)}</div>
@@ -1193,7 +1389,167 @@ export default function AdminLeadsClient({
         </>
       )}
 
-      <div style={{ marginTop: 12, border: "1px solid #eee", borderRadius: 14, overflow: "hidden" }}>
+      
+      {/* Mobile-only lead cards */}
+      <div className="admin-mobile-leads">
+        <div style={{ fontWeight: 900, marginBottom: 12 }}>
+          {"\uCD5C\uADFC \uC0C1\uB2F4 \uB9AC\uB4DC"}
+          {" "}({fmt(totalRows)})
+        </div>
+
+        {displayRows.map((l) => {
+          const d = draft[l.id] || {};
+          const curStatus = (d.status ?? l.status ?? "NEW") as StatusKey;
+          const curMemo = d.memo ?? l.memo ?? "";
+          const curAssignedTo =
+            d.assigned_to !== undefined
+              ? d.assigned_to
+              : l.assigned_to || "";
+
+          const changed =
+            (d.status !== undefined &&
+              d.status !== (l.status ?? "NEW")) ||
+            (d.memo !== undefined &&
+              d.memo !== (l.memo ?? "")) ||
+            (d.assigned_to !== undefined &&
+              d.assigned_to !== (l.assigned_to || null));
+
+          return (
+            <div key={l.id} className="admin-mobile-lead-card">
+              <div className="admin-mobile-lead-heading">
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 17, fontWeight: 900 }}>
+                    {l.name || "-"}
+                  </div>
+                  <div style={{ marginTop: 6 }}>
+                    <LandingBadge landingKey={l.landing_key} />
+                  </div>
+                </div>
+                <StatusBadge status={curStatus} />
+              </div>
+
+              <div className="admin-mobile-lead-details">
+                <div>
+                  {new Date(l.created_at).toLocaleString("ko-KR", {
+                    timeZone: "Asia/Seoul",
+                  })}
+                </div>
+                <div>
+                  <SourceBadge source={l.utm_source} />
+                </div>
+                <a
+                  href={`tel:${String(l.phone || "").replace(/[^\d+]/g, "")}`}
+                  style={{ color: "#2563eb", fontWeight: 800 }}
+                >
+                  {l.phone || "-"}
+                </a>
+              </div>
+
+              <div className="admin-mobile-lead-fields">
+                <label>
+                  <span>{"\uC0C1\uB2F4 \uC0C1\uD0DC"}</span>
+                  <select
+                    value={curStatus}
+                    onChange={(e) =>
+                      setDraft((prev) => ({
+                        ...prev,
+                        [l.id]: {
+                          ...prev[l.id],
+                          status: e.target.value,
+                        },
+                      }))
+                    }
+                  >
+                    {STATUS_OPTIONS.map((s) => (
+                      <option key={s} value={s}>
+                        {STATUS_META[s].label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  <span>{"\uB2F4\uB2F9\uC790"}</span>
+                  <select
+                    value={curAssignedTo || ""}
+                    onChange={(e) =>
+                      setDraft((prev) => ({
+                        ...prev,
+                        [l.id]: {
+                          ...prev[l.id],
+                          assigned_to: e.target.value || null,
+                        },
+                      }))
+                    }
+                  >
+                    <option value="">
+                      {"\uBBF8\uC9C0\uC815"}
+                    </option>
+                    {managers
+                      .filter(
+                        (m) =>
+                          m.active ||
+                          m.id === l.assigned_to ||
+                          m.id === curAssignedTo
+                      )
+                      .map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name}
+                          {!m.active ? " (inactive)" : ""}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+              </div>
+
+              <label className="admin-mobile-memo">
+                <span>{"\uC0C1\uB2F4 \uBA54\uBAA8"}</span>
+                <textarea
+                  rows={3}
+                  value={curMemo}
+                  onChange={(e) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      [l.id]: {
+                        ...prev[l.id],
+                        memo: e.target.value,
+                      },
+                    }))
+                  }
+                />
+              </label>
+
+              <button
+                type="button"
+                className="admin-mobile-save"
+                disabled={!changed || !!saving[l.id]}
+                onClick={() => saveLead(l.id)}
+              >
+                {saving[l.id]
+                  ? "\uC800\uC7A5\uC911..."
+                  : "\uBCC0\uACBD\uC0AC\uD56D \uC800\uC7A5"}
+              </button>
+
+              {isMainAdmin && (
+                <button
+                  type="button"
+                  className="admin-mobile-delete"
+                  disabled={!!deleting[l.id]}
+                  onClick={() => deleteLead(l.id)}
+                >
+                  {"\uB9AC\uB4DC \uC0AD\uC81C"}
+                </button>
+              )}
+            </div>
+          );
+        })}
+
+        {!loadingRows && displayRows.length === 0 && (
+          <p>{"\uB370\uC774\uD130\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4."}</p>
+        )}
+      </div>
+
+      <div className="admin-leads-table-scroll" style={{ marginTop: 12, border: "1px solid #eee", borderRadius: 14, overflowX: "auto" }}>
         <div style={{ padding: 12, borderBottom: "1px solid #eee", fontWeight: 800 }}>
           {isIntegratedAdmin
             ? `landing_key: ${allowedLandingKeys.map(getLandingDisplayName).join(" + ")} 통합 • ${loadingRows ? "불러오는 중..." : `전체 ${totalRows}건 / ${page}페이지`}`
