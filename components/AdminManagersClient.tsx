@@ -219,8 +219,8 @@ export default function AdminManagersClient() {
   }
 
   return (
-    <div style={{ padding: 20, maxWidth: 1000, margin: "0 auto" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+    <div className="admin-managers-page" style={{ padding: 20, maxWidth: 1000, margin: "0 auto" }}>
+      <div className="admin-managers-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>담당자 관리</h1>
 
@@ -235,9 +235,9 @@ export default function AdminManagersClient() {
           )}
         </div>
 
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <div className="admin-managers-nav" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <button onClick={goLeadsPage} style={blackBtn}>
-            리드 목록
+            ← 리드 관리로 돌아가기
           </button>
 
           <button
@@ -273,7 +273,7 @@ export default function AdminManagersClient() {
 
       {err && <p style={{ marginTop: 12, color: "crimson", whiteSpace: "pre-wrap" }}>{err}</p>}
 
-      <div style={{ marginTop: 18, border: "1px solid #eee", borderRadius: 14, padding: 12, background: "#fff" }}>
+      <div className="admin-managers-add" style={{ marginTop: 18, border: "1px solid #eee", borderRadius: 14, padding: 12, background: "#fff" }}>
         <h3 style={{ marginTop: 0, marginBottom: 10, fontWeight: 900 }}>새 담당자 추가</h3>
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -293,7 +293,7 @@ export default function AdminManagersClient() {
         </div>
       </div>
 
-      <div style={{ marginTop: 12, border: "1px solid #eee", borderRadius: 14, overflow: "hidden" }}>
+      <div className="admin-managers-list" style={{ marginTop: 12, border: "1px solid #eee", borderRadius: 14, overflow: "hidden" }}>
         <div style={{ padding: 12, borderBottom: "1px solid #eee", fontWeight: 900 }}>
           담당자 목록 • {loading ? "불러오는 중..." : `${managers.length}명`}
         </div>
@@ -313,7 +313,7 @@ export default function AdminManagersClient() {
           <tbody>
             {managers.map((m) => (
               <tr key={m.id} style={{ opacity: m.active ? 1 : 0.6 }}>
-                <td style={td}>
+                <td data-label={"\ub2f4\ub2f9\uc790"} style={td}>
                   {editingManagerId === m.id ? (
                     <input
                       value={editingManagerName}
@@ -328,7 +328,7 @@ export default function AdminManagersClient() {
                   )}
                 </td>
 
-                <td style={td}>
+                <td data-label={"\uc0c1\ud0dc"} style={td}>
                   <span
                     style={{
                       display: "inline-flex",
@@ -345,10 +345,10 @@ export default function AdminManagersClient() {
                   </span>
                 </td>
 
-                <td style={td}>{m.owner_landing_key}</td>
-                <td style={td}>{m.created_at ? new Date(m.created_at).toLocaleString("ko-KR") : "-"}</td>
+                <td data-label={"\uad00\ub9ac \uae30\uc900"} style={td}>{m.owner_landing_key}</td>
+                <td data-label={"\uc0dd\uc131\uc77c"} style={td}>{m.created_at ? new Date(m.created_at).toLocaleString("ko-KR") : "-"}</td>
 
-                <td style={td}>
+                <td data-label={"\uc774\ub984 \uc218\uc815"} style={td}>
                   {editingManagerId === m.id ? (
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       <button onClick={() => updateManagerName(m.id)} disabled={loading} style={blackBtn}>
@@ -380,7 +380,7 @@ export default function AdminManagersClient() {
                   )}
                 </td>
 
-                <td style={td}>
+                <td data-label={"\ud65c\uc131 \uc0c1\ud0dc \ubcc0\uacbd"} style={td}>
                   <button
                     onClick={() => toggleManagerActive(m.id, !m.active)}
                     disabled={loading}

@@ -79,3 +79,195 @@ body:has(.admin-light-page) {
     box-sizing: border-box;
   }
 }
+
+
+/* admin-managers-mobile-v2 */
+body:has(.admin-managers-page) {
+  background: #fff !important;
+  color: #111827 !important;
+  color-scheme: light;
+}
+
+.admin-managers-page {
+  background: #fff;
+  color: #111827;
+  color-scheme: light;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.admin-managers-page h1,
+.admin-managers-page h3,
+.admin-managers-page strong {
+  color: #111827;
+}
+
+.admin-managers-page input {
+  background: #fff;
+  color: #111827;
+  color-scheme: light;
+  box-sizing: border-box;
+}
+
+.admin-managers-page button {
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
+@media (max-width: 767px) {
+  .admin-managers-page {
+    padding: 14px !important;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .admin-managers-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+  }
+
+  .admin-managers-header > div {
+    min-width: 0;
+  }
+
+  .admin-managers-nav {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    width: 100%;
+    gap: 8px !important;
+  }
+
+  .admin-managers-nav button {
+    width: 100%;
+    min-width: 0;
+    padding: 12px 4px !important;
+    font-size: 12px;
+  }
+
+  .admin-managers-add {
+    padding: 14px !important;
+  }
+
+  .admin-managers-add > div {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px !important;
+  }
+
+  .admin-managers-add input {
+    width: 100%;
+    min-width: 0;
+    padding: 12px !important;
+    font-size: 14px;
+  }
+
+  .admin-managers-list {
+    border: none !important;
+    overflow: visible !important;
+  }
+
+  .admin-managers-list > div:first-child {
+    padding: 14px 0 !important;
+  }
+
+  .admin-managers-list table,
+  .admin-managers-list tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .admin-managers-list thead {
+    display: none;
+  }
+
+  .admin-managers-list tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+  }
+
+  .admin-managers-list tbody td {
+    display: block;
+    min-width: 0;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow-wrap: anywhere;
+    font-size: 14px;
+  }
+
+  .admin-managers-list tbody td::before {
+    display: block;
+    margin-bottom: 6px;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .admin-managers-list tbody td:nth-child(1)::before {
+    content: "\00003f\00003f\00003f";
+  }
+
+  .admin-managers-list tbody td:nth-child(2) {
+    text-align: right;
+  }
+
+  .admin-managers-list tbody td:nth-child(2)::before {
+    content: "\00003f\00003f";
+  }
+
+  .admin-managers-list tbody td:nth-child(3)::before {
+    content: "\00003f\00003f\000020\00003f\00003f";
+  }
+
+  .admin-managers-list tbody td:nth-child(4)::before {
+    content: "\00003f\00003f\00003f";
+  }
+
+  .admin-managers-list tbody td:nth-child(5)::before {
+    content: "\00003f\00003f\000020\00003f\00003f";
+  }
+
+  .admin-managers-list tbody td:nth-child(6)::before {
+    content: "\00003f\00003f\000020\00003f\00003f\000020\00003f\00003f";
+  }
+
+  .admin-managers-list tbody td button {
+    min-height: 40px;
+    max-width: 100%;
+    padding: 10px !important;
+    font-size: 13px;
+  }
+
+  .admin-managers-list tbody td input {
+    width: 100% !important;
+    min-width: 0;
+  }
+
+  .admin-managers-list tbody tr:has(td[colspan]) {
+    display: block;
+  }
+
+  .admin-managers-list tbody td[colspan]::before {
+    content: none;
+  }
+}
+
+
+/* admin-managers-data-label-fix */
+@media (max-width: 767px) {
+  .admin-managers-list tbody td[data-label]::before {
+    content: attr(data-label) !important;
+    display: block;
+    margin-bottom: 6px;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: normal;
+  }
+}
