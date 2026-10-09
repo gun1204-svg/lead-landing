@@ -15,6 +15,13 @@ type Stats = {
   allowed_landing_keys: string[] | null;
   status_counts: Record<string, number>;
   by_landing: Record<string, StatGroup>;
+  by_manager: {
+    id: string;
+    name: string;
+    total: number;
+    booked: number;
+    active: boolean | null;
+  }[];
   by_day: Record<string, number>;
   by_source: Record<string, number>;
 };
@@ -83,6 +90,87 @@ export default function AdminMonthlyStatsClient() {
         <StatCard label="예약률" value={`${data.booking_rate}%`}/>
         <StatCard label="전월 대비 리드" value={`${delta>0?"+":""}${fmt(delta)}건`}/>
       </div>
+
+      {/* manager-monthly-stats-v2 */}
+      <section style={boxStyle}>
+        <h2 style={{fontSize:20,fontWeight:800,margin:"0 0 10px"}}>
+          {"\uB2F4\uB2F9\uC790\uBCC4 \uC6D4\uBCC4 \uC2E4\uC801"}
+        </h2>
+
+        <p style={{color:"#64748b",fontSize:13,marginBottom:14}}>
+          {"\uC120\uD0DD\uD55C \uC6D4\uC758 \uB9AC\uB4DC\uB97C \uD604\uC7AC \uBC30\uC815\uB41C \uB2F4\uB2F9\uC790 \uAE30\uC900\uC73C\uB85C \uC9D1\uACC4\uD569\uB2C8\uB2E4."}
+        </p>
+
+        <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+          <table style={{
+            width:"100%",
+            minWidth:340,
+            borderCollapse:"collapse",
+            textAlign:"left",
+            fontSize:14,
+            color:"#111827"
+          }}>
+            <thead>
+              <tr style={{background:"#f8fafc"}}>
+                <th style={{padding:10,whiteSpace:"nowrap"}}>
+                  {"\uB2F4\uB2F9\uC790"}
+                </th>
+                <th style={{padding:10,whiteSpace:"nowrap"}}>
+                  {"\uC804\uCCB4 \uB9AC\uB4DC"}
+                </th>
+                <th style={{padding:10,whiteSpace:"nowrap"}}>
+                  {"\uC608\uC57D"}
+                </th>
+                <th style={{padding:10,whiteSpace:"nowrap"}}>
+                  {"\uC608\uC57D\uB960"}
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {[...(data.by_manager ?? [])]
+                .sort((a,b)=>b.total-a.total)
+                .map((m)=>(
+                  <tr
+                    key={m.id}
+                    style={{borderTop:"1px solid #e2e8f0"}}
+                  >
+                    <td style={{padding:10,fontWeight:700}}>
+                      {m.name}
+                      {m.active === false && (
+                        <span style={{
+                          marginLeft: 6,
+                          fontSize: 12,
+                          color: "#64748b"
+                        }}>
+                          {"(\uBE44\uD65C\uC131)"}
+                        </span>
+                      )}
+                    </td>
+                    <td style={{padding:10}}>
+                      {fmt(m.total)}
+                    </td>
+                    <td style={{padding:10}}>
+                      {fmt(m.booked)}
+                    </td>
+                    <td style={{padding:10}}>
+                      {m.total
+                        ? (m.booked / m.total * 100).toFixed(1)
+                        : "0.0"}%
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+
+        {(data.by_manager ?? []).length === 0 && (
+          <p style={{fontSize:13,color:"#64748b"}}>
+            {"\uD574\uB2F9 \uAE30\uAC04\uC758 \uB9AC\uB4DC\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4."}
+          </p>
+        )}
+      </section>
+
       <section style={boxStyle}><h2>랜딩별 실적</h2><div style={{overflowX:"auto"}}>
         <table style={{width:"100%",borderCollapse:"collapse",textAlign:"left"}}><thead><tr><th>랜딩</th><th>리드</th><th>예약</th><th>예약률</th></tr></thead><tbody>
           {Object.entries(data.by_landing).sort(([a],[b])=>a.localeCompare(b)).map(([key,row])=><tr key={key} onClick={()=>setLanding(key)} style={{cursor:"pointer",borderTop:"1px solid #e2e8f0"}}>
