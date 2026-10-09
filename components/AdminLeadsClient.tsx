@@ -345,6 +345,13 @@ export default function AdminLeadsClient() {
     router.push(`/${pageLK}/admin/managers${q}`);
   }
 
+  function goMonthlyStatsPage() {
+    const q = canSwitchAny && selectedLK !== "00"
+      ? `?landing_key=${encodeURIComponent(selectedLK)}`
+      : "";
+    router.push(`/${pageLK}/admin/stats${q}`);
+  }
+
   function downloadLeadsCsv() {
     const p = new URLSearchParams();
 
@@ -832,6 +839,21 @@ export default function AdminLeadsClient() {
         </div>
 
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <button
+            onClick={goMonthlyStatsPage}
+            style={{
+              padding: "8px 12px",
+              borderRadius: 10,
+              border: "1px solid #2563eb",
+              background: "#2563eb",
+              color: "#fff",
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            월별 통계
+          </button>
+
           <button
             onClick={goAccountLogsPage}
             style={{
@@ -1797,4 +1819,3 @@ const tdTop: React.CSSProperties = {
   fontSize: 14,
   verticalAlign: "top",
 };
-
