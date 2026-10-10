@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 
@@ -10,7 +10,14 @@ type StatGroup = {
   status: Record<string, number>;
 };
 
+type ManagerLandingStat = {
+  total: number;
+  booked?: number;
+  status?: Record<string, number>;
+};
+
 type ManagerStat = {
+  by_landing?: Record<string, ManagerLandingStat>;
   id: string;
   name: string;
   total: number;
@@ -29,6 +36,7 @@ type Stats = {
   status_counts: Record<string, number>;
   by_landing: Record<string, StatGroup>;
   by_manager: ManagerStat[];
+  by_manager_landing?: Record<string, Record<string, ManagerLandingStat>>;
   by_day: Record<string, number>;
   by_source: Record<string, number>;
 };
@@ -115,6 +123,7 @@ export default function AdminMonthlyStatsClient() {
   const [data, setData] = useState<Stats | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [expandedManager, setExpandedManager] = useState<string | null>(null);
 
   useEffect(() => {
     if (status !== "authenticated") return;
@@ -128,6 +137,7 @@ export default function AdminMonthlyStatsClient() {
 
     setLoading(true);
     setError("");
+    setExpandedManager(null);
 
     fetch(
       `/api/admin/monthly-stats?month=${encodeURIComponent(
@@ -362,7 +372,7 @@ export default function AdminMonthlyStatsClient() {
               }}
             >
               선택한 월의 리드를 현재 배정된 담당자 기준으로
-              집계합니다.
+              집계합니다. 담당자 이름을 클릭하면 수술별 상세가 펼쳐집니다.
             </p>
 
             <div
@@ -399,53 +409,109 @@ export default function AdminMonthlyStatsClient() {
                 </thead>
 
                 <tbody>
-                  {sortedManagers.map((m) => (
-                    <tr
-                      key={m.id}
-                      style={{
-                        borderTop: "1px solid #e2e8f0",
-                      }}
-                    >
-                      <td
-                        style={{
-                          padding: 10,
-                          fontWeight: 700,
-                        }}
-                      >
-                        {m.name}
+                  {sortedManagers.map((m) => {
+                    const expanded = expandedManager === m.id;
+                    const breakdown =
+                      m.by_landing ?? data.by_manager_landing?.[m.id];
+                    const details = Object.entries(breakdown ?? {}).sort(
+                      ([a], [b]) => a.localeCompare(b)
+                    );
 
-                        {m.active === false && (
-                          <span
-                            style={{
-                              marginLeft: 6,
-                              fontSize: 12,
-                              color: "#64748b",
-                            }}
-                          >
-                            (비활성)
-                          </span>
+                    return (
+                      <Fragment key={m.id}>
+                        <tr
+                          style={{
+                            borderTop: "1px solid #e2e8f0",
+                            background: expanded ? "#eff6ff" : "#fff",
+                          }}
+                        >
+                          <td style={{ padding: 10, fontWeight: 700 }}>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedManager(expanded ? null : m.id)
+                              }
+                              aria-expanded={expanded}
+                              aria-label={`${m.name} 수술별 상세 통계 ${expanded ? "접기" : "펼치기"}`}
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 8,
+                                border: 0,
+                                background: "transparent",
+                                color: "#1d4ed8",
+                                cursor: "pointer",
+                                padding: "6px 0",
+                                fontWeight: 800,
+                                fontSize: 14,
+                                textAlign: "left",
+                              }}
+                            >
+                              <span aria-hidden="true">{expanded ? "▾" : "▸"}</span>
+                              {m.name}
+                            </button>
+                            {m.active === false && (
+                              <span style={{ marginLeft: 6, fontSize: 12, color: "#64748b" }}>
+                                (비활성)
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ padding: 10 }}>{fmt(m.total)}</td>
+                          <td style={{ padding: 10 }}>{fmt(m.booked)}</td>
+                          <td style={{ padding: 10 }}>
+                            {m.total ? ((m.booked / m.total) * 100).toFixed(1) : "0.0"}%
+                          </td>
+                        </tr>
+                        {expanded && (
+                          <tr style={{ background: "#f8fafc" }}>
+                            <td colSpan={4} style={{ padding: "14px 12px 18px" }}>
+                              <div style={{ fontWeight: 800, marginBottom: 10 }}>
+                                {m.name} · 수술별 상담 및 예약 현황
+                              </div>
+                              {!breakdown ? (
+                                <p style={{ margin: 0, color: "#64748b", fontSize: 13 }}>
+                                  수술별 집계 데이터가 아직 제공되지 않습니다.
+                                  월별 통계 API에 담당자별 랜딩 집계를 추가해야 합니다.
+                                </p>
+                              ) : details.length === 0 ? (
+                                <p style={{ margin: 0, color: "#64748b", fontSize: 13 }}>
+                                  이 기간에 해당하는 수술별 상담 내역이 없습니다.
+                                </p>
+                              ) : (
+                                <div style={{ overflowX: "auto" }}>
+                                  <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 340, fontSize: 13 }}>
+                                    <thead>
+                                      <tr style={{ background: "#e2e8f0" }}>
+                                        <th style={{ padding: 9, textAlign: "left" }}>수술 종류</th>
+                                        <th style={{ padding: 9, textAlign: "right" }}>상담</th>
+                                        <th style={{ padding: 9, textAlign: "right" }}>예약</th>
+                                        <th style={{ padding: 9, textAlign: "right" }}>예약률</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {details.map(([lk, stat]) => {
+                                        const booked = stat.booked ?? stat.status?.BOOKED ?? 0;
+                                        return (
+                                          <tr key={lk} style={{ borderTop: "1px solid #e2e8f0" }}>
+                                            <td style={{ padding: 9 }}>{LABELS[lk] ?? `${lk} 랜딩`}</td>
+                                            <td style={{ padding: 9, textAlign: "right" }}>{fmt(stat.total)}</td>
+                                            <td style={{ padding: 9, textAlign: "right", fontWeight: 800 }}>{fmt(booked)}</td>
+                                            <td style={{ padding: 9, textAlign: "right" }}>
+                                              {stat.total ? ((booked / stat.total) * 100).toFixed(1) : "0.0"}%
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
                         )}
-                      </td>
-
-                      <td style={{ padding: 10 }}>
-                        {fmt(m.total)}
-                      </td>
-
-                      <td style={{ padding: 10 }}>
-                        {fmt(m.booked)}
-                      </td>
-
-                      <td style={{ padding: 10 }}>
-                        {m.total
-                          ? (
-                              (m.booked / m.total) *
-                              100
-                            ).toFixed(1)
-                          : "0.0"}
-                        %
-                      </td>
-                    </tr>
-                  ))}
+                      </Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -612,3 +678,4 @@ export default function AdminMonthlyStatsClient() {
     </main>
   );
 }
+
