@@ -1659,6 +1659,7 @@ export default function AdminLeadsClient({
                       rows={4}
                       style={{
                         width: "100%",
+                        boxSizing: "border-box",
                         minHeight: 96,
                         resize: "vertical",
                         padding: "10px 12px",
@@ -1676,11 +1677,12 @@ export default function AdminLeadsClient({
                         onClick={() => saveLead(l.id)}
                         disabled={!changed || !!saving[l.id]}
                         style={{
-                          width: 100,
-                          height: 40,
+                          width: "100%",
+                          height: 44,
                           padding: "10px 16px",
+                          boxSizing: "border-box",
                           borderRadius: 10,
-                          border: "1px solid #111",
+                          border: changed ? "1px solid #111" : "1px solid #d1d5db",
                           background: changed ? "#111" : "#f3f4f6",
                           color: changed ? "#fff" : "#6b7280",
                           fontSize: 14,
@@ -1689,7 +1691,7 @@ export default function AdminLeadsClient({
                           transition: "all 0.2s ease",
                         }}
                       >
-                        {saving[l.id] ? "저장중..." : "저장"}
+                        {saving[l.id] ? "저장중..." : "변경사항 저장"}
                       </button>
                     </div>
                   </td>
