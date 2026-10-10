@@ -1676,13 +1676,17 @@ export default function AdminLeadsClient({
                         onClick={() => saveLead(l.id)}
                         disabled={!changed || !!saving[l.id]}
                         style={{
-                          padding: "8px 16px",
+                          width: 100,
+                          height: 40,
+                          padding: "10px 16px",
                           borderRadius: 10,
-                          border: "1px solid #ddd",
-                          background: changed ? "#111" : "#f3f3f3",
-                          color: changed ? "#fff" : "#777",
+                          border: "1px solid #111",
+                          background: changed ? "#111" : "#f3f4f6",
+                          color: changed ? "#fff" : "#6b7280",
+                          fontSize: 14,
                           fontWeight: 800,
                           cursor: changed && !saving[l.id] ? "pointer" : "not-allowed",
+                          transition: "all 0.2s ease",
                         }}
                       >
                         {saving[l.id] ? "저장중..." : "저장"}
