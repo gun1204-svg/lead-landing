@@ -974,7 +974,7 @@ export default function AdminLeadsClient({
         }
 
         .admin-leads-table-scroll table {
-          min-width: 1100px;
+          min-width: 1000px;
         }
 
         .admin-leads-table-scroll th,
@@ -1389,7 +1389,7 @@ export default function AdminLeadsClient({
         </>
       )}
 
-      
+
       {/* Mobile-only lead cards */}
       <div className="admin-mobile-leads">
         <div style={{ fontWeight: 900, marginBottom: 12 }}>
@@ -1566,8 +1566,7 @@ export default function AdminLeadsClient({
               <th style={th}>전화</th>
               <th style={th}>상태</th>
               <th style={th}>담당자</th>
-              <th style={th}>메모</th>
-              <th style={th}>저장</th>
+              <th style={th}>메모 / 저장</th>
               {isMainAdmin && <th style={th}>삭제</th>}
             </tr>
           </thead>
@@ -1647,7 +1646,7 @@ export default function AdminLeadsClient({
                     </select>
                   </td>
 
-                  <td style={{ ...tdTop, minWidth: 320 }}>
+                  <td style={{ ...tdTop, minWidth: 260 }}>
                     <textarea
                       value={curMemo}
                       onChange={(e) =>
@@ -1671,23 +1670,24 @@ export default function AdminLeadsClient({
                         overflowWrap: "break-word",
                       }}
                     />
-                  </td>
-
-                  <td style={tdTop}>
-                    <button
-                      onClick={() => saveLead(l.id)}
-                      disabled={!changed || !!saving[l.id]}
-                      style={{
-                        padding: "6px 10px",
-                        borderRadius: 10,
-                        border: "1px solid #ddd",
-                        background: changed ? "#111" : "#f3f3f3",
-                        color: changed ? "#fff" : "#999",
-                        cursor: changed ? "pointer" : "not-allowed",
-                      }}
-                    >
-                      {saving[l.id] ? "저장중..." : "저장"}
-                    </button>
+                    <div style={{ marginTop: 8, display: "flex", justifyContent: "flex-end" }}>
+                      <button
+                        type="button"
+                        onClick={() => saveLead(l.id)}
+                        disabled={!changed || !!saving[l.id]}
+                        style={{
+                          padding: "8px 16px",
+                          borderRadius: 10,
+                          border: "1px solid #ddd",
+                          background: changed ? "#111" : "#f3f3f3",
+                          color: changed ? "#fff" : "#777",
+                          fontWeight: 800,
+                          cursor: changed && !saving[l.id] ? "pointer" : "not-allowed",
+                        }}
+                      >
+                        {saving[l.id] ? "저장중..." : "저장"}
+                      </button>
+                    </div>
                   </td>
 
                   {isMainAdmin && (
@@ -1714,7 +1714,7 @@ export default function AdminLeadsClient({
 
             {!loadingRows && displayRows.length === 0 && (
               <tr>
-                <td colSpan={isMainAdmin ? 10 : 9} style={{ padding: 14, color: "#666" }}>
+                <td colSpan={isMainAdmin ? 9 : 8} style={{ padding: 14, color: "#666" }}>
                   데이터 없음
                 </td>
               </tr>
