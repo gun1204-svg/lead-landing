@@ -30,7 +30,6 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     mobileSubmitLabel: "문의 사례 받아보기",
     pageCount: 5,
     telegramChatId: process.env.TELEGRAM_CHAT_ID_00,
-
     businessName: "비엔파트너스",
     address: "서울시 성동구 성수동2가 280 SK V1 CENTER 1-1611",
     businessNumber: "114-16-48944",
@@ -40,7 +39,6 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     privacyContact: "010-3703-1068",
     privacyEmail: "bienpartner@naver.com",
   },
-
   "01": {
     key: "01",
     hospitalName: "01병원",
@@ -51,7 +49,6 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     mobileSubmitLabel: "상담 받기",
     pageCount: 1,
     telegramChatId: process.env.TELEGRAM_CHAT_ID_01,
-
     businessName: "01병원",
     address: "서울시 강남구",
     businessNumber: "111-11-11111",
@@ -61,7 +58,6 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     privacyContact: "02-1111-2222",
     privacyEmail: "contact@hospital01.com",
   },
-
   "02": {
     key: "02",
     hospitalName: "미호성형외과의원",
@@ -72,10 +68,8 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     mobileSubmitLabel: "상담 받기",
     pageCount: 1,
     telegramChatId: process.env.TELEGRAM_CHAT_ID_02,
-
     businessName: "미호성형외과의원",
-    address:
-      "서울시 강남구 강남대로 492 HM타워 7,8,9층 (신논현역 3번출구 도보 3분)",
+    address: "서울시 강남구 강남대로 492 HM타워 7,8,9층 (신논현역 3번출구 도보 3분)",
     businessNumber: "848-79-00072",
     representativeName: "윤석호",
     phone: "02-595-5503",
@@ -83,7 +77,6 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     privacyContact: "02-595-5503",
     privacyEmail: "",
   },
-
   "03": {
     key: "03",
     hospitalName: "미호성형외과의원",
@@ -94,10 +87,8 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     mobileSubmitLabel: "상담 신청하기",
     pageCount: 1,
     telegramChatId: process.env.TELEGRAM_CHAT_ID_02,
-
     businessName: "미호성형외과의원",
-    address:
-      "서울시 강남구 강남대로 492 HM타워 7,8,9층 (신논현역 3번출구 도보 3분)",
+    address: "서울시 강남구 강남대로 492 HM타워 7,8,9층 (신논현역 3번출구 도보 3분)",
     businessNumber: "848-79-00072",
     representativeName: "윤석호",
     phone: "02-595-5503",
@@ -105,21 +96,18 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     privacyContact: "02-595-5503",
     privacyEmail: "",
   },
-
   "04": {
     key: "04",
     hospitalName: "미호성형외과의원",
-    title: "미호성형외과 코재수술 상담 신청",
-    description: "실패한 원인을 정확히 분석하여 마지막 코수술이 되도록",
+    title: "미호성형외과 자가늑코끝성형 상담 신청",
+    description: "코끝의 높이와 모양, 정면과 옆모습의 조화까지. 내 코에 적합한 자가늑코끝성형 방법을 상담해보세요.",
     introPath: "/intro/04",
     submitLabel: "상담 신청하기",
     mobileSubmitLabel: "상담 신청하기",
-    pageCount: 2,
+    pageCount: 4,
     telegramChatId: process.env.TELEGRAM_CHAT_ID_02,
-
     businessName: "미호성형외과의원",
-    address:
-      "서울시 강남구 강남대로 492 HM타워 7,8,9층 (신논현역 3번출구 도보 3분)",
+    address: "서울시 강남구 강남대로 492 HM타워 7,8,9층 (신논현역 3번출구 도보 3분)",
     businessNumber: "848-79-00072",
     representativeName: "윤석호",
     phone: "02-595-5503",
@@ -127,7 +115,6 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     privacyContact: "02-595-5503",
     privacyEmail: "",
   },
-
   "05": {
     key: "05",
     hospitalName: "미호성형외과의원",
@@ -137,13 +124,10 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     submitLabel: "상담 신청하기",
     mobileSubmitLabel: "상담 신청하기",
     pageCount: 4,
-
     // 05번 리드도 02번과 동일한 텔레그램 방으로 전송
     telegramChatId: process.env.TELEGRAM_CHAT_ID_02,
-
     businessName: "미호성형외과의원",
-    address:
-      "서울시 강남구 강남대로 492 HM타워 7,8,9층 (신논현역 3번출구 도보 3분)",
+    address: "서울시 강남구 강남대로 492 HM타워 7,8,9층 (신논현역 3번출구 도보 3분)",
     businessNumber: "848-79-00072",
     representativeName: "윤석호",
     phone: "02-595-5503",
@@ -151,24 +135,19 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     privacyContact: "02-595-5503",
     privacyEmail: "",
   },
-
   "06": {
     key: "06",
     hospitalName: "미호성형외과의원",
     title: "미호성형외과 눈썹거상 상담 신청",
-    description:
-      "처진 눈매와 눈썹 주변 고민, 눈썹거상 상담을 받아보세요",
+    description: "처진 눈매와 눈썹 주변 고민, 눈썹거상 상담을 받아보세요",
     introPath: "/intro/06",
     submitLabel: "상담 신청하기",
     mobileSubmitLabel: "상담 신청하기",
     pageCount: 4,
-
     // 06번 리드도 02번과 동일한 텔레그램 방으로 전송
     telegramChatId: process.env.TELEGRAM_CHAT_ID_02,
-
     businessName: "미호성형외과의원",
-    address:
-      "서울시 강남구 강남대로 492 HM타워 7,8,9층 (신논현역 3번출구 도보 3분)",
+    address: "서울시 강남구 강남대로 492 HM타워 7,8,9층 (신논현역 3번출구 도보 3분)",
     businessNumber: "848-79-00072",
     representativeName: "윤석호",
     phone: "02-595-5503",
@@ -176,24 +155,19 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     privacyContact: "02-595-5503",
     privacyEmail: "",
   },
-
   "07": {
     key: "07",
     hospitalName: "미호성형외과의원",
     title: "미호성형외과 기능코 상담 신청",
-    description:
-      "코막힘, 비염, 비중격 등 코 기능 고민을 상담해보세요",
+    description: "코막힘, 비염, 비중격 등 코 기능 고민을 상담해보세요",
     introPath: "/intro/07",
     submitLabel: "상담 신청하기",
     mobileSubmitLabel: "상담 신청하기",
     pageCount: 5,
-
     // 07번 리드도 02번과 동일한 텔레그램 방으로 전송
     telegramChatId: process.env.TELEGRAM_CHAT_ID_02,
-
     businessName: "미호성형외과의원",
-    address:
-      "서울시 강남구 강남대로 492 HM타워 7,8,9층 (신논현역 3번출구 도보 3분)",
+    address: "서울시 강남구 강남대로 492 HM타워 7,8,9층 (신논현역 3번출구 도보 3분)",
     businessNumber: "848-79-00072",
     representativeName: "윤석호",
     phone: "02-595-5503",
@@ -201,23 +175,18 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     privacyContact: "02-595-5503",
     privacyEmail: "",
   },
-
   "08": {
     key: "08",
     hospitalName: "미호성형외과의원",
     title: "미호성형외과 비개방 코성형 상담 신청",
-    description:
-      "흉터 부담을 줄이고 자연스러운 코 라인을 위한 비개방 코성형 상담을 받아보세요",
+    description: "흉터 부담을 줄이고 자연스러운 코 라인을 위한 비개방 코성형 상담을 받아보세요",
     introPath: "/intro/08",
     submitLabel: "상담 신청하기",
     mobileSubmitLabel: "상담 신청하기",
     pageCount: 7,
-
     telegramChatId: process.env.TELEGRAM_CHAT_ID_02,
-
     businessName: "미호성형외과의원",
-    address:
-      "서울시 강남구 강남대로 492 HM타워 7,8,9층 (신논현역 3번출구 도보 3분)",
+    address: "서울시 강남구 강남대로 492 HM타워 7,8,9층 (신논현역 3번출구 도보 3분)",
     businessNumber: "848-79-00072",
     representativeName: "윤석호",
     phone: "02-595-5503",
@@ -225,7 +194,6 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     privacyContact: "02-595-5503",
     privacyEmail: "",
   },
-
   "10": {
     key: "10",
     hospitalName: "예롬성형외과의원",
@@ -236,7 +204,6 @@ export const LANDING_CONFIG: Record<string, LandingConfig> = {
     mobileSubmitLabel: "상담 신청하기",
     pageCount: 2,
     telegramChatId: process.env.TELEGRAM_CHAT_ID_10,
-
     businessName: "예롬성형외과의원",
     address: "서울 강남구 논현로175길7 나사빌딩 4층",
     businessNumber: "211-09-49964",

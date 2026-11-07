@@ -95,24 +95,24 @@ const concernOptions03 = [
 
 const concernOptions04 = [
   {
-    title: "첫 수술 후 코 모양이 마음에 들지 않아요",
-    desc: "수술 후 전체적인 코 라인이나 분위기가 만족스럽지 않은 경우",
+    title: "코끝이 낮아 조금 더 높이고 싶어요",
+    desc: "얼굴과 조화를 이루는 코끝 높이를 상담받고 싶은 경우",
   },
   {
-    title: "코끝이 처지거나 들려 보여요",
-    desc: "시간이 지나며 코끝 방향이나 높이가 아쉬워진 경우",
+    title: "코끝이 뭉툭하고 둥글어 고민이에요",
+    desc: "정면에서 코끝이 넓거나 둔해 보여 신경 쓰이는 경우",
   },
   {
-    title: "보형물이 비치거나 휘어 보여요",
-    desc: "보형물 경계가 보이거나 중심이 틀어져 보이는 경우",
+    title: "코끝이 처져 보이는 게 고민이에요",
+    desc: "옆모습에서 코끝의 방향과 라인이 아쉬운 경우",
   },
   {
-    title: "콧대·코끝 라인이 부자연스러워요",
-    desc: "전체적인 연결감이나 라인이 어색하게 느껴지는 경우",
+    title: "자연스럽고 세련된 코끝을 원해요",
+    desc: "높이뿐 아니라 정면과 옆모습의 조화를 원하는 경우",
   },
   {
-    title: "재수술이 필요한지 먼저 상담받고 싶어요",
-    desc: "현재 상태에서 재수술 가능 여부가 궁금한 경우",
+    title: "제 코에 자가늑연골이 적합한지 궁금해요",
+    desc: "코 피부·연골 상태를 확인하고 적합한 방법을 상담받고 싶은 경우",
   },
 ];
 
@@ -349,6 +349,11 @@ function TopLeadForm({
               noValidate
             >
               {showRequiredVisitNotice && <RequiredVisitNotice />}
+              {submitButtonText.includes("자가늑") && (
+                <p className="text-center text-[12px] leading-5 text-gray-600">
+                  첫 코수술 대상 이벤트 · 부가세 및 마취비 별도
+                </p>
+              )}
 
               <input
                 className="h-13 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] font-medium text-black placeholder:text-gray-400 outline-none transition focus:border-black focus:ring-2 focus:ring-black/5"
@@ -501,8 +506,10 @@ function LandingSpecialContent({
 
   const heading = isLanding02
     ? "눈밑 고민,"
-    : isLanding04 || isLanding05
-      ? "코재수술 고민,"
+    : isLanding04
+      ? "지금 내 코끝,"
+      : isLanding05
+        ? "코재수술 고민,"
       : isLanding06
         ? "눈썹거상 고민,"
         : isLanding07
@@ -513,12 +520,16 @@ function LandingSpecialContent({
               ? ""
               : "코 고민,";
 
-  const headingSub = "어떤 유형에 가까우신가요?";
+  const headingSub = isLanding04
+    ? "어떤 점이 가장 고민이신가요?"
+    : "어떤 유형에 가까우신가요?";
 
   const helperText = isLanding02
     ? "현재 가장 신경 쓰이는 고민을 선택해 주세요."
-    : isLanding04 || isLanding05
-      ? "현재 가장 고민되는 재수술 부분을 선택해 주세요."
+    : isLanding04
+      ? "현재 가장 신경 쓰이는 코끝 고민을 선택해 주세요."
+      : isLanding05
+        ? "현재 가장 고민되는 재수술 부분을 선택해 주세요."
       : isLanding06
         ? "현재 가장 신경 쓰이는 눈가 처짐 고민을 선택해 주세요."
         : isLanding07
@@ -531,8 +542,10 @@ function LandingSpecialContent({
 
   const selectedBoxText = isLanding02
     ? "선택하신 내용으로 상담 안내가 진행됩니다."
-    : isLanding04 || isLanding05
-      ? "선택하신 재수술 고민 기준으로 상담 안내가 진행됩니다."
+    : isLanding04
+      ? "선택하신 코끝 고민을 참고해 상담을 안내드립니다."
+      : isLanding05
+        ? "선택하신 재수술 고민 기준으로 상담 안내가 진행됩니다."
       : isLanding06
         ? "선택하신 눈썹거상 고민 기준으로 상담 안내가 진행됩니다."
         : isLanding07
@@ -662,7 +675,7 @@ function LandingSpecialContent({
             }}
             alt={
               landingKey === "04"
-                ? "코재수술 메인"
+                ? "미호성형외과 자가늑코끝성형 이벤트"
                 : landingKey === "10"
                   ? "예롬성형외과 메인"
                   : "코수술 메인"
@@ -672,6 +685,18 @@ function LandingSpecialContent({
           />
         </section>
       ) : null}
+
+      {isLanding04 && (
+        <section className="bg-[#faf7f6] px-5 py-12 text-center">
+          <p className="text-[12px] font-semibold tracking-[0.18em] text-[#aa858a]">MIHO NOSE TIP</p>
+          <h2 className="mt-3 text-[clamp(27px,5vw,38px)] font-bold leading-[1.35] text-[#282222]">
+            코끝이 달라지면,<br />분위기도 달라지니까.
+          </h2>
+          <p className="mt-4 text-[15px] leading-7 text-gray-600">
+            내 얼굴에 어울리는 코끝 라인.<br />미호에서 함께 고민해 보세요.
+          </p>
+        </section>
+      )}
 
       <section className="bg-[#f7faf8] px-4 py-10">
         <div className="mx-auto w-full max-w-[760px]">
@@ -786,7 +811,7 @@ function LandingSpecialContent({
                 setAgreed={setAgreed}
                 handleSubmit={handleSubmit}
                 handleFormStarted={handleFormStarted}
-                submitButtonText="상담 신청하기"
+                submitButtonText={isLanding04 ? "자가늑코끝성형 상담 신청하기" : "상담 신청하기"}
                 showRequiredVisitNotice={true}
               />
             )}
@@ -850,6 +875,81 @@ function LandingSpecialContent({
         </div>
       </section>
 
+      {isLanding04 && (
+        <>
+          <section className="bg-white px-5 pb-9 pt-12 text-center">
+            <p className="text-[12px] font-bold tracking-[0.16em] text-[#aa858a]">NOSE TIP DESIGN</p>
+            <h2 className="mt-3 text-[clamp(25px,5vw,36px)] font-bold leading-[1.35] text-[#282222]">
+              높이만이 아니라,<br />정면과 옆모습의 조화까지.
+            </h2>
+            <p className="mt-3 text-[14px] leading-7 text-gray-600">
+              코끝의 모양과 피부·연골 상태를 확인하고<br />개인별 수술 방향을 상담합니다.
+            </p>
+          </section>
+          <section>
+            <img
+              src="/intro/04/02.jpg"
+              alt="미호성형외과 자가늑코끝성형 전후사진"
+              className="block h-auto w-full"
+              draggable={false}
+              loading="lazy"
+            />
+          </section>
+          <section className="bg-[#f8f4f1] px-5 py-12 text-center">
+            <p className="text-[12px] font-bold tracking-[0.16em] text-[#aa858a]">MIHO CARTILAGE GUIDE</p>
+            <h2 className="mt-3 text-[28px] font-bold text-[#282222]">자가늑연골이란?</h2>
+            <p className="mx-auto mt-4 max-w-[620px] text-[15px] leading-8 text-[#554d49]">
+              본인의 갈비뼈 주변에서 채취하는 연골로,<br className="hidden sm:block" /> 코끝을 지지하거나 형태를 만드는 데 활용됩니다.
+              <br />적합한 재료와 수술 방법은 진료 후 결정합니다.
+            </p>
+            <h3 className="mt-11 text-[23px] font-bold text-[#282222]">자가늑연골과 기증늑연골의 차이</h3>
+            <div className="mx-auto mt-6 grid max-w-[760px] grid-cols-2 gap-3 text-left">
+              <div className="rounded-2xl bg-white p-4 shadow-sm">
+                <h4 className="text-center text-[16px] font-bold text-[#282222]">자가늑연골</h4>
+                <p className="mt-3 text-[13px] font-bold text-[#956c71]">특징</p>
+                <p className="mt-1 text-[13px] leading-6 text-gray-700">본인 연골을 사용하며 코끝 지지 구조에 활용할 수 있습니다.</p>
+                <p className="mt-3 text-[13px] font-bold text-[#956c71]">고려사항</p>
+                <p className="mt-1 text-[13px] leading-6 text-gray-700">가슴 부위의 연골 채취가 필요하며 통증, 흉터 등이 발생할 수 있습니다.</p>
+              </div>
+              <div className="rounded-2xl bg-white p-4 shadow-sm">
+                <h4 className="text-center text-[16px] font-bold text-[#282222]">기증늑연골</h4>
+                <p className="mt-3 text-[13px] font-bold text-[#956c71]">특징</p>
+                <p className="mt-1 text-[13px] leading-6 text-gray-700">본인의 가슴 부위 연골을 채취하지 않아도 사용할 수 있는 재료입니다.</p>
+                <p className="mt-3 text-[13px] font-bold text-[#956c71]">고려사항</p>
+                <p className="mt-1 text-[13px] leading-6 text-gray-700">재료의 특성과 흡수·변형 등 합병증 가능성을 고려해야 합니다.</p>
+              </div>
+            </div>
+            <p className="mx-auto mt-5 max-w-[660px] text-[12px] leading-6 text-gray-500">
+              ※ 어떤 재료가 적합한지는 코 상태와 진료 결과에 따라 달라집니다.
+            </p>
+          </section>
+          <InlineCTA text="자가늑코끝성형 상담 신청하기" onClick={onOpenForm} />
+          <section>
+            <img
+              src="/intro/04/03.jpg"
+              alt="미호성형외과 자가늑코끝성형 리얼모델 이미지"
+              className="block h-auto w-full"
+              draggable={false}
+              loading="lazy"
+            />
+          </section>
+          <section>
+            <img
+              src="/intro/04/04.jpg"
+              alt="미호성형외과 자가늑코끝성형 이벤트 확인사항"
+              className="block h-auto w-full"
+              draggable={false}
+              loading="lazy"
+            />
+          </section>
+          <p className="bg-white px-5 py-5 text-center text-[12px] leading-6 text-gray-600">
+            이벤트 조건 및 세부 비용은 상담 시 확인해 주세요.<br />
+            수술 후 출혈, 감염, 흉터, 비대칭 등의 부작용이 발생할 수 있으며 결과와 회복 과정에는 개인차가 있습니다.
+          </p>
+          <InlineCTA text="자가늑코끝성형 상담 신청하기" onClick={onOpenForm} />
+        </>
+      )}
+
       {isLanding08 && (
         <>
           {["02", "03", "04", "05", "06", "07"].map((imageNo) => (
@@ -869,7 +969,7 @@ function LandingSpecialContent({
         </>
       )}
 
-      {!isLanding10 && !isLanding05 && !isLanding06 && !isLanding07 && !isLanding08 && (
+      {!isLanding10 && !isLanding04 && !isLanding05 && !isLanding06 && !isLanding07 && !isLanding08 && (
         <section className="bg-white px-4 py-8">
           <div className="mx-auto w-full max-w-[760px]">
             <div className="mb-6 text-center">
@@ -881,12 +981,6 @@ function LandingSpecialContent({
                 {landingKey === "02" ? (
                   <>
                     같은 고민 사례를
-                    <br />
-                    짧은 영상으로 먼저 확인해보세요
-                  </>
-                ) : landingKey === "04" ? (
-                  <>
-                    코재수술 전후 변화를
                     <br />
                     짧은 영상으로 먼저 확인해보세요
                   </>
@@ -902,8 +996,6 @@ function LandingSpecialContent({
               <p className="mt-2 text-[14px] leading-6 text-gray-600">
                 {landingKey === "02"
                   ? "실제 전후 느낌을 빠르게 보고 상담 여부를 결정하실 수 있습니다."
-                  : landingKey === "04"
-                    ? "재수술 사례 느낌을 먼저 보고 상담 여부를 편하게 결정하실 수 있습니다."
                     : "실제 사례 느낌을 먼저 보고 상담 여부를 편하게 결정하실 수 있습니다."}
               </p>
             </div>
@@ -923,22 +1015,6 @@ function LandingSpecialContent({
                     desc="두 번째 쇼츠 사례도 함께 비교해보세요."
                     src="https://www.youtube.com/embed/g5TzGxqmEvc?autoplay=1&mute=1&playsinline=1&loop=1&playlist=g5TzGxqmEvc&rel=0"
                     iframeTitle="눈밑지방재배치 쇼츠 2"
-                  />
-                </>
-              ) : landingKey === "04" ? (
-                <>
-                  <ShortsCard
-                    title="코재수술 사례 1"
-                    desc="첫 번째 재수술 사례를 확인해보세요."
-                    src="https://www.youtube.com/embed/XsJytEGOe88?autoplay=1&mute=1&playsinline=1&loop=1&playlist=XsJytEGOe88&rel=0"
-                    iframeTitle="코재수술 쇼츠 1"
-                  />
-
-                  <ShortsCard
-                    title="코재수술 사례 2"
-                    desc="두 번째 재수술 사례도 함께 비교해보세요."
-                    src="https://www.youtube.com/embed/NLRpdAcfPHQ?autoplay=1&mute=1&playsinline=1&loop=1&playlist=NLRpdAcfPHQ&rel=0"
-                    iframeTitle="코재수술 쇼츠 2"
                   />
                 </>
               ) : (
@@ -963,7 +1039,7 @@ function LandingSpecialContent({
         </section>
       )}
 
-      {!isLanding05 && !isLanding06 && !isLanding07 && !isLanding08 && (
+      {!isLanding04 && !isLanding05 && !isLanding06 && !isLanding07 && !isLanding08 && (
         <InlineCTA text="상담 신청하기" onClick={onOpenForm} />
       )}
 
@@ -980,14 +1056,12 @@ function LandingSpecialContent({
         </section>
       )}
 
-      {!isLanding06 && !isLanding08 && (
+      {!isLanding04 && !isLanding06 && !isLanding08 && (
         <section>
           <img
             src={
               landingKey === "02"
               ? "/intro/02/03.jpg"
-              : landingKey === "04"
-                ? "/intro/04/03.jpg"
                 : landingKey === "05"
                   ? "/intro/05/03.jpg"
                   : landingKey === "10"
@@ -1001,8 +1075,6 @@ function LandingSpecialContent({
             e.currentTarget.src =
               landingKey === "02"
                 ? "/intro/02/02.png"
-                : landingKey === "04"
-                  ? "/intro/04/02.png"
                   : landingKey === "05"
                     ? "/intro/05/04.png"
                     : landingKey === "10"
@@ -1014,8 +1086,6 @@ function LandingSpecialContent({
           alt={
             landingKey === "02"
               ? "02 랜딩 하단"
-              : landingKey === "04"
-                ? "04 랜딩 하단"
                 : landingKey === "05"
                   ? "윤석호 대표원장 코재수술 하단"
                   : landingKey === "10"
@@ -1060,7 +1130,7 @@ function LandingSpecialContent({
         </section>
       )}
 
-      <InlineCTA text="상담 신청하기" onClick={onOpenForm} />
+      {!isLanding04 && <InlineCTA text="상담 신청하기" onClick={onOpenForm} />}
     </>
   );
 }
@@ -1576,6 +1646,9 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                     noValidate
                   >
                     {showRequiredVisitNotice && <RequiredVisitNotice compact />}
+                    {isLanding04 && (
+                      <p className="text-center text-[12px] leading-5 text-gray-600">390만 원 이벤트 · 첫 코수술 대상 · 부가세·마취비 별도</p>
+                    )}
 
                     <input
                       className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] font-medium text-black placeholder:text-gray-400 outline-none transition focus:border-black focus:ring-2 focus:ring-black/5"
@@ -1664,6 +1737,9 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
             >
               <form onSubmit={handleSubmit} className="space-y-4" noValidate>
                 {showRequiredVisitNotice && <RequiredVisitNotice compact />}
+                {isLanding04 && (
+                  <p className="text-center text-[12px] leading-5 text-gray-600">390만 원 이벤트 · 첫 코수술 대상 · 부가세·마취비 별도</p>
+                )}
 
                 <input
                   placeholder="이름을 입력해주세요"

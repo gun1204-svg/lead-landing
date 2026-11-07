@@ -15,7 +15,6 @@ function normalizeLandingKey(v: string) {
 
 function getLandingSeo(lk: string) {
   const baseUrl = "https://www.bienptns.com";
-
   const fallbackImage = `${baseUrl}/intro/${lk}/01.jpg`;
   const ogImage = `${baseUrl}/og/${lk}.jpg`;
 
@@ -25,13 +24,8 @@ function getLandingSeo(lk: string) {
       description:
         "이중턱, 볼처짐, 얼굴라인 고민이 있다면 지금 상담 신청하고 개선 방향을 확인해보세요.",
       keywords: [
-        "예롬성형외과",
-        "얼굴라인 상담",
-        "이중턱 상담",
-        "볼처짐 상담",
-        "윤곽주사 상담",
-        "얼굴형 상담",
-        "강남 성형외과",
+        "예롬성형외과", "얼굴라인 상담", "이중턱 상담", "볼처짐 상담",
+        "윤곽주사 상담", "얼굴형 상담", "강남 성형외과",
       ],
       ogTitle: "예롬성형외과 얼굴라인 상담",
       ogDescription:
@@ -48,16 +42,9 @@ function getLandingSeo(lk: string) {
       description:
         "흉터 부담을 줄이고 자연스러운 코 라인을 원하는 분들을 위한 미호성형외과 비개방 코성형 상담입니다.",
       keywords: [
-        "미호성형외과",
-        "비개방 코성형",
-        "비개방 코수술",
-        "비개방 코성형 상담",
-        "코성형 상담",
-        "코수술 상담",
-        "자연스러운 코성형",
-        "코끝 성형",
-        "강남 코성형",
-        "신논현 코성형",
+        "미호성형외과", "비개방 코성형", "비개방 코수술", "비개방 코성형 상담",
+        "코성형 상담", "코수술 상담", "자연스러운 코성형", "코끝 성형",
+        "강남 코성형", "신논현 코성형",
       ],
       ogTitle: "미호성형외과 비개방 코성형 상담",
       ogDescription:
@@ -74,16 +61,8 @@ function getLandingSeo(lk: string) {
       description:
         "코막힘, 비염, 비중격 등 코 기능 고민이 있다면 미호성형외과 기능코 상담을 받아보세요.",
       keywords: [
-        "미호성형외과",
-        "기능코",
-        "기능코 상담",
-        "코막힘",
-        "비염",
-        "비중격",
-        "비중격만곡증",
-        "코막힘 상담",
-        "강남 기능코",
-        "신논현 기능코",
+        "미호성형외과", "기능코", "기능코 상담", "코막힘", "비염",
+        "비중격", "비중격만곡증", "코막힘 상담", "강남 기능코", "신논현 기능코",
       ],
       ogTitle: "미호성형외과 기능코 상담",
       ogDescription:
@@ -100,15 +79,8 @@ function getLandingSeo(lk: string) {
       description:
         "눈꺼풀 처짐, 무거워 보이는 눈매, 좁아진 눈썹과 눈 사이가 고민이라면 미호성형외과 눈썹거상 상담을 받아보세요.",
       keywords: [
-        "미호성형외과",
-        "눈썹거상",
-        "눈썹거상 상담",
-        "눈꺼풀 처짐",
-        "처진 눈매",
-        "눈썹 처짐",
-        "눈썹과 눈 사이",
-        "강남 눈썹거상",
-        "신논현 눈썹거상",
+        "미호성형외과", "눈썹거상", "눈썹거상 상담", "눈꺼풀 처짐",
+        "처진 눈매", "눈썹 처짐", "눈썹과 눈 사이", "강남 눈썹거상", "신논현 눈썹거상",
       ],
       ogTitle: "미호성형외과 눈썹거상 상담",
       ogDescription:
@@ -125,15 +97,8 @@ function getLandingSeo(lk: string) {
       description:
         "코재수술, 현재 상태와 첫 수술의 문제점을 확인하고 윤석호 대표원장에게 상담받아보세요.",
       keywords: [
-        "윤석호 대표원장",
-        "미호성형외과",
-        "코재수술",
-        "코재수술 상담",
-        "코성형 재수술",
-        "코끝 재수술",
-        "보형물 재수술",
-        "구축코 재수술",
-        "휜 코 재수술",
+        "윤석호 대표원장", "미호성형외과", "코재수술", "코재수술 상담",
+        "코성형 재수술", "코끝 재수술", "보형물 재수술", "구축코 재수술", "휜 코 재수술",
       ],
       ogTitle: "윤석호 대표원장 코재수술 상담",
       ogDescription:
@@ -146,23 +111,19 @@ function getLandingSeo(lk: string) {
 
   if (lk === "04") {
     return {
-      title: "코재수술 상담",
+      title: "자가늑코끝성형 상담 | 미호성형외과",
       description:
-        "실패한 원인을 정확히 분석하여 마지막 코수술이 되도록!",
+        "코끝 높이와 모양, 정면과 옆모습의 조화까지. 내 코에 자가늑연골이 적합한지 미호성형외과에서 상담받아보세요.",
       keywords: [
-        "코재수술 상담",
-        "코재수술",
-        "코성형 재수술",
-        "코끝 재수술",
-        "보형물 재수술",
-        "휜 코 재수술",
-        "코 비대칭 상담",
+        "미호성형외과", "자가늑코끝성형", "자가늑 코끝성형",
+        "자가늑연골", "자가늑 코성형", "코끝성형", "코끝수술",
+        "코끝성형 상담", "강남 코끝성형", "신논현 코성형",
       ],
-      ogTitle: "코재수술 상담",
+      ogTitle: "미호성형외과 자가늑코끝성형 390만 원 이벤트",
       ogDescription:
-        "코수술 후 코 모양, 코끝, 보형물, 비대칭 고민이 있다면 지금 상담 신청",
-      siteName: "비엔파트너스",
-      image: ogImage,
+        "코끝이 달라지면, 분위기도 달라지니까. 첫 코수술 대상 자가늑코끝성형 이벤트 상담. 부가세 및 마취비 별도.",
+      siteName: "미호성형외과의원",
+      image: fallbackImage,
       fallbackImage,
     };
   }
@@ -170,18 +131,12 @@ function getLandingSeo(lk: string) {
   if (lk === "03") {
     return {
       title: "코수술 상담",
-      description:
-        "낮은 콧대, 퍼진 코, 휜 코, 옆라인 고민이 있으신가요?",
+      description: "낮은 콧대, 퍼진 코, 휜 코, 옆라인 고민이 있으신가요?",
       keywords: [
-        "코수술 상담",
-        "코성형 상담",
-        "낮은 콧대 상담",
-        "휜 코 상담",
-        "코라인 상담",
+        "코수술 상담", "코성형 상담", "낮은 콧대 상담", "휜 코 상담", "코라인 상담",
       ],
       ogTitle: "코수술 상담",
-      ogDescription:
-        "코 라인, 콧대, 비대칭 고민이 있다면 지금 상담 신청",
+      ogDescription: "코 라인, 콧대, 비대칭 고민이 있다면 지금 상담 신청",
       siteName: "비엔파트너스",
       image: ogImage,
       fallbackImage,
@@ -194,11 +149,7 @@ function getLandingSeo(lk: string) {
       description:
         "눈밑지방, 다크서클, 처짐 고민 있으신가요? 지금 상담 신청하고 개선 가능 여부를 확인해보세요.",
       keywords: [
-        "눈밑지방재배치",
-        "다크서클 상담",
-        "눈밑처짐 상담",
-        "눈밑지방",
-        "눈밑성형",
+        "눈밑지방재배치", "다크서클 상담", "눈밑처짐 상담", "눈밑지방", "눈밑성형",
       ],
       ogTitle: "눈밑지방재배치 상담",
       ogDescription:
@@ -226,11 +177,7 @@ function getLandingSeo(lk: string) {
     title: "비엔파트너스",
     description: "성과 중심 퍼포먼스 마케팅과 상담 랜딩 운영.",
     keywords: [
-      "비엔파트너스",
-      "퍼포먼스 마케팅",
-      "상담 랜딩",
-      "CPA 마케팅",
-      "리드 수집",
+      "비엔파트너스", "퍼포먼스 마케팅", "상담 랜딩", "CPA 마케팅", "리드 수집",
     ],
     ogTitle: "비엔파트너스",
     ogDescription: "성과 중심 퍼포먼스 마케팅과 상담 랜딩 운영.",
@@ -240,9 +187,7 @@ function getLandingSeo(lk: string) {
   };
 }
 
-export async function generateMetadata({
-  params,
-}: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { landingKey } = await params;
   const lk = normalizeLandingKey(landingKey);
   const seo = getLandingSeo(lk);
@@ -252,16 +197,11 @@ export async function generateMetadata({
     title: seo.title,
     description: seo.description,
     keywords: seo.keywords,
-    alternates: {
-      canonical: url,
-    },
+    alternates: { canonical: url },
     robots: {
       index: true,
       follow: true,
-      googleBot: {
-        index: true,
-        follow: true,
-      },
+      googleBot: { index: true, follow: true },
     },
     openGraph: {
       title: seo.ogTitle,
@@ -271,18 +211,8 @@ export async function generateMetadata({
       locale: "ko_KR",
       type: "website",
       images: [
-        {
-          url: seo.image,
-          width: 1200,
-          height: 630,
-          alt: seo.ogTitle,
-        },
-        {
-          url: seo.fallbackImage,
-          width: 1200,
-          height: 630,
-          alt: seo.ogTitle,
-        },
+        { url: seo.image, width: 1200, height: 630, alt: seo.ogTitle },
+        { url: seo.fallbackImage, width: 1200, height: 630, alt: seo.ogTitle },
       ],
     },
     twitter: {

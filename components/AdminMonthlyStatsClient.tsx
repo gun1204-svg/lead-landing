@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Fragment, useEffect, useState } from "react";
@@ -45,7 +44,7 @@ const LABELS: Record<string, string> = {
   "01": "01 랜딩",
   "02": "02 눈밑지방재배치",
   "03": "03 코성형",
-  "04": "04 코재수술",
+  "04": "04 자가늑코끝성형",
   "05": "05 코재수술 (윤석호)",
   "06": "06 눈썹거상",
   "07": "07 기능코",
@@ -678,4 +677,3 @@ export default function AdminMonthlyStatsClient() {
     </main>
   );
 }
-

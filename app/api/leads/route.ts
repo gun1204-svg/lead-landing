@@ -36,7 +36,7 @@ function getLandingLabel(landingKey: string) {
   const names: Record<string, string> = {
     "02": "눈밑",
     "03": "첫코",
-    "04": "코재수술",
+    "04": "자가늑코끝성형",
     "05": "윤석호 대표원장 코재수술",
     "06": "눈썹거상",
     "07": "기능코",
