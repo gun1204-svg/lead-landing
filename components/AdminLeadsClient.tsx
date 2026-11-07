@@ -54,7 +54,7 @@ const LK_KEYS = Array.from({ length: 21 }, (_, i) => String(i).padStart(2, "0"))
 const LANDING_LABELS: Record<string, string> = {
   "02": "눈밑",
   "03": "첫코",
-  "04": "코재수술",
+  "04": "자가늑코끝성형",
   "05": "윤석호 코재수술",
   "06": "눈썹거상",
   "07": "기능코",
@@ -308,10 +308,16 @@ export default function AdminLeadsClient({
   const isIntegratedAdmin = !canSwitchAny && allowedLandingKeys.length > 1;
   const managerOwnerLK = getManagerOwnerLK(userLK, selectedLK);
 
+  // 화면의 랜딩 번호만 오름차순으로 표시하며, 원본 권한 데이터는 변경하지 않습니다.
+  const sortedAllowedLandingKeys = useMemo(
+    () => [...allowedLandingKeys].sort((a, b) => Number(a) - Number(b)),
+    [allowedLandingKeys],
+  );
+
   const visibleKeys = useMemo(() => {
     if (canSwitchAny) return LK_KEYS;
-    return allowedLandingKeys.length ? allowedLandingKeys : [pageLK];
-  }, [canSwitchAny, allowedLandingKeys, pageLK]);
+    return sortedAllowedLandingKeys.length ? sortedAllowedLandingKeys : [pageLK];
+  }, [canSwitchAny, sortedAllowedLandingKeys, pageLK]);
 
   const totalBalance = useMemo(() => {
     if (isIntegratedAdmin) {
@@ -1060,7 +1066,7 @@ export default function AdminLeadsClient({
 
           {isIntegratedAdmin && (
             <p style={{ marginTop: 6, marginBottom: 0, fontWeight: 800, color: "#0f766e" }}>
-              통합 관리: {allowedLandingKeys.join(" + ")}번 리드 / 잔액 합산 표시
+              통합 관리: {sortedAllowedLandingKeys.join(" + ")}번 리드 / 잔액 합산 표시
             </p>
           )}
         </div>
@@ -1213,7 +1219,7 @@ export default function AdminLeadsClient({
 
         {isIntegratedAdmin ? (
           <>
-            {allowedLandingKeys.map((lk) => {
+            {sortedAllowedLandingKeys.map((lk) => {
               const acc = integratedAccounts.find((a) => normalizeLK(a.landing_key) === lk);
               const chargeAccount02 = integratedAccounts.find(
                 (a) => normalizeLK(a.landing_key) === "02",
@@ -1552,7 +1558,7 @@ export default function AdminLeadsClient({
       <div className="admin-leads-table-scroll" style={{ marginTop: 12, border: "1px solid #eee", borderRadius: 14, overflowX: "auto" }}>
         <div style={{ padding: 12, borderBottom: "1px solid #eee", fontWeight: 800 }}>
           {isIntegratedAdmin
-            ? `landing_key: ${allowedLandingKeys.map(getLandingDisplayName).join(" + ")} 통합 • ${loadingRows ? "불러오는 중..." : `전체 ${totalRows}건 / ${page}페이지`}`
+            ? `landing_key: ${sortedAllowedLandingKeys.map(getLandingDisplayName).join(" + ")} 통합 • ${loadingRows ? "불러오는 중..." : `전체 ${totalRows}건 / ${page}페이지`}`
             : `landing_key: ${selectedLK} • ${loadingRows ? "불러오는 중..." : `전체 ${totalRows}건 / ${page}페이지`}`}
         </div>
 
