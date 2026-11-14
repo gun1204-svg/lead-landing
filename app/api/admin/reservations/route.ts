@@ -60,6 +60,9 @@ export async function GET(req: Request) {
         .select("id,name,phone,landing_key,assigned_to,status,reservation_date,reservation_time,reservation_memo,reservation_status,created_at")
         .gte("reservation_date", `${month}-01`)
         .lt("reservation_date", nextMonth(month))
+        // 예약관리에는 현재 리드 상태가 BOOKED인 환자만 표시합니다.
+        // 신규 등으로 변경된 리드는 과거 예약 날짜가 남아 있어도 제외합니다.
+        .eq("status", "BOOKED")
         .order("reservation_date", { ascending: true })
         .order("reservation_time", { ascending: true, nullsFirst: false })
         .range(from, from + size - 1);
