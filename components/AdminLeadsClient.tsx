@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 
@@ -14,6 +14,10 @@ type Lead = {
   landing_key: string | null;
   utm_source?: string | null;
   assigned_to?: string | null;
+  reservation_date?: string | null;
+  reservation_time?: string | null;
+  reservation_memo?: string | null;
+  reservation_status?: string | null;
 };
 
 type Account = {
@@ -73,6 +77,103 @@ const STATUS_OPTIONS = ["NEW", "BOOKED", "CALLED", "NO_ANSWER", "INVALID"] as co
 type StatusKey = typeof STATUS_OPTIONS[number];
 type StatusFilter = "ALL" | StatusKey;
 type ManagerFilter = "ALL" | "UNASSIGNED" | string;
+type ReservationStatus = "SCHEDULED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
+type LeadDraft = {
+  status?: string;
+  memo?: string;
+  assigned_to?: string | null;
+  reservation_date?: string | null;
+  reservation_time?: string | null;
+  reservation_memo?: string | null;
+  reservation_status?: ReservationStatus | null;
+};
+
+const RESERVATION_LABELS: Record<ReservationStatus, string> = {
+  SCHEDULED: "예약 예정",
+  COMPLETED: "방문 완료",
+  CANCELLED: "예약 취소",
+  NO_SHOW: "미방문",
+};
+
+function fieldChanged(l: Lead, d: LeadDraft) {
+  return (Object.keys(d) as (keyof LeadDraft)[]).some(
+    (key) => d[key] !== undefined && (d[key] ?? null) !== ((l as any)[key] ?? null)
+  );
+}
+
+function hasReservationFields(lead: Lead, draft: LeadDraft) {
+  const status = draft.status ?? lead.status ?? "NEW";
+  const date = draft.reservation_date !== undefined ? draft.reservation_date : lead.reservation_date;
+  const reservationStatus = draft.reservation_status !== undefined
+    ? draft.reservation_status : lead.reservation_status;
+  return status === "BOOKED" || !!date || !!reservationStatus;
+}
+
+function ReservationFields({
+  lead,
+  draft,
+  onChange,
+}: {
+  lead: Lead;
+  draft: LeadDraft;
+  onChange: (value: LeadDraft) => void;
+}) {
+  const status = draft.status ?? lead.status ?? "NEW";
+  const date = draft.reservation_date !== undefined ? draft.reservation_date : lead.reservation_date;
+  const time = draft.reservation_time !== undefined ? draft.reservation_time : lead.reservation_time;
+  const memo = draft.reservation_memo !== undefined ? draft.reservation_memo : lead.reservation_memo;
+  const reservationStatus = draft.reservation_status !== undefined
+    ? draft.reservation_status : lead.reservation_status;
+
+  if (!hasReservationFields(lead, draft)) return null;
+
+  const controlStyle: React.CSSProperties = {
+    ...inp, height: 36, width: "100%", minWidth: 0,
+    boxSizing: "border-box", fontSize: 13,
+  };
+  const labelStyle: React.CSSProperties = {
+    display: "flex", alignItems: "center", gap: 6,
+    fontSize: 12, fontWeight: 700, minWidth: 0,
+  };
+
+  return (
+    <div className="admin-reservation-strip" style={{
+      display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8,
+      padding: "8px 10px", border: "1px solid #a7f3d0",
+      borderRadius: 9, background: "#f0fdf4", whiteSpace: "normal",
+    }}>
+      <strong style={{ fontSize: 12, color: "#065f46", whiteSpace: "nowrap" }}>예약</strong>
+      <label style={{ ...labelStyle, flex: "0 1 170px" }}>
+        <span style={{ whiteSpace: "nowrap" }}>날짜{status === "BOOKED" ? "*" : ""}</span>
+        <input type="date" value={date || ""}
+          onChange={(e) => onChange({ reservation_date: e.target.value || null })}
+          style={controlStyle} />
+      </label>
+      <label style={{ ...labelStyle, flex: "0 1 135px" }}>
+        <span style={{ whiteSpace: "nowrap" }}>시간</span>
+        <input type="time" value={(time || "").slice(0, 5)}
+          onChange={(e) => onChange({ reservation_time: e.target.value || null })}
+          style={controlStyle} />
+      </label>
+      <label style={{ ...labelStyle, flex: "0 1 180px" }}>
+        <span style={{ whiteSpace: "nowrap" }}>진행</span>
+        <select value={reservationStatus || "SCHEDULED"}
+          onChange={(e) => onChange({ reservation_status: e.target.value as ReservationStatus })}
+          style={controlStyle}>
+          {(Object.keys(RESERVATION_LABELS) as ReservationStatus[]).map((k) =>
+            <option key={k} value={k}>{RESERVATION_LABELS[k]}</option>
+          )}
+        </select>
+      </label>
+      <label style={{ ...labelStyle, flex: "1 1 200px" }}>
+        <span style={{ whiteSpace: "nowrap" }}>메모</span>
+        <input type="text" value={memo || ""} placeholder="예약 관련 메모"
+          onChange={(e) => onChange({ reservation_memo: e.target.value })}
+          style={controlStyle} />
+      </label>
+    </div>
+  );
+}
 
 const STATUS_META: Record<StatusKey, { label: string; bg: string; fg: string; bd: string }> = {
   NEW: { label: "신규", bg: "#EEF2FF", fg: "#3730A3", bd: "#C7D2FE" },
@@ -260,9 +361,11 @@ export default function AdminLeadsClient({
 
   const [allowedLandingKeys, setAllowedLandingKeys] = useState<string[]>([pageLK]);
 
-  const [draft, setDraft] = useState<
-    Record<string, { status?: string; memo?: string; assigned_to?: string | null }>
-  >({});
+  const [draft, setDraft] = useState<Record<string, LeadDraft>>({});
+  const [searchInput, setSearchInput] = useState("");
+  const [monthInput, setMonthInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [receivedMonth, setReceivedMonth] = useState("");
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [deleting, setDeleting] = useState<Record<string, boolean>>({});
 
@@ -406,19 +509,33 @@ export default function AdminLeadsClient({
   }
 
   async function saveLead(id: string) {
+    const lead = rows.find((r) => r.id === id);
+    if (!lead) return;
     const d = draft[id] || {};
-    const body: any = {};
+    const body: Record<string, unknown> = { id };
 
     if (typeof d.status === "string") body.status = d.status;
     if (typeof d.memo === "string") body.memo = d.memo;
     if (typeof d.assigned_to !== "undefined") body.assigned_to = d.assigned_to || null;
-    if (Object.keys(body).length === 0) return;
+    if (d.reservation_date !== undefined) body.reservation_date = d.reservation_date;
+    if (d.reservation_time !== undefined) body.reservation_time = d.reservation_time;
+    if (d.reservation_memo !== undefined) body.reservation_memo = d.reservation_memo;
+    if (d.reservation_status !== undefined) body.reservation_status = d.reservation_status;
+    if (Object.keys(body).length === 1) return;
+
+    const finalStatus = d.status ?? lead.status ?? "NEW";
+    const finalDate = d.reservation_date !== undefined ? d.reservation_date : lead.reservation_date;
+    if (finalStatus === "BOOKED" && !finalDate &&
+        (d.status === "BOOKED" || d.reservation_date !== undefined)) {
+      alert("예약으로 변경할 때 예약 날짜를 반드시 입력해주세요.");
+      return;
+    }
 
     setSaving((m) => ({ ...m, [id]: true }));
     setErr(null);
 
     try {
-      const res = await fetch(`/api/admin/leads/${id}`, {
+      const res = await fetch(`/api/admin/leads`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -510,6 +627,8 @@ export default function AdminLeadsClient({
           });
           if (statusFilter !== "ALL") leadParams.set("status", statusFilter);
           if (managerFilter !== "ALL") leadParams.set("manager", managerFilter);
+          if (search) leadParams.set("search", search);
+          if (receivedMonth) leadParams.set("month", receivedMonth);
 
           const leadsRes = await fetch(`/api/admin/leads?${leadParams.toString()}`, {
             cache: "no-store",
@@ -572,6 +691,8 @@ export default function AdminLeadsClient({
             page_size: String(pageSize),
             ...(statusFilter !== "ALL" ? { status: statusFilter } : {}),
             ...(managerFilter !== "ALL" ? { manager: managerFilter } : {}),
+            ...(search ? { search } : {}),
+            ...(receivedMonth ? { month: receivedMonth } : {}),
           }).toString()}`, {
             cache: "no-store",
             signal: ac.signal,
@@ -630,6 +751,8 @@ export default function AdminLeadsClient({
     pageSize,
     statusFilter,
     managerFilter,
+    search,
+    receivedMonth,
   ]);
 
   useEffect(() => {
@@ -1087,6 +1210,22 @@ export default function AdminLeadsClient({
             월별 통계
           </button>
 
+          <button
+            type="button"
+            onClick={() => router.push(`/${pageLK}/admin/reservations${canSwitchAny && selectedLK !== "00" ? `?landing_key=${encodeURIComponent(selectedLK)}` : ""}`)}
+            style={{
+              padding: "8px 12px",
+              borderRadius: 10,
+              border: "1px solid #0f766e",
+              background: "#0f766e",
+              color: "#fff",
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            예약관리
+          </button>
+
           {userLK === "00" && (
             <button
               onClick={() => router.push("/00/admin/permissions")}
@@ -1339,6 +1478,35 @@ export default function AdminLeadsClient({
         {managerLoading && <span style={{ fontSize: 13, color: "#666" }}>담당자 불러오는 중...</span>}
       </div>
 
+       <form
+         onSubmit={(e) => {
+           e.preventDefault();
+           setPage(1);
+           setSearch(searchInput.trim());
+           setReceivedMonth(monthInput);
+         }}
+         style={{ marginTop: 10, display: "flex", alignItems: "end", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}
+       >
+         <label style={{ display: "grid", gap: 4, fontSize: 12, fontWeight: 800 }}>
+           환자 이름 검색
+           <input value={searchInput} onChange={(e) => setSearchInput(e.target.value)}
+             placeholder="환자 이름" style={{ ...inp, width: 170 }} />
+         </label>
+         <label style={{ display: "grid", gap: 4, fontSize: 12, fontWeight: 800 }}>
+           접수월 (전체: 비움)
+           <input type="month" value={monthInput} onChange={(e) => setMonthInput(e.target.value)}
+             style={{ ...inp, width: 160 }} />
+         </label>
+         <button type="submit" style={{ ...blackBtn, height: 38 }}>검색</button>
+         <button type="button" style={{ ...smallBtn, height: 38 }} onClick={() => {
+           setSearchInput("");
+           setMonthInput("");
+           setSearch("");
+           setReceivedMonth("");
+           setPage(1);
+         }}>초기화</button>
+       </form>
+
       {err && <p style={{ marginTop: 12, color: "crimson", whiteSpace: "pre-wrap" }}>{err}</p>}
 
       {userLK === "00" && (
@@ -1412,13 +1580,7 @@ export default function AdminLeadsClient({
               ? d.assigned_to
               : l.assigned_to || "";
 
-          const changed =
-            (d.status !== undefined &&
-              d.status !== (l.status ?? "NEW")) ||
-            (d.memo !== undefined &&
-              d.memo !== (l.memo ?? "")) ||
-            (d.assigned_to !== undefined &&
-              d.assigned_to !== (l.assigned_to || null));
+          const changed = fieldChanged(l, d);
 
           return (
             <div key={l.id} className="admin-mobile-lead-card">
@@ -1508,6 +1670,10 @@ export default function AdminLeadsClient({
                 </label>
               </div>
 
+              <ReservationFields lead={l} draft={d} onChange={(change) =>
+                setDraft((prev) => ({ ...prev, [l.id]: { ...prev[l.id], ...change } }))
+              } />
+
               <label className="admin-mobile-memo">
                 <span>{"\uC0C1\uB2F4 \uBA54\uBAA8"}</span>
                 <textarea
@@ -1558,8 +1724,8 @@ export default function AdminLeadsClient({
       <div className="admin-leads-table-scroll" style={{ marginTop: 12, border: "1px solid #eee", borderRadius: 14, overflowX: "auto" }}>
         <div style={{ padding: 12, borderBottom: "1px solid #eee", fontWeight: 800 }}>
           {isIntegratedAdmin
-            ? `landing_key: ${sortedAllowedLandingKeys.map(getLandingDisplayName).join(" + ")} 통합 • ${loadingRows ? "불러오는 중..." : `전체 ${totalRows}건 / ${page}페이지`}`
-            : `landing_key: ${selectedLK} • ${loadingRows ? "불러오는 중..." : `전체 ${totalRows}건 / ${page}페이지`}`}
+            ? `${sortedAllowedLandingKeys.join(" + ")} 통합 • ${loadingRows ? "불러오는 중..." : `전체 ${totalRows}건 / ${page}페이지`}`
+            : `${selectedLK} • ${loadingRows ? "불러오는 중..." : `전체 ${totalRows}건 / ${page}페이지`}`}
         </div>
 
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -1584,13 +1750,11 @@ export default function AdminLeadsClient({
               const curMemo = (d.memo ?? l.memo ?? "") as string;
               const curAssignedTo = d.assigned_to !== undefined ? d.assigned_to : l.assigned_to || "";
 
-              const changed =
-                (d.status !== undefined && d.status !== (l.status ?? "NEW")) ||
-                (d.memo !== undefined && d.memo !== (l.memo ?? "")) ||
-                (d.assigned_to !== undefined && d.assigned_to !== (l.assigned_to || null));
+              const changed = fieldChanged(l, d);
 
               return (
-                <tr key={l.id}>
+                <Fragment key={l.id}>
+                <tr>
                   <td style={tdTop}>{new Date(l.created_at).toLocaleString("ko-KR")}</td>
                   <td style={tdTop}><LandingBadge landingKey={l.landing_key} /></td>
                   <td style={tdTop}><SourceBadge source={l.utm_source} /></td>
@@ -1721,6 +1885,16 @@ export default function AdminLeadsClient({
                     </td>
                   )}
                 </tr>
+                {hasReservationFields(l, d) && (
+                  <tr>
+                    <td colSpan={isMainAdmin ? 9 : 8} style={{ padding: "0 12px 8px", borderBottom: "1px solid #f3f3f3" }}>
+                      <ReservationFields lead={l} draft={d} onChange={(change) =>
+                        setDraft((prev) => ({ ...prev, [l.id]: { ...prev[l.id], ...change } }))
+                      } />
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               );
             })}
 
