@@ -102,11 +102,24 @@ function fieldChanged(l: Lead, d: LeadDraft) {
 }
 
 function hasReservationFields(lead: Lead, draft: LeadDraft) {
-  const status = draft.status ?? lead.status ?? "NEW";
-  const date = draft.reservation_date !== undefined ? draft.reservation_date : lead.reservation_date;
-  const reservationStatus = draft.reservation_status !== undefined
-    ? draft.reservation_status : lead.reservation_status;
-  return status === "BOOKED" || !!date || !!reservationStatus;
+  // 리드 상태가 예약일 때만 예약 입력창을 보여줍니다.
+  // 예약 데이터가 남아 있어도 신규 등 다른 상태에서는 표시하지 않습니다.
+  return (draft.status ?? lead.status ?? "NEW") === "BOOKED";
+}
+
+function leadStatusDraft(status: string): LeadDraft {
+  if (status === "NEW") {
+    // 예약에서 신규로 되돌릴 때 예약관리 달력에서도 제외되도록
+    // 서버로 전달할 예약 필드를 모두 null로 초기화합니다.
+    return {
+      status,
+      reservation_date: null,
+      reservation_time: null,
+      reservation_status: null,
+      reservation_memo: null,
+    };
+  }
+  return { status };
 }
 
 function ReservationFields({
@@ -521,6 +534,12 @@ export default function AdminLeadsClient({
     if (d.reservation_time !== undefined) body.reservation_time = d.reservation_time;
     if (d.reservation_memo !== undefined) body.reservation_memo = d.reservation_memo;
     if (d.reservation_status !== undefined) body.reservation_status = d.reservation_status;
+    if (d.status === "NEW") {
+      body.reservation_date = null;
+      body.reservation_time = null;
+      body.reservation_status = null;
+      body.reservation_memo = null;
+    }
     if (Object.keys(body).length === 1) return;
 
     const finalStatus = d.status ?? lead.status ?? "NEW";
@@ -1623,7 +1642,7 @@ export default function AdminLeadsClient({
                         ...prev,
                         [l.id]: {
                           ...prev[l.id],
-                          status: e.target.value,
+                          ...leadStatusDraft(e.target.value),
                         },
                       }))
                     }
@@ -1770,7 +1789,7 @@ export default function AdminLeadsClient({
                         onChange={(e) =>
                           setDraft((prev) => ({
                             ...prev,
-                            [l.id]: { ...prev[l.id], status: e.target.value },
+                            [l.id]: { ...prev[l.id], ...leadStatusDraft(e.target.value) },
                           }))
                         }
                       >
