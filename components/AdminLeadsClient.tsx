@@ -389,8 +389,12 @@ export default function AdminLeadsClient({
   const [draft, setDraft] = useState<Record<string, LeadDraft>>({});
   const [searchInput, setSearchInput] = useState("");
   const [monthInput, setMonthInput] = useState("");
+  const [dateInput, setDateInput] = useState("");
+  const [phoneLast4Input, setPhoneLast4Input] = useState("");
   const [search, setSearch] = useState("");
   const [receivedMonth, setReceivedMonth] = useState("");
+  const [receivedDate, setReceivedDate] = useState("");
+  const [phoneLast4, setPhoneLast4] = useState("");
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [deleting, setDeleting] = useState<Record<string, boolean>>({});
 
@@ -659,7 +663,9 @@ export default function AdminLeadsClient({
           if (statusFilter !== "ALL") leadParams.set("status", statusFilter);
           if (managerFilter !== "ALL") leadParams.set("manager", managerFilter);
           if (search) leadParams.set("search", search);
-          if (receivedMonth) leadParams.set("month", receivedMonth);
+          if (receivedMonth && !receivedDate) leadParams.set("month", receivedMonth);
+          if (receivedDate) leadParams.set("date", receivedDate);
+          if (phoneLast4) leadParams.set("phone_last4", phoneLast4);
 
           const leadsRes = await fetch(`/api/admin/leads?${leadParams.toString()}`, {
             cache: "no-store",
@@ -723,7 +729,9 @@ export default function AdminLeadsClient({
             ...(statusFilter !== "ALL" ? { status: statusFilter } : {}),
             ...(managerFilter !== "ALL" ? { manager: managerFilter } : {}),
             ...(search ? { search } : {}),
-            ...(receivedMonth ? { month: receivedMonth } : {}),
+            ...(receivedMonth && !receivedDate ? { month: receivedMonth } : {}),
+            ...(receivedDate ? { date: receivedDate } : {}),
+            ...(phoneLast4 ? { phone_last4: phoneLast4 } : {}),
           }).toString()}`, {
             cache: "no-store",
             signal: ac.signal,
@@ -784,6 +792,8 @@ export default function AdminLeadsClient({
     managerFilter,
     search,
     receivedMonth,
+    receivedDate,
+    phoneLast4,
   ]);
 
   useEffect(() => {
@@ -1525,27 +1535,48 @@ export default function AdminLeadsClient({
          onSubmit={(e) => {
            e.preventDefault();
            setPage(1);
+           if (phoneLast4Input && !/^\d{4}$/.test(phoneLast4Input)) {
+             alert("전화번호 뒷자리는 숫자 4개를 입력해주세요.");
+             return;
+           }
            setSearch(searchInput.trim());
-           setReceivedMonth(monthInput);
+           setReceivedMonth(dateInput ? "" : monthInput);
+           setReceivedDate(dateInput);
+           setPhoneLast4(phoneLast4Input);
          }}
          style={{ marginTop: 10, display: "flex", alignItems: "end", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}
        >
          <label style={{ display: "grid", gap: 4, fontSize: 12, fontWeight: 800 }}>
-           환자 이름 검색
+           환자 이름
            <input value={searchInput} onChange={(e) => setSearchInput(e.target.value)}
              placeholder="환자 이름" style={{ ...inp, width: 170 }} />
+         </label>
+         <label style={{ display: "grid", gap: 4, fontSize: 12, fontWeight: 800 }}>
+           전화번호 뒷자리
+           <input inputMode="numeric" maxLength={4} value={phoneLast4Input}
+             onChange={(e) => setPhoneLast4Input(e.target.value.replace(/\D/g, "").slice(0, 4))}
+             placeholder="4자리 (선택)" style={{ ...inp, width: 120 }} />
          </label>
          <label style={{ display: "grid", gap: 4, fontSize: 12, fontWeight: 800 }}>
            접수월 (전체: 비움)
            <input type="month" value={monthInput} onChange={(e) => setMonthInput(e.target.value)}
              style={{ ...inp, width: 160 }} />
          </label>
+         <label style={{ display: "grid", gap: 4, fontSize: 12, fontWeight: 800 }}>
+           접수일 (선택 시 접수월보다 우선)
+           <input type="date" value={dateInput} onChange={(e) => setDateInput(e.target.value)}
+             style={{ ...inp, width: 160 }} />
+         </label>
          <button type="submit" style={{ ...blackBtn, height: 38 }}>검색</button>
          <button type="button" style={{ ...smallBtn, height: 38 }} onClick={() => {
            setSearchInput("");
            setMonthInput("");
+           setDateInput("");
+           setPhoneLast4Input("");
            setSearch("");
            setReceivedMonth("");
+           setReceivedDate("");
+           setPhoneLast4("");
            setPage(1);
          }}>초기화</button>
        </form>
@@ -1874,52 +1905,53 @@ export default function AdminLeadsClient({
                     </select>
                   </td>
 
-                  <td style={{ ...tdTop, minWidth: 230, width: "27%" }}>
-                    <textarea
-                      value={curMemo}
-                      onChange={(e) =>
-                        setDraft((prev) => ({
-                          ...prev,
-                          [l.id]: { ...prev[l.id], memo: e.target.value },
-                        }))
-                      }
-                      placeholder="메모"
-                      rows={4}
-                      style={{
-                        width: "100%",
-                        boxSizing: "border-box",
-                        minHeight: 96,
-                        resize: "vertical",
-                        padding: "10px 12px",
-                        borderRadius: 10,
-                        border: "1px solid #ddd",
-                        fontSize: 14,
-                        lineHeight: 1.6,
-                        whiteSpace: "pre-wrap",
-                        overflowWrap: "break-word",
-                      }}
-                    />
-                    <div style={{ marginTop: 8, display: "flex", justifyContent: "flex-end" }}>
+                  <td style={{ ...tdTop, minWidth: 245, width: "29%" }}>
+                    <div style={{ display: "flex", alignItems: "stretch", gap: 6, width: "100%" }}>
+                      <textarea
+                        value={curMemo}
+                        onChange={(e) =>
+                          setDraft((prev) => ({
+                            ...prev,
+                            [l.id]: { ...prev[l.id], memo: e.target.value },
+                          }))
+                        }
+                        placeholder="메모"
+                        rows={3}
+                        style={{
+                          flex: "1 1 0",
+                          width: 0,
+                          minWidth: 0,
+                          boxSizing: "border-box",
+                          minHeight: 76,
+                          resize: "vertical",
+                          padding: "8px 9px",
+                          borderRadius: 10,
+                          border: "1px solid #ddd",
+                          fontSize: 13,
+                          lineHeight: 1.5,
+                          whiteSpace: "pre-wrap",
+                          overflowWrap: "break-word",
+                        }}
+                      />
                       <button
                         type="button"
                         onClick={() => saveLead(l.id)}
                         disabled={!changed || !!saving[l.id]}
                         style={{
-                          width: "100%",
-                          height: 44,
-                          padding: "10px 16px",
-                          boxSizing: "border-box",
+                          flex: "0 0 54px",
+                          alignSelf: "stretch",
+                          padding: "0 6px",
                           borderRadius: 10,
                           border: changed ? "1px solid #111" : "1px solid #d1d5db",
                           background: changed ? "#111" : "#f3f4f6",
                           color: changed ? "#fff" : "#6b7280",
-                          fontSize: 14,
+                          fontSize: 13,
                           fontWeight: 800,
                           cursor: changed && !saving[l.id] ? "pointer" : "not-allowed",
-                          transition: "all 0.2s ease",
+                          whiteSpace: "nowrap",
                         }}
                       >
-                        {saving[l.id] ? "저장중..." : "변경사항 저장"}
+                        {saving[l.id] ? "저장중" : "저장"}
                       </button>
                     </div>
                   </td>

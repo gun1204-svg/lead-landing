@@ -79,6 +79,27 @@ function normalizeMonth(v: string | null): string | null {
   return s;
 }
 
+function normalizeSearchDate(value: string | null): string | null {
+  if (!value) return null;
+  const s = value.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) throw new Error("Invalid date");
+  const [year, month, day] = s.split("-").map(Number);
+  const check = new Date(Date.UTC(year, month - 1, day));
+  if (check.getUTCFullYear() !== year || check.getUTCMonth() + 1 !== month || check.getUTCDate() !== day) {
+    throw new Error("Invalid date");
+  }
+  return s;
+}
+
+function getDateRange(date: string) {
+  const nextDay = new Date(`${date}T00:00:00Z`);
+  nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+  return {
+    start: `${date}T00:00:00+09:00`,
+    end: `${nextDay.toISOString().slice(0, 10)}T00:00:00+09:00`,
+  };
+}
+
 function getMonthRange(month: string) {
   const [year, m] = month.split("-").map(Number);
 
@@ -431,6 +452,13 @@ export async function GET(req: Request) {
       throw new Error("Invalid month");
     }
 
+    const dateParam = searchParams.get("date");
+    const selectedDate = normalizeSearchDate(dateParam);
+    const phoneLast4 = String(searchParams.get("phone_last4") ?? "").trim();
+    if (phoneLast4 && !/^\d{4}$/.test(phoneLast4)) {
+      throw new Error("Invalid phone_last4");
+    }
+
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
@@ -487,14 +515,16 @@ export async function GET(req: Request) {
       }
     }
 
-    // 접수월 기준 검색
-    // 예약 날짜와는 무관하게 created_at 사용
-    if (selectedMonth) {
-      const range = getMonthRange(selectedMonth);
+    // 전화번호 마지막 4자리: 기존 번호에 하이픈이 있어도 일치합니다.
+    if (phoneLast4) {
+      q = q.ilike("phone", `%${phoneLast4}`);
+    }
 
-      q = q
-        .gte("created_at", range.start)
-        .lt("created_at", range.end);
+    // 접수일 우선, 접수일이 비어 있을 때만 접수월 적용 (한국 시간 기준)
+    // 예약 날짜가 아닌 created_at을 기준으로 합니다.
+    if (selectedDate || selectedMonth) {
+      const range = selectedDate ? getDateRange(selectedDate) : getMonthRange(selectedMonth!);
+      q = q.gte("created_at", range.start).lt("created_at", range.end);
     }
 
     const [{ data, error, count }, summary] =
@@ -526,7 +556,9 @@ export async function GET(req: Request) {
       summary,
       filters: {
         search,
-        month: selectedMonth,
+        month: selectedDate ? null : selectedMonth,
+        date: selectedDate,
+        phone_last4: phoneLast4 || null,
         status,
         manager,
       },
