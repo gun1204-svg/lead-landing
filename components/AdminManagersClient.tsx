@@ -220,33 +220,42 @@ export default function AdminManagersClient() {
 
   return (
     <div className="admin-managers-page" style={{ padding: 20, maxWidth: 1000, margin: "0 auto" }}>
-      <div className="admin-managers-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>담당자 관리</h1>
-
-          <p style={{ opacity: 0.7, marginTop: 6, marginBottom: 0 }}>
-            user: {(session?.user as any)?.email} / my_landing_key: {userLK || "-"} / page_lk: {pageLK} / owner_landing_key: {managerOwnerLK}
-          </p>
-
-          {["02", "03", "04"].includes(selectedLK) && managerOwnerLK === "02" && (
-            <p style={{ marginTop: 6, marginBottom: 0, fontWeight: 800, color: "#0f766e" }}>
-              02·03·04번 담당자는 02번 기준으로 통합 관리됩니다.
-            </p>
-          )}
-        </div>
-
-        <div className="admin-managers-nav" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <button onClick={goLeadsPage} style={blackBtn}>
+      <div className="admin-managers-header" style={{ marginBottom: 14 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
+          <button
+            type="button"
+            onClick={goLeadsPage}
+            style={{
+              ...smallBtn,
+              fontWeight: 700,
+              color: "#111827",
+              background: "#fff",
+              whiteSpace: "nowrap",
+            }}
+          >
             ← 리드 관리로 돌아가기
           </button>
 
           <button
+            type="button"
             onClick={() => signOut({ callbackUrl: `/${pageLK}/admin/login` })}
             style={smallBtn}
           >
             로그아웃
           </button>
         </div>
+
+        <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>담당자 관리</h1>
+
+        <p style={{ opacity: 0.7, marginTop: 6, marginBottom: 0 }}>
+          user: {(session?.user as any)?.email} / my_landing_key: {userLK || "-"} / page_lk: {pageLK} / owner_landing_key: {managerOwnerLK}
+        </p>
+
+        {["02", "03", "04"].includes(selectedLK) && managerOwnerLK === "02" && (
+          <p style={{ marginTop: 6, marginBottom: 0, fontWeight: 800, color: "#0f766e" }}>
+            02·03·04번 담당자는 02번 기준으로 통합 관리됩니다.
+          </p>
+        )}
       </div>
 
       {canSwitchAny && (

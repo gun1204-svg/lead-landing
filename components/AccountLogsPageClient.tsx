@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import BalanceHistoryCard from "@/components/BalanceHistoryCard";
@@ -18,6 +18,17 @@ function extractLKFromPath(pathname: string) {
   return normalizeLK(m?.[1] ?? "00");
 }
 
+const backButtonStyle: React.CSSProperties = {
+  padding: "9px 12px",
+  borderRadius: 9,
+  border: "1px solid #d1d5db",
+  background: "#fff",
+  color: "#111827",
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: "pointer",
+};
+
 export default function AccountLogsPageClient() {
   const router = useRouter();
   const pathname = usePathname();
@@ -32,7 +43,6 @@ export default function AccountLogsPageClient() {
   const canSwitchAny = userLK === "00";
 
   const selectedLK = normalizeLK(sp.get("landing_key") ?? pageLK);
-
   const historyLandingKey = canSwitchAny ? selectedLK : undefined;
 
   function setLandingKey(k: string) {
@@ -41,75 +51,51 @@ export default function AccountLogsPageClient() {
     router.refresh();
   }
 
+  useEffect(() => {
+    if (authStatus === "unauthenticated") {
+      router.replace(`/${pageLK}/admin/login`);
+    }
+  }, [authStatus, pageLK, router]);
+
   if (!authStatus || authStatus === "loading") {
     return <div style={{ padding: 20 }}>loading...</div>;
   }
 
   if (authStatus === "unauthenticated") {
-    router.replace(`/${pageLK}/admin/login`);
     return <div style={{ padding: 20 }}>로그인이 필요합니다.</div>;
   }
 
   return (
     <div className="admin-light-page" style={{ padding: 20, maxWidth: 1200, margin: "0 auto" }}>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "stretch",
-          gap: 12,
-          marginBottom: 14,
-        }}
-      >
-        <div>
+      <div style={{ marginBottom: 14 }}>
+        <button
+          type="button"
+          onClick={() =>
+            router.push(
+              `/${pageLK}/admin/leads${canSwitchAny ? `?landing_key=${encodeURIComponent(selectedLK)}` : ""}`
+            )
+          }
+          style={backButtonStyle}
+        >
+          ← 리드 관리로 돌아가기
+        </button>
+
+        <div style={{ marginTop: 18 }}>
           <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>
             잔액 변동 히스토리
           </h1>
-
           <p style={{ opacity: 0.7, marginTop: 6, marginBottom: 0 }}>
             user: {(session?.user as any)?.email} / my_landing_key: {userLK || "-"} / page_lk: {pageLK}
           </p>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-            gap: 8,
-            alignItems: "center",
-            width: "100%",
-          }}
-        >
+        <div style={{ marginTop: 12 }}>
           <button
-            onClick={() => router.push(`/${pageLK}/admin/leads${canSwitchAny ? `?landing_key=${selectedLK}` : ""}`)}
-            style={{
-              padding: "12px 6px",
-              whiteSpace: "nowrap",
-              minWidth: 0,
-              fontSize: 13,
-              color: "#111827",
-              borderRadius: 10,
-              border: "1px solid #ddd",
-              background: "#fff",
-              fontWeight: 800,
-              cursor: "pointer",
-            }}
-          >
-            리드 목록
-          </button>
-
-          <button
+            type="button"
             onClick={() => signOut({ callbackUrl: `/${pageLK}/admin/login` })}
             style={{
-              padding: "12px 6px",
-              whiteSpace: "nowrap",
-              minWidth: 0,
-              fontSize: 13,
-              color: "#111827",
-              borderRadius: 10,
-              border: "1px solid #ddd",
-              background: "#fff",
-              cursor: "pointer",
+              ...backButtonStyle,
+              padding: "10px 16px",
             }}
           >
             로그아웃

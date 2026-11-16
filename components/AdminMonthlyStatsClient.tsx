@@ -238,8 +238,19 @@ export default function AdminMonthlyStatsClient() {
       <a
         href={`/${pageLK}/admin/leads`}
         style={{
-          color: "#2563eb",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "9px 10px",
+          border: "1px solid #d1d5db",
+          borderRadius: 9,
+          background: "#ffffff",
+          color: "#111827",
           textDecoration: "none",
+          fontSize: 14,
+          fontWeight: 700,
+          lineHeight: "20px",
+          cursor: "pointer",
         }}
       >
         ← 리드 관리로 돌아가기
