@@ -88,6 +88,13 @@ type LeadDraft = {
   reservation_status?: ReservationStatus | null;
 };
 
+// 예약 시간은 00:00부터 23:30까지 30분 간격으로 선택합니다.
+const RESERVATION_TIME_OPTIONS = Array.from({ length: 48 }, (_, index) => {
+  const hour = Math.floor(index / 2);
+  const minute = index % 2 === 0 ? "00" : "30";
+  return `${String(hour).padStart(2, "0")}:${minute}`;
+});
+
 const RESERVATION_LABELS: Record<ReservationStatus, string> = {
   SCHEDULED: "예약 예정",
   COMPLETED: "방문 완료",
@@ -164,9 +171,18 @@ function ReservationFields({
       </label>
       <label style={{ ...labelStyle, flex: "0 1 135px" }}>
         <span style={{ whiteSpace: "nowrap" }}>시간</span>
-        <input type="time" value={(time || "").slice(0, 5)}
+        <select value={(time || "").slice(0, 5)}
           onChange={(e) => onChange({ reservation_time: e.target.value || null })}
-          style={controlStyle} />
+          style={controlStyle}>
+          <option value="">시간 선택</option>
+          {/* 이전에 저장한 30분 단위 외 예약 시간도 변경 전까지 보존합니다. */}
+          {time && !RESERVATION_TIME_OPTIONS.includes(time.slice(0, 5)) && (
+            <option value={time.slice(0, 5)}>{time.slice(0, 5)} (기존 예약)</option>
+          )}
+          {RESERVATION_TIME_OPTIONS.map((option) => (
+            <option key={option} value={option}>{option}</option>
+          ))}
+        </select>
       </label>
       <label style={{ ...labelStyle, flex: "0 1 180px" }}>
         <span style={{ whiteSpace: "nowrap" }}>진행</span>
