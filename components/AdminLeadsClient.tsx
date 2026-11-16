@@ -88,9 +88,9 @@ type LeadDraft = {
   reservation_status?: ReservationStatus | null;
 };
 
-// 예약 시간은 00:00부터 23:30까지 30분 간격으로 선택합니다.
-const RESERVATION_TIME_OPTIONS = Array.from({ length: 48 }, (_, index) => {
-  const hour = Math.floor(index / 2);
+// 예약 시간은 09:00부터 21:00까지 30분 간격으로 선택합니다.
+const RESERVATION_TIME_OPTIONS = Array.from({ length: 25 }, (_, index) => {
+  const hour = 9 + Math.floor(index / 2);
   const minute = index % 2 === 0 ? "00" : "30";
   return `${String(hour).padStart(2, "0")}:${minute}`;
 });
