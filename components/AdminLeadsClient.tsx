@@ -138,65 +138,97 @@ function ReservationFields({
   draft: LeadDraft;
   onChange: (value: LeadDraft) => void;
 }) {
+  const [open, setOpen] = useState(false);
   const date = draft.reservation_date !== undefined ? draft.reservation_date : lead.reservation_date;
   const time = draft.reservation_time !== undefined ? draft.reservation_time : lead.reservation_time;
   const reservationStatus = draft.reservation_status !== undefined
     ? draft.reservation_status : lead.reservation_status;
 
-  // 예약 상태일 때만 같은 행의 예약정보 칸에서 편집합니다.
-  if (!hasReservationFields(lead, draft)) {
-    return <span style={{ color: "#9ca3af", fontSize: 12 }}>-</span>;
-  }
+  if (!hasReservationFields(lead, draft)) return <span style={{ color: "#9ca3af", fontSize: 12 }}>-</span>;
 
+  const shortDate = date ? `${date.slice(5, 7)}/${date.slice(8, 10)}` : "날짜 미정";
+  const shortTime = time ? time.slice(0, 5) : "시간 미정";
   const controlStyle: React.CSSProperties = {
-    ...inp,
-    height: 32,
-    width: "100%",
-    minWidth: 0,
-    boxSizing: "border-box",
-    padding: "4px 6px",
-    fontSize: 12,
-    background: "#fff",
+    ...inp, height: 38, width: "100%", minWidth: 0,
+    boxSizing: "border-box", fontSize: 14, background: "#fff",
   };
 
   return (
-    <div style={{ display: "grid", gap: 5, minWidth: 0, width: "100%", maxWidth: 160 }}>
-      <input
-        type="date"
-        aria-label="예약 날짜"
-        title="예약 날짜"
-        value={date || ""}
-        onChange={(e) => onChange({ reservation_date: e.target.value || null })}
-        style={controlStyle}
-      />
-      <select
-        aria-label="예약 시간"
-        title="예약 시간"
-        value={(time || "").slice(0, 5)}
-        onChange={(e) => onChange({ reservation_time: e.target.value || null })}
-        style={controlStyle}
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        title="예약 날짜·시간·진행 상태 편집"
+        style={{
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          gap: 5, width: "100%", maxWidth: 160, minHeight: 32,
+          border: "1px solid #a7f3d0", borderRadius: 8,
+          background: "#f0fdf4", color: "#065f46", fontSize: 12,
+          fontWeight: 700, whiteSpace: "nowrap", padding: "4px 6px",
+          cursor: "pointer", boxSizing: "border-box",
+        }}
       >
-        <option value="">시간 선택</option>
-        {/* 기존에 저장한 선택 범위 밖의 시간도 변경 전까지 보존합니다. */}
-        {time && !RESERVATION_TIME_OPTIONS.includes(time.slice(0, 5)) && (
-          <option value={time.slice(0, 5)}>{time.slice(0, 5)} (기존)</option>
-        )}
-        {RESERVATION_TIME_OPTIONS.map((option) => (
-          <option key={option} value={option}>{option}</option>
-        ))}
-      </select>
-      <select
-        aria-label="예약 진행 상태"
-        title="예약 진행 상태"
-        value={reservationStatus || "SCHEDULED"}
-        onChange={(e) => onChange({ reservation_status: e.target.value as ReservationStatus })}
-        style={controlStyle}
-      >
-        {(Object.keys(RESERVATION_LABELS) as ReservationStatus[]).map((k) => (
-          <option key={k} value={k}>{RESERVATION_LABELS[k]}</option>
-        ))}
-      </select>
-    </div>
+        <span>{shortDate} {shortTime}</span>
+        <span aria-hidden="true">✎</span>
+      </button>
+
+      {open && (
+        <div
+          role="presentation"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
+          style={{
+            position: "fixed", inset: 0, zIndex: 2000, background: "rgba(15,23,42,.48)",
+            display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+          }}
+        >
+          <div role="dialog" aria-modal="true" aria-label="예약정보 수정" style={{
+            background: "#fff", color: "#111827", width: "100%", maxWidth: 440,
+            padding: 20, borderRadius: 14, boxShadow: "0 18px 50px rgba(0,0,0,.2)",
+            boxSizing: "border-box", whiteSpace: "normal",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <strong style={{ fontSize: 17 }}>예약정보 수정 · {lead.name || "환자"}</strong>
+              <button type="button" onClick={() => setOpen(false)} style={{ ...smallBtn, fontSize: 16 }} aria-label="닫기">×</button>
+            </div>
+            <div style={{ display: "grid", gap: 12 }}>
+              <label style={{ display: "grid", gap: 5, fontSize: 13, fontWeight: 700 }}>
+                예약 날짜
+                <input type="date" aria-label="예약 날짜" value={date || ""}
+                  onChange={(e) => onChange({ reservation_date: e.target.value || null })} style={controlStyle} />
+              </label>
+              <label style={{ display: "grid", gap: 5, fontSize: 13, fontWeight: 700 }}>
+                예약 시간
+                <select aria-label="예약 시간" value={(time || "").slice(0, 5)}
+                  onChange={(e) => onChange({ reservation_time: e.target.value || null })} style={controlStyle}>
+                  <option value="">시간 선택</option>
+                  {time && !RESERVATION_TIME_OPTIONS.includes(time.slice(0, 5)) && (
+                    <option value={time.slice(0, 5)}>{time.slice(0, 5)} (기존)</option>
+                  )}
+                  {RESERVATION_TIME_OPTIONS.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </label>
+              <label style={{ display: "grid", gap: 5, fontSize: 13, fontWeight: 700 }}>
+                진행 상태
+                <select aria-label="예약 진행 상태" value={reservationStatus || "SCHEDULED"}
+                  onChange={(e) => onChange({ reservation_status: e.target.value as ReservationStatus })} style={controlStyle}>
+                  {(Object.keys(RESERVATION_LABELS) as ReservationStatus[]).map((k) => (
+                    <option key={k} value={k}>{RESERVATION_LABELS[k]}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div style={{ fontSize: 12, color: "#64748b", marginTop: 12 }}>
+              변경한 내용은 리드 목록의 ‘저장’ 버튼을 눌러야 실제 반영됩니다.
+            </div>
+            <button type="button" onClick={() => setOpen(false)} style={{
+              ...blackBtn, marginTop: 14, width: "100%", height: 40, fontWeight: 800,
+            }}>입력 완료</button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
