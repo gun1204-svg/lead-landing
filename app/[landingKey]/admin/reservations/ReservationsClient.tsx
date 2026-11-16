@@ -154,9 +154,18 @@ export default function ReservationsClient() {
   return (
     <main style={{ background: "#fff", color: "#111827", minHeight: "100vh", padding: "20px 16px", colorScheme: "light" }}>
       <div style={{ maxWidth: 1160, margin: "0 auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-          <div><h1 style={{ margin: 0, fontSize: 24 }}>예약관리</h1><p style={{ color: "#64748b", marginTop: 6 }}>예약 날짜 기준 월별 달력 · 날짜를 눌러 예약자 확인</p></div>
-          <button style={button} onClick={() => router.push(`/${pageLK}/admin/leads${isRoot && landingFilter !== "ALL" ? `?landing_key=${landingFilter}` : ""}`)}>← 리드 관리로 돌아가기</button>
+        <div style={{ marginBottom: 18 }}>
+          <button
+            type="button"
+            style={button}
+            onClick={() => router.push(`/${pageLK}/admin/leads${isRoot && landingFilter !== "ALL" ? `?landing_key=${encodeURIComponent(landingFilter)}` : ""}`)}
+          >
+            ← 리드 관리로 돌아가기
+          </button>
+          <h1 style={{ margin: "16px 0 0", fontSize: 24 }}>예약관리</h1>
+          <p style={{ color: "#64748b", marginTop: 6, marginBottom: 0 }}>
+            예약 날짜 기준 월별 달력 · 날짜를 눌러 예약자 확인
+          </p>
         </div>
         <section style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginTop: 20, marginBottom: 16 }}>
           <button style={button} onClick={() => setMonth((v) => shiftMonth(v, -1))}>이전달</button>
