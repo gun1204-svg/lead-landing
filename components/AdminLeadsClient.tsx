@@ -138,68 +138,64 @@ function ReservationFields({
   draft: LeadDraft;
   onChange: (value: LeadDraft) => void;
 }) {
-  const status = draft.status ?? lead.status ?? "NEW";
   const date = draft.reservation_date !== undefined ? draft.reservation_date : lead.reservation_date;
   const time = draft.reservation_time !== undefined ? draft.reservation_time : lead.reservation_time;
-  const memo = draft.reservation_memo !== undefined ? draft.reservation_memo : lead.reservation_memo;
   const reservationStatus = draft.reservation_status !== undefined
     ? draft.reservation_status : lead.reservation_status;
 
-  if (!hasReservationFields(lead, draft)) return null;
+  // 예약 상태일 때만 같은 행의 예약정보 칸에서 편집합니다.
+  if (!hasReservationFields(lead, draft)) {
+    return <span style={{ color: "#9ca3af", fontSize: 12 }}>-</span>;
+  }
 
   const controlStyle: React.CSSProperties = {
-    ...inp, height: 36, width: "100%", minWidth: 0,
-    boxSizing: "border-box", fontSize: 13,
-  };
-  const labelStyle: React.CSSProperties = {
-    display: "flex", alignItems: "center", gap: 6,
-    fontSize: 12, fontWeight: 700, minWidth: 0,
+    ...inp,
+    height: 32,
+    width: "100%",
+    minWidth: 0,
+    boxSizing: "border-box",
+    padding: "4px 6px",
+    fontSize: 12,
+    background: "#fff",
   };
 
   return (
-    <div className="admin-reservation-strip" style={{
-      display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8,
-      padding: "8px 10px", border: "1px solid #a7f3d0",
-      borderRadius: 9, background: "#f0fdf4", whiteSpace: "normal",
-    }}>
-      <strong style={{ fontSize: 12, color: "#065f46", whiteSpace: "nowrap" }}>예약</strong>
-      <label style={{ ...labelStyle, flex: "0 1 170px" }}>
-        <span style={{ whiteSpace: "nowrap" }}>날짜{status === "BOOKED" ? "*" : ""}</span>
-        <input type="date" value={date || ""}
-          onChange={(e) => onChange({ reservation_date: e.target.value || null })}
-          style={controlStyle} />
-      </label>
-      <label style={{ ...labelStyle, flex: "0 1 135px" }}>
-        <span style={{ whiteSpace: "nowrap" }}>시간</span>
-        <select value={(time || "").slice(0, 5)}
-          onChange={(e) => onChange({ reservation_time: e.target.value || null })}
-          style={controlStyle}>
-          <option value="">시간 선택</option>
-          {/* 이전에 저장한 30분 단위 외 예약 시간도 변경 전까지 보존합니다. */}
-          {time && !RESERVATION_TIME_OPTIONS.includes(time.slice(0, 5)) && (
-            <option value={time.slice(0, 5)}>{time.slice(0, 5)} (기존 예약)</option>
-          )}
-          {RESERVATION_TIME_OPTIONS.map((option) => (
-            <option key={option} value={option}>{option}</option>
-          ))}
-        </select>
-      </label>
-      <label style={{ ...labelStyle, flex: "0 1 180px" }}>
-        <span style={{ whiteSpace: "nowrap" }}>진행</span>
-        <select value={reservationStatus || "SCHEDULED"}
-          onChange={(e) => onChange({ reservation_status: e.target.value as ReservationStatus })}
-          style={controlStyle}>
-          {(Object.keys(RESERVATION_LABELS) as ReservationStatus[]).map((k) =>
-            <option key={k} value={k}>{RESERVATION_LABELS[k]}</option>
-          )}
-        </select>
-      </label>
-      <label style={{ ...labelStyle, flex: "1 1 200px" }}>
-        <span style={{ whiteSpace: "nowrap" }}>메모</span>
-        <input type="text" value={memo || ""} placeholder="예약 관련 메모"
-          onChange={(e) => onChange({ reservation_memo: e.target.value })}
-          style={controlStyle} />
-      </label>
+    <div style={{ display: "grid", gap: 5, minWidth: 150, maxWidth: 190 }}>
+      <input
+        type="date"
+        aria-label="예약 날짜"
+        title="예약 날짜"
+        value={date || ""}
+        onChange={(e) => onChange({ reservation_date: e.target.value || null })}
+        style={controlStyle}
+      />
+      <select
+        aria-label="예약 시간"
+        title="예약 시간"
+        value={(time || "").slice(0, 5)}
+        onChange={(e) => onChange({ reservation_time: e.target.value || null })}
+        style={controlStyle}
+      >
+        <option value="">시간 선택</option>
+        {/* 기존에 저장한 선택 범위 밖의 시간도 변경 전까지 보존합니다. */}
+        {time && !RESERVATION_TIME_OPTIONS.includes(time.slice(0, 5)) && (
+          <option value={time.slice(0, 5)}>{time.slice(0, 5)} (기존)</option>
+        )}
+        {RESERVATION_TIME_OPTIONS.map((option) => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
+      <select
+        aria-label="예약 진행 상태"
+        title="예약 진행 상태"
+        value={reservationStatus || "SCHEDULED"}
+        onChange={(e) => onChange({ reservation_status: e.target.value as ReservationStatus })}
+        style={controlStyle}
+      >
+        {(Object.keys(RESERVATION_LABELS) as ReservationStatus[]).map((k) => (
+          <option key={k} value={k}>{RESERVATION_LABELS[k]}</option>
+        ))}
+      </select>
     </div>
   );
 }
@@ -1705,9 +1701,14 @@ export default function AdminLeadsClient({
                 </label>
               </div>
 
-              <ReservationFields lead={l} draft={d} onChange={(change) =>
-                setDraft((prev) => ({ ...prev, [l.id]: { ...prev[l.id], ...change } }))
-              } />
+              {hasReservationFields(l, d) && (
+                <div style={{ marginTop: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 6 }}>예약정보</div>
+                  <ReservationFields lead={l} draft={d} onChange={(change) =>
+                    setDraft((prev) => ({ ...prev, [l.id]: { ...prev[l.id], ...change } }))
+                  } />
+                </div>
+              )}
 
               <label className="admin-mobile-memo">
                 <span>{"\uC0C1\uB2F4 \uBA54\uBAA8"}</span>
@@ -1772,6 +1773,7 @@ export default function AdminLeadsClient({
               <th style={th}>이름</th>
               <th style={th}>전화</th>
               <th style={th}>상태</th>
+              <th style={th}>예약정보</th>
               <th style={th}>담당자</th>
               <th style={th}>메모 / 저장</th>
               {isMainAdmin && <th style={th}>삭제</th>}
@@ -1816,6 +1818,12 @@ export default function AdminLeadsClient({
                         ))}
                       </select>
                     </div>
+                  </td>
+
+                  <td style={{ ...tdTop, minWidth: 170, width: 180, whiteSpace: "normal" }}>
+                    <ReservationFields lead={l} draft={d} onChange={(change) =>
+                      setDraft((prev) => ({ ...prev, [l.id]: { ...prev[l.id], ...change } }))
+                    } />
                   </td>
 
                   <td style={tdTop}>
@@ -1920,22 +1928,13 @@ export default function AdminLeadsClient({
                     </td>
                   )}
                 </tr>
-                {hasReservationFields(l, d) && (
-                  <tr>
-                    <td colSpan={isMainAdmin ? 9 : 8} style={{ padding: "0 12px 8px", borderBottom: "1px solid #f3f3f3" }}>
-                      <ReservationFields lead={l} draft={d} onChange={(change) =>
-                        setDraft((prev) => ({ ...prev, [l.id]: { ...prev[l.id], ...change } }))
-                      } />
-                    </td>
-                  </tr>
-                )}
                 </Fragment>
               );
             })}
 
             {!loadingRows && displayRows.length === 0 && (
               <tr>
-                <td colSpan={isMainAdmin ? 9 : 8} style={{ padding: 14, color: "#666" }}>
+                <td colSpan={isMainAdmin ? 10 : 9} style={{ padding: 14, color: "#666" }}>
                   데이터 없음
                 </td>
               </tr>
