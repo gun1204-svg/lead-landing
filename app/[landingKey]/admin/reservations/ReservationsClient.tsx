@@ -30,8 +30,8 @@ const LABELS: Record<string, string> = {
   "08": "비개방 코성형", "09": "일본 코수술", "10": "브이타이팅",
 };
 const RESERVATION_LABELS: Record<string, string> = {
-  SCHEDULED: "예약 예정", COMPLETED: "방문 완료",
-  CANCELLED: "예약 취소", NO_SHOW: "미방문",
+  SCHEDULED: "예약", COMPLETED: "완료",
+  CANCELLED: "취소", NO_SHOW: "부도",
 };
 function kstMonth() {
   return localToday().slice(0, 7);
@@ -86,6 +86,7 @@ export default function ReservationsClient() {
     if (landingFilter !== "ALL") params.set("landing_key", landingFilter);
     setLoading(true);
     setError("");
+    setItems([]);
     fetch(`/api/admin/reservations?${params}`, { cache: "no-store", signal: ctrl.signal })
       .then(async (r) => {
         const json = await r.json().catch(() => ({}));
@@ -112,6 +113,28 @@ export default function ReservationsClient() {
   const [y, m] = month.split("-").map(Number);
   const dayCount = new Date(Date.UTC(y, m, 0)).getUTCDate();
   const offset = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
+  // 예약일 기준 월별 집계. 검색어는 환자 찾기에만 사용하고 통계에는 영향을 주지 않습니다.
+  const monthlyStats = useMemo(() => {
+    const counts = { SCHEDULED: 0, COMPLETED: 0, CANCELLED: 0, NO_SHOW: 0 };
+    const byLanding: Record<string, { total: number; SCHEDULED: number; COMPLETED: number; CANCELLED: number; NO_SHOW: number }> = {};
+    let total = 0;
+    for (const item of items) {
+      if (!item.reservation_date?.startsWith(`${month}-`)) continue;
+      const key = (item.reservation_status ?? "SCHEDULED") as keyof typeof counts;
+      const lk = item.landing_key ?? "00";
+      const entry = (byLanding[lk] ??= { total: 0, SCHEDULED: 0, COMPLETED: 0, CANCELLED: 0, NO_SHOW: 0 });
+      total += 1;
+      entry.total += 1;
+      if (key in counts) {
+        counts[key] += 1;
+        entry[key] += 1;
+      }
+    }
+    return { total, ...counts, visitRate: total > 0 ? (counts.COMPLETED / total) * 100 : 0, byLanding };
+  }, [items, month]);
+  const monthlyLandingRows = useMemo(() =>
+    Object.entries(monthlyStats.byLanding).sort(([a], [b]) => Number(a) - Number(b)),
+  [monthlyStats.byLanding]);
   const selected = byDate[date] ?? [];
   const enabledKeys = isRoot ? Object.keys(LABELS) : (allowed ?? [userLK]);
 
@@ -179,6 +202,53 @@ export default function ReservationsClient() {
           <button style={button} onClick={() => setReload((v) => v + 1)}>새로고침</button>
         </section>
         {error && <p role="alert" style={{ color: "#b91c1c" }}>{error}</p>}
+        <section aria-label="월별 예약 현황" style={{ margin: "18px 0 20px" }}>
+          <h2 style={{ margin: "0 0 12px", fontSize: 19 }}>{month.replace("-", "년 ")}월 예약 현황</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(135px, 1fr))", gap: 10 }}>
+            {[
+              { label: "전체 예약", value: `${monthlyStats.total}건`, color: "#111827" },
+              { label: "예약", value: `${monthlyStats.SCHEDULED}건`, color: "#2563eb" },
+              { label: "완료", value: `${monthlyStats.COMPLETED}건`, color: "#15803d" },
+              { label: "취소", value: `${monthlyStats.CANCELLED}건`, color: "#b45309" },
+              { label: "부도", value: `${monthlyStats.NO_SHOW}건`, color: "#b91c1c" },
+              { label: "방문율", value: `${monthlyStats.visitRate.toFixed(1)}%`, color: "#15803d" },
+            ].map((card) => (
+              <div key={card.label} style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px 14px", background: "#fff" }}>
+                <div style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>{card.label}</div>
+                <div style={{ fontSize: 23, fontWeight: 800, color: card.color }}>{loading ? "…" : card.value}</div>
+              </div>
+            ))}
+          </div>
+          <p style={{ margin: "8px 0 0", fontSize: 12, color: "#64748b" }}>
+            예약 날짜 기준 · 방문율 = 완료 ÷ 전체 예약 · 이름/전화번호 검색은 통계에 영향을 주지 않습니다.
+          </p>
+          {monthlyLandingRows.length > 0 && (
+            <div style={{ overflowX: "auto", marginTop: 16, border: "1px solid #e2e8f0", borderRadius: 12 }}>
+              <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 580, textAlign: "center", fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: "#f8fafc" }}>
+                    {["수술/랜딩", "전체", "예약", "완료", "취소", "부도", "방문율"].map((h) =>
+                      <th key={h} style={{ padding: 10, borderBottom: "1px solid #e2e8f0" }}>{h}</th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {monthlyLandingRows.map(([lk, row]) => (
+                    <tr key={lk}>
+                      <td style={{ padding: 9, borderBottom: "1px solid #f1f5f9", textAlign: "left" }}>{lk} {LABELS[lk] ?? ""}</td>
+                      <td style={{ padding: 9, borderBottom: "1px solid #f1f5f9" }}>{row.total}</td>
+                      <td style={{ padding: 9, borderBottom: "1px solid #f1f5f9" }}>{row.SCHEDULED}</td>
+                      <td style={{ padding: 9, borderBottom: "1px solid #f1f5f9" }}>{row.COMPLETED}</td>
+                      <td style={{ padding: 9, borderBottom: "1px solid #f1f5f9" }}>{row.CANCELLED}</td>
+                      <td style={{ padding: 9, borderBottom: "1px solid #f1f5f9" }}>{row.NO_SHOW}</td>
+                      <td style={{ padding: 9, borderBottom: "1px solid #f1f5f9" }}>{(row.COMPLETED / row.total * 100).toFixed(1)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
         <p style={{ fontSize: 13, color: "#64748b" }}>{month} 예약 {filtered.length}건 {loading ? "· 불러오는 중..." : ""}</p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
           {["일", "월", "화", "수", "목", "금", "토"].map((n) => <div key={n} style={{ textAlign: "center", padding: 10, background: "#f8fafc", fontWeight: 700 }}>{n}</div>)}
