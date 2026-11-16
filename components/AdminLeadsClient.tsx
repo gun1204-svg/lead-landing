@@ -160,7 +160,7 @@ function ReservationFields({
   };
 
   return (
-    <div style={{ display: "grid", gap: 5, minWidth: 150, maxWidth: 190 }}>
+    <div style={{ display: "grid", gap: 5, minWidth: 0, width: "100%", maxWidth: 160 }}>
       <input
         type="date"
         aria-label="예약 날짜"
@@ -1135,11 +1135,23 @@ export default function AdminLeadsClient({
 
         .admin-leads-table-scroll table {
           min-width: 1000px;
+          table-layout: auto;
         }
 
+        /* 랜딩·유입·예약정보의 좌우 여백을 줄여 메모 열의 공간을 확보 */
         .admin-leads-table-scroll th,
         .admin-leads-table-scroll td {
           white-space: nowrap;
+          padding-left: 5px !important;
+          padding-right: 5px !important;
+        }
+        .admin-leads-table-scroll th:first-child,
+        .admin-leads-table-scroll td:first-child {
+          padding-left: 9px !important;
+        }
+        .admin-leads-table-scroll th:last-child,
+        .admin-leads-table-scroll td:last-child {
+          padding-right: 9px !important;
         }
 
         .admin-leads-table-scroll textarea {
@@ -1792,14 +1804,17 @@ export default function AdminLeadsClient({
               return (
                 <Fragment key={l.id}>
                 <tr>
-                  <td style={tdTop}>{new Date(l.created_at).toLocaleString("ko-KR")}</td>
-                  <td style={tdTop}><LandingBadge landingKey={l.landing_key} /></td>
-                  <td style={tdTop}><SourceBadge source={l.utm_source} /></td>
+                  <td style={{ ...tdTop, minWidth: 95, fontSize: 12, lineHeight: 1.5 }}>
+                    <div>{new Date(l.created_at).toLocaleDateString("ko-KR")}</div>
+                    <div>{new Date(l.created_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}</div>
+                  </td>
+                  <td style={{ ...tdTop, paddingLeft: 3, paddingRight: 3 }}><LandingBadge landingKey={l.landing_key} /></td>
+                  <td style={{ ...tdTop, paddingLeft: 3, paddingRight: 3 }}><SourceBadge source={l.utm_source} /></td>
                   <td style={tdTop}>{l.name ?? "-"}</td>
                   <td style={tdTop}>{l.phone ?? "-"}</td>
 
                   <td style={tdTop}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                       <StatusBadge status={curStatus} />
 
                       <select
@@ -1820,7 +1835,7 @@ export default function AdminLeadsClient({
                     </div>
                   </td>
 
-                  <td style={{ ...tdTop, minWidth: 170, width: 180, whiteSpace: "normal" }}>
+                  <td style={{ ...tdTop, minWidth: 152, width: 160, whiteSpace: "normal" }}>
                     <ReservationFields lead={l} draft={d} onChange={(change) =>
                       setDraft((prev) => ({ ...prev, [l.id]: { ...prev[l.id], ...change } }))
                     } />
@@ -1838,7 +1853,7 @@ export default function AdminLeadsClient({
                         }));
                       }}
                       style={{
-                        width: 130,
+                        width: 112,
                         height: 34,
                         padding: "0 8px",
                         border: "1px solid #ddd",
@@ -1859,7 +1874,7 @@ export default function AdminLeadsClient({
                     </select>
                   </td>
 
-                  <td style={{ ...tdTop, minWidth: 260 }}>
+                  <td style={{ ...tdTop, minWidth: 230, width: "27%" }}>
                     <textarea
                       value={curMemo}
                       onChange={(e) =>
