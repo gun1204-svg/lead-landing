@@ -96,10 +96,10 @@ const RESERVATION_TIME_OPTIONS = Array.from({ length: 25 }, (_, index) => {
 });
 
 const RESERVATION_LABELS: Record<ReservationStatus, string> = {
-  SCHEDULED: "예약 예정",
-  COMPLETED: "방문 완료",
-  CANCELLED: "예약 취소",
-  NO_SHOW: "미방문",
+  SCHEDULED: "예약",
+  COMPLETED: "완료",
+  CANCELLED: "취소",
+  NO_SHOW: "부도",
 };
 
 function fieldChanged(l: Lead, d: LeadDraft) {
@@ -148,6 +148,7 @@ function ReservationFields({
 
   const shortDate = date ? `${date.slice(5, 7)}/${date.slice(8, 10)}` : "날짜 미정";
   const shortTime = time ? time.slice(0, 5) : "시간 미정";
+  const statusLabel = RESERVATION_LABELS[(reservationStatus || "SCHEDULED") as ReservationStatus] || "예약";
   const controlStyle: React.CSSProperties = {
     ...inp, height: 38, width: "100%", minWidth: 0,
     boxSizing: "border-box", fontSize: 14, background: "#fff",
@@ -161,14 +162,14 @@ function ReservationFields({
         title="예약 날짜·시간·진행 상태 편집"
         style={{
           display: "inline-flex", alignItems: "center", justifyContent: "center",
-          gap: 5, width: "100%", maxWidth: 160, minHeight: 32,
+          gap: 4, width: "100%", maxWidth: 208, minHeight: 32,
           border: "1px solid #a7f3d0", borderRadius: 8,
-          background: "#f0fdf4", color: "#065f46", fontSize: 12,
+          background: "#f0fdf4", color: "#065f46", fontSize: 11,
           fontWeight: 700, whiteSpace: "nowrap", padding: "4px 6px",
           cursor: "pointer", boxSizing: "border-box",
         }}
       >
-        <span>{shortDate} {shortTime}</span>
+        <span>{shortDate} {shortTime} · {statusLabel}</span>
         <span aria-hidden="true">✎</span>
       </button>
 
@@ -1898,7 +1899,7 @@ export default function AdminLeadsClient({
                     </div>
                   </td>
 
-                  <td style={{ ...tdTop, minWidth: 152, width: 160, whiteSpace: "normal" }}>
+                  <td style={{ ...tdTop, minWidth: 198, width: 208, whiteSpace: "nowrap" }}>
                     <ReservationFields lead={l} draft={d} onChange={(change) =>
                       setDraft((prev) => ({ ...prev, [l.id]: { ...prev[l.id], ...change } }))
                     } />
