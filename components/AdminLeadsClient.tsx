@@ -393,6 +393,98 @@ function SourceBadge({ source }: { source?: string | null }) {
   );
 }
 
+
+// 접수 기간 선택: 첫 클릭은 시작일, 두 번째 클릭은 종료일.
+// 날짜 범위는 한국 시간 기준으로 서버에 전달합니다.
+function ReceptionDateRangePicker({
+  start,
+  end,
+  onChange,
+}: {
+  start: string;
+  end: string;
+  onChange: (start: string, end: string) => void;
+}) {
+  const todayParts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(new Date());
+  const todayPart = (type: string) => todayParts.find((part) => part.type === type)?.value ?? "";
+  const today = `${todayPart("year")}-${todayPart("month")}-${todayPart("day")}`;
+  const [open, setOpen] = useState(false);
+  const [viewMonth, setViewMonth] = useState(() => today.slice(0, 7));
+  const [choosingEnd, setChoosingEnd] = useState(false);
+  const [year, month] = viewMonth.split("-").map(Number);
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const firstWeekday = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+
+  function changeMonth(amount: number) {
+    const d = new Date(Date.UTC(year, month - 1 + amount, 1));
+    setViewMonth(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`);
+  }
+  function chooseDay(day: number) {
+    const selected = `${viewMonth}-${String(day).padStart(2, "0")}`;
+    if (!choosingEnd || !start || end) {
+      onChange(selected, "");
+      setChoosingEnd(true);
+    } else {
+      onChange(selected < start ? selected : start, selected < start ? start : selected);
+      setChoosingEnd(false);
+    }
+  }
+
+  return (
+    <div style={{ display: "grid", gap: 4, position: "relative", minWidth: 210 }}>
+      <span style={{ fontSize: 12, fontWeight: 800 }}>접수 기간</span>
+      <button
+        type="button"
+        onClick={() => { setViewMonth((start || today).slice(0, 7)); setOpen((v) => !v); }}
+        aria-expanded={open}
+        style={{ ...inp, height: 38, background: "#fff", color: "#111827", textAlign: "left", cursor: "pointer", whiteSpace: "nowrap" }}
+      >
+        📅 {start ? `${start}${end ? ` ~ ${end}` : " ~ 종료일 선택"}` : "전체 기간 · 날짜 선택"}
+      </button>
+      {open && (
+        <div style={{ position: "absolute", zIndex: 50, top: "100%", right: 0, marginTop: 6, width: 310, maxWidth: "calc(100vw - 32px)", background: "#fff", border: "1px solid #cbd5e1", borderRadius: 12, boxShadow: "0 12px 30px rgba(15,23,42,.18)", padding: 12, color: "#111827" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+            <button type="button" onClick={() => changeMonth(-1)} aria-label="이전 달" style={{ ...smallBtn, padding: "5px 11px" }}>‹</button>
+            <strong style={{ fontSize: 14 }}>{year}년 {month}월</strong>
+            <button type="button" onClick={() => changeMonth(1)} aria-label="다음 달" style={{ ...smallBtn, padding: "5px 11px" }}>›</button>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 3 }}>
+            {["일", "월", "화", "수", "목", "금", "토"].map((label) => (
+              <div key={label} style={{ textAlign: "center", fontSize: 12, color: "#64748b", padding: "5px 0" }}>{label}</div>
+            ))}
+            {Array.from({ length: firstWeekday }, (_, i) => <span key={`empty-${i}`} />)}
+            {Array.from({ length: daysInMonth }, (_, i) => {
+              const day = i + 1;
+              const value = `${viewMonth}-${String(day).padStart(2, "0")}`;
+              const endpoint = value === start || value === end;
+              const within = Boolean(start && end && value > start && value < end);
+              return (
+                <button key={day} type="button" onClick={() => chooseDay(day)}
+                  aria-label={`${value} 선택`} aria-pressed={endpoint || within}
+                  style={{ height: 34, borderRadius: 7, cursor: "pointer", fontWeight: endpoint ? 800 : 500,
+                    border: value === today && !endpoint ? "1px solid #2563eb" : "1px solid transparent",
+                    background: endpoint ? "#2563eb" : within ? "#dbeafe" : "#fff",
+                    color: endpoint ? "#fff" : "#111827" }}>
+                  {day}
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ fontSize: 12, color: "#475569", marginTop: 10, minHeight: 18 }}>
+            {!start ? "시작일을 선택하세요." : !end ? "종료일을 선택하세요. (같은 날도 가능)" : `${start} ~ ${end}`}
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 9 }}>
+            <button type="button" style={smallBtn} onClick={() => { onChange("", ""); setChoosingEnd(false); }}>기간 초기화</button>
+            <button type="button" style={blackBtn} onClick={() => setOpen(false)}>완료</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminLeadsClient({
   permissionsOnly = false,
 }: {
@@ -421,12 +513,12 @@ export default function AdminLeadsClient({
 
   const [draft, setDraft] = useState<Record<string, LeadDraft>>({});
   const [searchInput, setSearchInput] = useState("");
-  const [monthInput, setMonthInput] = useState("");
-  const [dateInput, setDateInput] = useState("");
+  const [rangeStartInput, setRangeStartInput] = useState("");
+  const [rangeEndInput, setRangeEndInput] = useState("");
   const [phoneLast4Input, setPhoneLast4Input] = useState("");
   const [search, setSearch] = useState("");
-  const [receivedMonth, setReceivedMonth] = useState("");
-  const [receivedDate, setReceivedDate] = useState("");
+  const [receivedStart, setReceivedStart] = useState("");
+  const [receivedEnd, setReceivedEnd] = useState("");
   const [phoneLast4, setPhoneLast4] = useState("");
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [deleting, setDeleting] = useState<Record<string, boolean>>({});
@@ -696,8 +788,10 @@ export default function AdminLeadsClient({
           if (statusFilter !== "ALL") leadParams.set("status", statusFilter);
           if (managerFilter !== "ALL") leadParams.set("manager", managerFilter);
           if (search) leadParams.set("search", search);
-          if (receivedMonth && !receivedDate) leadParams.set("month", receivedMonth);
-          if (receivedDate) leadParams.set("date", receivedDate);
+          if (receivedStart && receivedEnd) {
+            leadParams.set("start_date", receivedStart);
+            leadParams.set("end_date", receivedEnd);
+          }
           if (phoneLast4) leadParams.set("phone_last4", phoneLast4);
 
           const leadsRes = await fetch(`/api/admin/leads?${leadParams.toString()}`, {
@@ -762,8 +856,7 @@ export default function AdminLeadsClient({
             ...(statusFilter !== "ALL" ? { status: statusFilter } : {}),
             ...(managerFilter !== "ALL" ? { manager: managerFilter } : {}),
             ...(search ? { search } : {}),
-            ...(receivedMonth && !receivedDate ? { month: receivedMonth } : {}),
-            ...(receivedDate ? { date: receivedDate } : {}),
+            ...(receivedStart && receivedEnd ? { start_date: receivedStart, end_date: receivedEnd } : {}),
             ...(phoneLast4 ? { phone_last4: phoneLast4 } : {}),
           }).toString()}`, {
             cache: "no-store",
@@ -824,8 +917,8 @@ export default function AdminLeadsClient({
     statusFilter,
     managerFilter,
     search,
-    receivedMonth,
-    receivedDate,
+    receivedStart,
+    receivedEnd,
     phoneLast4,
   ]);
 
@@ -1567,14 +1660,18 @@ export default function AdminLeadsClient({
        <form
          onSubmit={(e) => {
            e.preventDefault();
+           if (rangeStartInput && !rangeEndInput) {
+             alert("접수 기간의 종료일도 선택해주세요.");
+             return;
+           }
            setPage(1);
            if (phoneLast4Input && !/^\d{4}$/.test(phoneLast4Input)) {
              alert("전화번호 뒷자리는 숫자 4개를 입력해주세요.");
              return;
            }
            setSearch(searchInput.trim());
-           setReceivedMonth(dateInput ? "" : monthInput);
-           setReceivedDate(dateInput);
+           setReceivedStart(rangeStartInput);
+           setReceivedEnd(rangeEndInput);
            setPhoneLast4(phoneLast4Input);
          }}
          style={{ marginTop: 10, display: "flex", alignItems: "end", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}
@@ -1590,25 +1687,17 @@ export default function AdminLeadsClient({
              onChange={(e) => setPhoneLast4Input(e.target.value.replace(/\D/g, "").slice(0, 4))}
              placeholder="4자리 (선택)" style={{ ...inp, width: 120 }} />
          </label>
-         <label style={{ display: "grid", gap: 4, fontSize: 12, fontWeight: 800 }}>
-           접수월 (전체: 비움)
-           <input type="month" value={monthInput} onChange={(e) => setMonthInput(e.target.value)}
-             style={{ ...inp, width: 160 }} />
-         </label>
-         <label style={{ display: "grid", gap: 4, fontSize: 12, fontWeight: 800 }}>
-           접수일 (선택 시 접수월보다 우선)
-           <input type="date" value={dateInput} onChange={(e) => setDateInput(e.target.value)}
-             style={{ ...inp, width: 160 }} />
-         </label>
+         <ReceptionDateRangePicker start={rangeStartInput} end={rangeEndInput}
+           onChange={(start, end) => { setRangeStartInput(start); setRangeEndInput(end); }} />
          <button type="submit" style={{ ...blackBtn, height: 38 }}>검색</button>
          <button type="button" style={{ ...smallBtn, height: 38 }} onClick={() => {
            setSearchInput("");
-           setMonthInput("");
-           setDateInput("");
+           setRangeStartInput("");
+           setRangeEndInput("");
            setPhoneLast4Input("");
            setSearch("");
-           setReceivedMonth("");
-           setReceivedDate("");
+           setReceivedStart("");
+           setReceivedEnd("");
            setPhoneLast4("");
            setPage(1);
          }}>초기화</button>

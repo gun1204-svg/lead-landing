@@ -91,6 +91,16 @@ function normalizeSearchDate(value: string | null): string | null {
   return s;
 }
 
+
+function getInclusiveDateRange(start: string, end: string) {
+  const next = new Date(`${end}T00:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  return {
+    start: `${start}T00:00:00+09:00`,
+    end: `${next.toISOString().slice(0, 10)}T00:00:00+09:00`,
+  };
+}
+
 function getDateRange(date: string) {
   const nextDay = new Date(`${date}T00:00:00Z`);
   nextDay.setUTCDate(nextDay.getUTCDate() + 1);
@@ -454,6 +464,16 @@ export async function GET(req: Request) {
 
     const dateParam = searchParams.get("date");
     const selectedDate = normalizeSearchDate(dateParam);
+    const startDateParam = searchParams.get("start_date");
+    const endDateParam = searchParams.get("end_date");
+    const startDate = normalizeSearchDate(startDateParam);
+    const endDate = normalizeSearchDate(endDateParam);
+    if (Boolean(startDate) !== Boolean(endDate)) {
+      throw new Error("Invalid date range: start_date and end_date required");
+    }
+    if (startDate && endDate && startDate > endDate) {
+      throw new Error("Invalid date range: start_date after end_date");
+    }
     const phoneLast4 = String(searchParams.get("phone_last4") ?? "").trim();
     if (phoneLast4 && !/^\d{4}$/.test(phoneLast4)) {
       throw new Error("Invalid phone_last4");
@@ -520,9 +540,12 @@ export async function GET(req: Request) {
       q = q.ilike("phone", `%${phoneLast4}`);
     }
 
-    // 접수일 우선, 접수일이 비어 있을 때만 접수월 적용 (한국 시간 기준)
-    // 예약 날짜가 아닌 created_at을 기준으로 합니다.
-    if (selectedDate || selectedMonth) {
+    // 날짜 범위 우선, 구버전의 단일 접수일·접수월도 계속 지원합니다.
+    // 한국 시간 기준 접수 시각(created_at), 종료일 포함.
+    if (startDate && endDate) {
+      const range = getInclusiveDateRange(startDate, endDate);
+      q = q.gte("created_at", range.start).lt("created_at", range.end);
+    } else if (selectedDate || selectedMonth) {
       const range = selectedDate ? getDateRange(selectedDate) : getMonthRange(selectedMonth!);
       q = q.gte("created_at", range.start).lt("created_at", range.end);
     }
@@ -557,7 +580,9 @@ export async function GET(req: Request) {
       filters: {
         search,
         month: selectedDate ? null : selectedMonth,
-        date: selectedDate,
+        date: startDate ? null : selectedDate,
+        start_date: startDate,
+        end_date: endDate,
         phone_last4: phoneLast4 || null,
         status,
         manager,
