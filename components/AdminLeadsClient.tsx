@@ -501,10 +501,10 @@ export default function AdminLeadsClient({
   const session = sess?.data;
 
   const pageLK = useMemo(() => extractLKFromPath(pathname), [pathname]);
-  const isMainAdmin = pageLK === "00";
-
   const userLK = normalizeLK((session?.user as any)?.landing_key ?? "");
-  const canSwitchAny = userLK === "00";
+  // 최고관리자 기능은 URL(/00)이 아닌 실제 로그인 계정 권한으로 판별합니다.
+  const isMainAdmin = userLK === "00" && (session?.user as any)?.email === "admin";
+  const canSwitchAny = isMainAdmin;
   const selectedLK = normalizeLK(sp.get("landing_key") ?? pageLK);
 
   const [rows, setRows] = useState<Lead[]>([]);
@@ -926,7 +926,7 @@ export default function AdminLeadsClient({
 
   useEffect(() => {
     if (authStatus !== "authenticated") return;
-    if (userLK !== "00") return;
+    if (!isMainAdmin) return;
 
     const ac = new AbortController();
 
@@ -948,10 +948,10 @@ export default function AdminLeadsClient({
     })();
 
     return () => ac.abort();
-  }, [authStatus, userLK]);
+  }, [authStatus, isMainAdmin]);
 
   async function refreshAccountsList() {
-    if (userLK !== "00") return;
+    if (!isMainAdmin) return;
 
     const res = await fetch("/api/admin/accounts", { cache: "no-store" });
     const json = await res.json().catch(() => ({}));
@@ -960,7 +960,7 @@ export default function AdminLeadsClient({
   }
 
   async function refreshPermissions() {
-    if (userLK !== "00") return;
+    if (!isMainAdmin) return;
 
     setPermissionsLoading(true);
 
@@ -982,12 +982,12 @@ export default function AdminLeadsClient({
 
   useEffect(() => {
     if (authStatus !== "authenticated") return;
-    if (userLK !== "00") return;
+    if (!isMainAdmin) return;
     refreshPermissions();
-  }, [authStatus, userLK]);
+  }, [authStatus, isMainAdmin]);
 
   async function doTopup() {
-    if (userLK !== "00") return;
+    if (!isMainAdmin) return;
 
     const admin_id = topupAdminId.trim();
     const amount = safeNumber(topupAmount, 0);
@@ -1031,7 +1031,7 @@ export default function AdminLeadsClient({
     price_per_lead: number,
     is_active: boolean
   ) {
-    if (userLK !== "00") return;
+    if (!isMainAdmin) return;
 
     const res = await fetch("/api/admin/accounts", {
       method: "PATCH",
@@ -1125,8 +1125,7 @@ export default function AdminLeadsClient({
 
   if (permissionsOnly) {
     if (
-      userLK !== "00" ||
-      (session?.user as any)?.email !== "admin"
+      !isMainAdmin
     ) {
       return <div style={{ padding: 24 }}>?? ??? ????.</div>;
     }
@@ -1407,7 +1406,7 @@ export default function AdminLeadsClient({
             예약관리
           </button>
 
-          {userLK === "00" && (
+          {isMainAdmin && (
             <button
               onClick={() => router.push("/00/admin/permissions")}
               style={{
@@ -1454,7 +1453,7 @@ export default function AdminLeadsClient({
             담당자 관리
           </button>
 
-          {userLK === "00" && (
+          {isMainAdmin && (
           <button
             onClick={downloadLeadsCsv}
             style={{
@@ -1707,58 +1706,14 @@ export default function AdminLeadsClient({
 
       {err && <p style={{ marginTop: 12, color: "crimson", whiteSpace: "pre-wrap" }}>{err}</p>}
 
-      {userLK === "00" && (
-        <>
-
-<div style={{ marginTop: 18, border: "1px solid #eee", borderRadius: 14, padding: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-              <h3 style={{ margin: 0, fontWeight: 900 }}>Root: 충전 / 단가 설정</h3>
-
-              <button onClick={refreshAccountsList} style={smallBtn}>
-                목록 새로고침
-              </button>
-            </div>
-
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-              <input placeholder="admin_id (admin01)" value={topupAdminId} onChange={(e) => setTopupAdminId(e.target.value)} style={inp} />
-              <input placeholder="충전 금액" type="number" value={topupAmount ? String(topupAmount) : ""} onChange={(e) => setTopupAmount(Number(e.target.value))} style={inp} />
-              <input placeholder="메모(선택)" value={topupNote} onChange={(e) => setTopupNote(e.target.value)} style={inp} />
-
-              <button onClick={doTopup} disabled={topupLoading} style={blackBtn}>
-                {topupLoading ? "충전중..." : "충전"}
-              </button>
-            </div>
-
-            <div style={{ marginTop: 12, opacity: accountsLoading ? 0.6 : 1 }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr>
-                    <th style={th}>admin</th>
-                    <th style={th}>LK</th>
-                    <th style={th}>잔액</th>
-                    <th style={th}>단가</th>
-                    <th style={th}>활성</th>
-                    <th style={th}>저장</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {accounts.map((a) => (
-                    <AccountRow key={`${a.admin_id}-${a.landing_key}`} a={a} onSave={saveAccountSetting} />
-                  ))}
-
-                  {accounts.length === 0 && (
-                    <tr>
-                      <td colSpan={6} style={{ padding: 12, color: "#666" }}>
-                        계정 없음
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+      {isMainAdmin && (
+        <div style={{ marginTop: 18, border: "1px solid #dbeafe", borderRadius: 14, padding: 16, background: "#f8fbff", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <strong style={{ fontSize: 16 }}>충전 · 단가 관리</strong>
+            <div style={{ fontSize: 13, color: "#475569", marginTop: 5 }}>관리자 계정별 잔액, 충전 및 리드 단가를 전용 페이지에서 관리합니다.</div>
           </div>
-        </>
+          <button type="button" onClick={() => router.push("/00/admin/accounts")} style={{ ...blackBtn, fontWeight: 800 }}>충전 / 단가 관리 열기</button>
+        </div>
       )}
 
 
@@ -2610,4 +2565,3 @@ const tdTop: React.CSSProperties = {
   fontSize: 14,
   verticalAlign: "top",
 };
-
