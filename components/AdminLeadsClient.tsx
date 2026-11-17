@@ -65,11 +65,13 @@ const LANDING_LABELS: Record<string, string> = {
   "08": "비개방 코성형",
   "09": "일본 코수술",
   "10": "브이타이팅",
+  "11": "수능",
 };
 
 function getLandingDisplayName(landingKey: string) {
   const lk = normalizeLK(landingKey);
   const label = LANDING_LABELS[lk];
+  if (lk === "11") return "11수능";
   return label ? `${lk} ${label}` : lk;
 }
 
@@ -258,7 +260,7 @@ function getManagerOwnerLK(userLK: string, selectedLK: string) {
   const lk = normalizeLK(selectedLK);
 
   // 현재 02 어드민이 02/03/04/05/06/07/08/09를 통합 관리하므로 담당자도 02 기준으로 묶음
-  if (["02", "03", "04", "05", "06", "07", "08", "09"].includes(lk)) return "02";
+  if (["02", "03", "04", "05", "06", "07", "08", "09", "11"].includes(lk)) return "02";
 
   return lk;
 }
@@ -1545,7 +1547,7 @@ export default function AdminLeadsClient({
               const leadSummary = summary?.landing_counts?.[lk] || { today: 0, month: 0, total: 0 };
               const displayPrice =
                 acc?.price_per_lead ??
-                (lk === "08" ? chargeAccount02?.price_per_lead : undefined);
+                (["08", "11"].includes(lk) ? chargeAccount02?.price_per_lead : undefined);
 
               return (
                 <div key={lk} style={card}>
@@ -2608,3 +2610,4 @@ const tdTop: React.CSSProperties = {
   fontSize: 14,
   verticalAlign: "top",
 };
+

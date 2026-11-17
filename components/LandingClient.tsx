@@ -239,6 +239,150 @@ const concernOptions10 = [
   },
 ];
 
+const eventOptions11 = [
+  { title: "비절개쌍꺼풀", price: "30만원", image: "02", description: "눈성형 상담" },
+  { title: "첫코성형", price: "100만원", image: "03", description: "첫 코수술 상담" },
+  { title: "비개방코성형", price: "149만원", image: "04", description: "비개방 코수술 상담" },
+];
+
+function Landing11Content({
+  concerns,
+  selectConcern,
+  onCTA,
+  name,
+  phone,
+  agreed,
+  submitting,
+  submitError,
+  submitInfo,
+  setName,
+  setPhone,
+  setAgreed,
+  handleSubmit,
+  handleFormStarted,
+}: {
+  concerns: string[];
+  selectConcern: (value: string) => void;
+  onCTA: (location: string) => void;
+  name: string;
+  phone: string;
+  agreed: boolean;
+  submitting: boolean;
+  submitError: string;
+  submitInfo: string;
+  setName: (v: string) => void;
+  setPhone: (v: string) => void;
+  setAgreed: (v: boolean) => void;
+  handleSubmit: (e: React.FormEvent) => Promise<void>;
+  handleFormStarted: () => void;
+}) {
+  const scrollToCheck = (value?: string, location = "event11_cta") => {
+    if (value) selectConcern(value);
+    onCTA(location);
+    window.setTimeout(() => {
+      document.getElementById("event11-check")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 80);
+  };
+
+  return (
+    <div className="bg-white">
+      <section className="relative">
+        <img src="/intro/11/01.jpg" alt="미호성형외과 2027 수능 3종 이벤트: 비절개쌍꺼풀 30만원, 첫코성형 100만원, 비개방코성형 149만원" className="block h-auto w-full" draggable={false} />
+        {/* 인쇄된 '이벤트 신청하기' 영역에 실제 클릭 동작을 추가 */}
+        <button
+          type="button"
+          aria-label="수능 3종 이벤트 상담 신청하기"
+          onClick={() => scrollToCheck(undefined, "event11_hero_image")}
+          className="absolute bottom-[6%] left-[33%] h-[10%] w-[35%] cursor-pointer rounded-xl focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+        />
+      </section>
+      <section id="event11-check" className="scroll-mt-4 bg-[#eef5ff] px-4 py-9">
+        <div className="mx-auto max-w-[760px]">
+          <div className="rounded-[25px] bg-white px-5 py-7 shadow-sm">
+            <p className="text-center text-[12px] font-bold tracking-[0.16em] text-[#338cc8]">2027 EXAM EVENT</p>
+            <h2 className="mt-2 text-center text-[25px] font-extrabold text-[#22223a]">어떤 수술이 고민이신가요?</h2>
+            <p className="mt-2 text-center text-[13px] text-gray-600">관심 있는 수술을 선택하면 상담 신청란이 열립니다.</p>
+            <div className="mt-6 grid gap-3">
+              {eventOptions11.map((option) => {
+                const selected = concerns.includes(option.title);
+                return (
+                  <button
+                    key={option.title}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => {
+                      selectConcern(option.title);
+                      window.setTimeout(() => document.getElementById("event11-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+                    }}
+                    className={`flex w-full items-center justify-between rounded-2xl border-2 px-4 py-4 text-left transition ${selected ? "border-[#399ada] bg-[#edf7ff]" : "border-[#e2e8f0] bg-white"}`}
+                  >
+                    <span className="text-[15px] font-bold text-[#24243b]">{option.title}</span>
+                    <span className="text-[17px] font-extrabold text-[#278dce]">{option.price} {selected ? "✓" : ""}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-4 text-center text-[12px] leading-5 text-gray-600">2027 수능 수험생 대상 · 첫수술 기준 · 부가세/마취비 별도</p>
+          </div>
+          {concerns.length > 0 && (
+            <div id="event11-form" className="scroll-mt-4 pt-5">
+              <p className="text-center text-[14px] font-semibold text-[#273f70]">선택 수술: {concerns.join(", ")}</p>
+              <TopLeadForm
+                name={name}
+                phone={phone}
+                agreed={agreed}
+                submitting={submitting}
+                submitError={submitError}
+                submitInfo={submitInfo}
+                setName={setName}
+                setPhone={setPhone}
+                setAgreed={setAgreed}
+                handleSubmit={handleSubmit}
+                handleFormStarted={handleFormStarted}
+                submitButtonText={`${concerns[0]} 이벤트 상담 신청하기`}
+                showRequiredVisitNotice={false}
+              />
+            </div>
+          )}
+        </div>
+      </section>
+      {eventOptions11.map((option) => (
+        <section key={option.image}>
+          <img
+            src={`/intro/11/${option.image}.jpg`}
+            alt={`미호성형외과 ${option.title} 수술 관련 안내 및 전후 사례`}
+            className="block h-auto w-full"
+            loading="lazy"
+            draggable={false}
+          />
+          <div className="bg-[#f0f6ff] px-4 py-5">
+            <div className="mx-auto max-w-[760px]">
+              <button
+                type="button"
+                onClick={() => scrollToCheck(option.title, `event11_${option.image}_cta`)}
+                className="w-full rounded-2xl bg-[#25243e] px-4 py-4 text-[15px] font-bold text-white shadow-lg"
+              >
+                {option.title} {option.price} 상담 신청하기
+              </button>
+            </div>
+          </div>
+        </section>
+      ))}
+      <section className="bg-[#eef5ff] px-4 py-10 text-center">
+        <h2 className="text-[22px] font-extrabold text-[#25243e]">수능 3종 이벤트 상담 신청</h2>
+        <p className="mt-2 text-[13px] text-gray-600">관심 있는 수술을 선택하고 상담을 신청해보세요.</p>
+        <button type="button" onClick={() => scrollToCheck(undefined, "event11_bottom_cta")} className="mt-5 w-full max-w-[760px] rounded-2xl bg-[#25243e] px-5 py-4 text-[15px] font-bold text-white">이벤트 상담 신청하기</button>
+        <p className="mx-auto mt-5 max-w-[760px] text-[12px] leading-6 text-gray-600">
+          이벤트 적용 조건 및 자세한 비용은 병원 상담 시 확인해주세요. 수술 후 출혈, 감염, 흉터, 비대칭 등 합병증이 발생할 수 있으며 결과와 회복에는 개인차가 있습니다.
+        </p>
+      </section>
+    </div>
+  );
+}
+
 function InlineCTA({
   text = "상담 신청하기",
   onClick,
@@ -1140,10 +1284,23 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
   const seg1 = pathname?.split("/")[1] || "";
 
   const lk = useMemo(
-    () => normalizeLK(seg1 || landingKey || "00"),
+    () => (String(seg1 || landingKey).trim() === "11" ? "11" : normalizeLK(seg1 || landingKey || "00")),
     [seg1, landingKey],
   );
-  const config = useMemo(() => getLandingConfig(lk), [lk]);
+  const config = useMemo(() => {
+    if (lk === "11") {
+      return {
+        ...getLandingConfig("02"),
+        key: "11",
+        title: "미호성형외과 수능 3종 이벤트",
+        description: "비절개쌍꺼풀 30만원 · 첫코성형 100만원 · 비개방코성형 149만원",
+        hospitalName: "미호성형외과의원",
+        introPath: "/intro/11",
+        pageCount: 4,
+      };
+    }
+    return getLandingConfig(lk);
+  }, [lk]);
   const isLanding02 = config.key === "02";
   const isLanding03 = config.key === "03";
   const isLanding04 = config.key === "04";
@@ -1152,6 +1309,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
   const isLanding07 = config.key === "07";
   const isLanding08 = config.key === "08";
   const isLanding10 = config.key === "10";
+  const isLanding11 = config.key === "11";
   const isSpecialLanding =
     isLanding02 ||
     isLanding03 ||
@@ -1198,6 +1356,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
   const [concerns07, setConcerns07] = useState<string[]>([]);
   const [concerns08, setConcerns08] = useState<string[]>([]);
   const [concerns10, setConcerns10] = useState<string[]>([]);
+  const [concerns11, setConcerns11] = useState<string[]>([]);
   const [submitError, setSubmitError] = useState("");
   const [submitInfo, setSubmitInfo] = useState("");
 
@@ -1250,6 +1409,16 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
     setConcerns10((prev) =>
       prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item],
     );
+  }
+
+  function selectConcern11(value: string) {
+    setConcerns11(value ? [value] : []);
+    clearFormMessages();
+  }
+
+  function selectConcern11AndTrack(value: string) {
+    selectConcern11(value);
+    trackCTA("event11_surgery_select", getTrackingPayload());
   }
 
   function getTrackingPayload() {
@@ -1332,6 +1501,11 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       return;
     }
 
+    if (isLanding11 && concerns11.length === 0) {
+      setSubmitError("상담받을 수술을 선택해주세요.");
+      return;
+    }
+
     if (!agreed) {
       setSubmitError("개인정보 수집 및 이용 동의가 필요합니다.");
       return;
@@ -1376,7 +1550,9 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                     ? concerns08
                     : isLanding10
                       ? concerns10
-                      : [];
+                      : isLanding11
+                        ? concerns11
+                        : [];
 
       const res = await fetch("/api/leads", {
         method: "POST",
@@ -1469,6 +1645,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
       setConcerns07([]);
       setConcerns08([]);
       setConcerns10([]);
+      setConcerns11([]);
       setOpen(false);
       formStartedRef.current = false;
     } catch (error: any) {
@@ -1521,7 +1698,24 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
 
         <div className="grid min-h-[100dvh] w-full grid-cols-1 lg:grid-cols-[minmax(0,1fr)_420px]">
           <div className="min-w-0 pb-24 lg:pb-0">
-            {isSpecialLanding ? (
+            {isLanding11 ? (
+              <Landing11Content
+                concerns={concerns11}
+                selectConcern={selectConcern11AndTrack}
+                onCTA={(location) => trackCTA(location, getTrackingPayload())}
+                name={name}
+                phone={phone}
+                agreed={agreed}
+                submitting={submitting}
+                submitError={submitError}
+                submitInfo={submitInfo}
+                setName={setName}
+                setPhone={setPhone}
+                setAgreed={setAgreed}
+                handleSubmit={handleSubmit}
+                handleFormStarted={handleFormStarted}
+              />
+            ) : isSpecialLanding ? (
               <LandingSpecialContent
                 landingKey={
                   isLanding02
@@ -1645,6 +1839,19 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
                     className="flex flex-col gap-4"
                     noValidate
                   >
+                    {isLanding11 && (
+                      <select
+                        value={concerns11[0] ?? ""}
+                        onChange={(e) => selectConcern11AndTrack(e.target.value)}
+                        disabled={submitting}
+                        required
+                        className="h-12 w-full rounded-xl border border-gray-300 bg-white px-3 text-[14px] text-black"
+                        aria-label="상담 희망 수술 선택"
+                      >
+                        <option value="">상담 희망 수술 선택</option>
+                        {eventOptions11.map((option) => <option key={option.title} value={option.title}>{option.title} · {option.price}</option>)}
+                      </select>
+                    )}
                     {showRequiredVisitNotice && <RequiredVisitNotice compact />}
                     {isLanding04 && (
                       <p className="text-center text-[12px] leading-5 text-gray-600">390만 원 이벤트 · 첫 코수술 대상 · 부가세·마취비 별도</p>
@@ -1722,7 +1929,7 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
             onClick={() => openFormWithTracking("mobile_sticky")}
             className="h-12 w-full rounded-xl bg-black text-[15px] font-semibold text-white shadow-sm"
           >
-            상담 신청하기
+            {isLanding11 ? "수능 이벤트 상담 신청하기" : "상담 신청하기"}
           </button>
         </div>
 
@@ -1736,6 +1943,20 @@ export default function LandingClient({ landingKey }: { landingKey: string }) {
               onClick={(e) => e.stopPropagation()}
             >
               <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+                {isLanding11 && (
+                  <select
+                    value={concerns11[0] ?? ""}
+                    onChange={(e) => selectConcern11AndTrack(e.target.value)}
+                    disabled={submitting}
+                    required
+                    className="h-12 w-full rounded-xl border border-gray-300 bg-white px-3 text-[14px] text-black"
+                    aria-label="상담 희망 수술 선택"
+                  >
+                    <option value="">상담 희망 수술 선택</option>
+                    {eventOptions11.map((option) => <option key={option.title} value={option.title}>{option.title} · {option.price}</option>)}
+                  </select>
+                )}
+
                 {showRequiredVisitNotice && <RequiredVisitNotice compact />}
                 {isLanding04 && (
                   <p className="text-center text-[12px] leading-5 text-gray-600">390만 원 이벤트 · 첫 코수술 대상 · 부가세·마취비 별도</p>

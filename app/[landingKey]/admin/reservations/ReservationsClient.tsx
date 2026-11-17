@@ -28,7 +28,11 @@ const LABELS: Record<string, string> = {
   "02": "눈밑", "03": "첫코", "04": "자가늑코끝성형",
   "05": "윤석호 코재수술", "06": "눈썹거상", "07": "기능코",
   "08": "비개방 코성형", "09": "일본 코수술", "10": "브이타이팅",
+  "11": "수능",
 };
+function landingDisplay(key: string) {
+  return key === "11" ? "11수능" : `${key} ${LABELS[key] ?? ""}`.trim();
+}
 const RESERVATION_LABELS: Record<string, string> = {
   SCHEDULED: "예약", COMPLETED: "완료",
   CANCELLED: "취소", NO_SHOW: "부도",
@@ -196,7 +200,7 @@ export default function ReservationsClient() {
           <button style={button} onClick={() => setMonth((v) => shiftMonth(v, 1))}>다음달</button>
           <select style={field} value={landingFilter} onChange={(e) => setLandingFilter(e.target.value)}>
             <option value="ALL">전체 허용 랜딩</option>
-            {enabledKeys.sort((a, b) => Number(a) - Number(b)).map((key) => <option value={key} key={key}>{key} {LABELS[key] ?? ""}</option>)}
+            {enabledKeys.sort((a, b) => Number(a) - Number(b)).map((key) => <option value={key} key={key}>{landingDisplay(key)}</option>)}
           </select>
           <input style={{ ...field, flex: "1 1 180px" }} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="환자 이름 / 전화번호 검색" />
           <button style={button} onClick={() => setReload((v) => v + 1)}>새로고침</button>
@@ -235,7 +239,7 @@ export default function ReservationsClient() {
                 <tbody>
                   {monthlyLandingRows.map(([lk, row]) => (
                     <tr key={lk}>
-                      <td style={{ padding: 9, borderBottom: "1px solid #f1f5f9", textAlign: "left" }}>{lk} {LABELS[lk] ?? ""}</td>
+                      <td style={{ padding: 9, borderBottom: "1px solid #f1f5f9", textAlign: "left" }}>{landingDisplay(lk)}</td>
                       <td style={{ padding: 9, borderBottom: "1px solid #f1f5f9" }}>{row.total}</td>
                       <td style={{ padding: 9, borderBottom: "1px solid #f1f5f9" }}>{row.SCHEDULED}</td>
                       <td style={{ padding: 9, borderBottom: "1px solid #f1f5f9" }}>{row.COMPLETED}</td>
@@ -273,7 +277,7 @@ export default function ReservationsClient() {
                   <strong>{r.reservation_time?.slice(0, 5) || "시간 미정"} · {r.name || "이름 없음"}</strong>
                   <span style={{ fontSize: 13, color: "#166534" }}>{RESERVATION_LABELS[r.reservation_status || "SCHEDULED"] ?? "예약"}</span>
                 </div>
-                <p style={{ fontSize: 13, color: "#475569" }}>{r.landing_key} {LABELS[r.landing_key || ""] ?? ""} · {r.phone || "전화번호 없음"}</p>
+                <p style={{ fontSize: 13, color: "#475569" }}>{landingDisplay(r.landing_key || "00")} · {r.phone || "전화번호 없음"}</p>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
                   <label style={{ display: "grid", gap: 5, fontSize: 13 }}>예약 날짜<input type="date" style={field} value={d?.reservation_date ?? r.reservation_date ?? ""} onChange={(e) => patch(r.id, { reservation_date: e.target.value })} /></label>
                   <label style={{ display: "grid", gap: 5, fontSize: 13 }}>예약 시간<input type="time" style={field} value={d?.reservation_time ?? r.reservation_time?.slice(0, 5) ?? ""} onChange={(e) => patch(r.id, { reservation_time: e.target.value })} /></label>

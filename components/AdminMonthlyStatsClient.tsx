@@ -51,6 +51,7 @@ const LABELS: Record<string, string> = {
   "08": "08 비개방 코성형",
   "09": "09 일본 코성형",
   "10": "10 얼굴라인",
+  "11": "11수능",
 };
 
 const STATUS: Record<string, string> = {

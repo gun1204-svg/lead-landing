@@ -18,6 +18,25 @@ function getLandingSeo(lk: string) {
   const fallbackImage = `${baseUrl}/intro/${lk}/01.jpg`;
   const ogImage = `${baseUrl}/og/${lk}.jpg`;
 
+  if (lk === "11") {
+    return {
+      title: "미호성형외과 2027 수능 3종 이벤트",
+      description:
+        "2027 수능 수험생 대상 미호성형외과 이벤트. 비절개쌍꺼풀 30만원, 첫코성형 100만원, 비개방코성형 149만원. 첫수술 기준, 부가세 및 마취비 별도. 이벤트 상담 신청.",
+      keywords: [
+        "미호성형외과", "2027 수능 이벤트", "수능 성형 이벤트", "수험생 성형 이벤트",
+        "수험생 쌍꺼풀", "비절개쌍꺼풀", "비절개 쌍꺼풀", "첫코성형",
+        "첫코수술", "비개방코성형", "비개방 코수술", "강남 성형외과", "신논현 성형외과",
+      ],
+      ogTitle: "미호성형외과 수능 3종 이벤트",
+      ogDescription:
+        "2027 수능 수험생 대상! 비절개쌍꺼풀 30만원, 첫코성형 100만원, 비개방코성형 149만원. 첫수술 기준, 부가세 및 마취비 별도.",
+      siteName: "미호성형외과의원",
+      image: fallbackImage,
+      fallbackImage,
+    };
+  }
+
   if (lk === "10") {
     return {
       title: "예롬성형외과 얼굴라인 상담",
