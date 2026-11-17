@@ -13,6 +13,7 @@ type Account = {
 };
 
 const currency = (amount: number) => Number(amount || 0).toLocaleString("ko-KR");
+const adminDisplayName = (id: string) => id === "admin" || id === "admin00" ? "admin00 (최고관리자)" : id;
 const landingNames: Record<string, string> = {
   "02": "눈밑", "03": "첫코", "04": "자가늑코끝성형", "05": "윤석호 코재수술",
   "06": "눈썹거상", "07": "기능코", "08": "비개방 코성형", "09": "일본 코수술",
@@ -48,7 +49,7 @@ function EditableAccountRow({ account, onSaved }: { account: Account; onSaved: (
 
   return (
     <tr style={{ borderTop: "1px solid #e2e8f0" }}>
-      <td style={{ padding: 12, fontWeight: 800 }}>{account.admin_id}</td>
+      <td style={{ padding: 12, fontWeight: 800 }}>{adminDisplayName(account.admin_id)}</td>
       <td style={{ padding: 12, whiteSpace: "nowrap" }}>{account.landing_key} {landingNames[account.landing_key] || ""}</td>
       <td style={{ padding: 12, textAlign: "right", whiteSpace: "nowrap" }}>{currency(account.balance)}원</td>
       <td style={{ padding: 12 }}><input aria-label={`${account.admin_id} 단가`} type="number" min={0} step={1} value={price} onChange={(e) => setPrice(e.target.value)} style={{ ...control, width: 140 }} /></td>
@@ -86,7 +87,7 @@ export default function AdminAccountsClient() {
 
   useEffect(() => { if (isRoot) void loadAccounts(); }, [isRoot, loadAccounts]);
 
-  const ids = useMemo(() => [...new Set(accounts.map((a) => a.admin_id))].filter((id) => id !== "admin").sort((a, b) => a.localeCompare(b, "en", { numeric: true })), [accounts]);
+  const ids = useMemo(() => [...new Set(accounts.map((a) => a.admin_id))].sort((a, b) => a.localeCompare(b, "en", { numeric: true })), [accounts]);
   const sortedAccounts = useMemo(() => [...accounts].sort((a, b) => a.admin_id.localeCompare(b.admin_id, "en", { numeric: true }) || a.landing_key.localeCompare(b.landing_key, "en", { numeric: true })), [accounts]);
   const totalBalance = useMemo(() => accounts.reduce((sum, a) => sum + Number(a.balance || 0), 0), [accounts]);
 
@@ -119,14 +120,17 @@ export default function AdminAccountsClient() {
   if (!isRoot) return <div style={{ padding: 24 }}>최고관리자만 접근할 수 있습니다.</div>;
 
   return (
-    <main style={{ minHeight: "100vh", background: "#f8fafc", color: "#0f172a", padding: "24px 16px", colorScheme: "light" }}>
+    <main style={{ minHeight: "100vh", background: "#f8fafc", color: "#0f172a", padding: "16px", colorScheme: "light" }}>
       <div style={{ maxWidth: 1150, margin: "0 auto", display: "grid", gap: 18 }}>
+        <div style={{ display: "flex", justifyContent: "flex-start" }}>
+          <button type="button" onClick={() => router.push("/00/admin/leads")}
+            style={{ ...primary, background: "#fff", border: "1px solid #cbd5e1", color: "#0f172a", padding: "8px 12px" }}>
+            ← 리드 관리로 돌아가기
+          </button>
+        </div>
         <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <div><h1 style={{ fontSize: 25, margin: 0 }}>충전 / 단가 관리</h1><p style={{ margin: "7px 0 0", color: "#64748b" }}>00 최고관리자 전용 · 관리자 계정별 잔액 및 단가</p></div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => router.push("/00/admin/leads")} style={{ ...primary, background: "#fff", border: "1px solid #cbd5e1", color: "#0f172a" }}>← 리드 관리로 돌아가기</button>
-            <button type="button" onClick={() => void loadAccounts()} disabled={loading} style={primary}>{loading ? "불러오는 중" : "목록 새로고침"}</button>
-          </div>
+          <button type="button" onClick={() => void loadAccounts()} disabled={loading} style={primary}>{loading ? "불러오는 중" : "목록 새로고침"}</button>
         </header>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
@@ -141,7 +145,7 @@ export default function AdminAccountsClient() {
           <p style={{ margin: "0 0 16px", color: "#64748b", fontSize: 13 }}>양수는 충전, 음수(-)는 차감입니다. 차감은 서버 API에서도 음수 금액을 허용해야 실제 반영됩니다.</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12, alignItems: "end" }}>
             <label style={{ display: "grid", gap: 6, fontWeight: 700, fontSize: 13 }}>관리자 계정
-              <select value={selectedId} onChange={(e) => setSelectedId(e.target.value)} style={control}><option value="">계정 선택</option>{ids.map((id) => <option key={id} value={id}>{id}</option>)}</select>
+              <select value={selectedId} onChange={(e) => setSelectedId(e.target.value)} style={control}><option value="">계정 선택</option>{ids.map((id) => <option key={id} value={id}>{adminDisplayName(id)}</option>)}</select>
             </label>
             <label style={{ display: "grid", gap: 6, fontWeight: 700, fontSize: 13 }}>충전 / 차감 금액 (원)
               <input type="number" step={1} placeholder="충전: 350000 / 차감: -350000" value={amount} onChange={(e) => setAmount(e.target.value)} style={control}/>
@@ -157,6 +161,7 @@ export default function AdminAccountsClient() {
         <section style={panel}>
           <h2 style={{ margin: "0 0 8px", fontSize: 19 }}>관리자별 단가 · 활성 설정</h2>
           <p style={{ margin: "0 0 14px", color: "#64748b", fontSize: 13 }}>단가와 활성 상태를 변경한 뒤 해당 행의 저장 버튼을 눌러주세요.</p>
+          {!loading && !accounts.some((a) => a.admin_id === "admin" || a.admin_id === "admin00") && <p style={{ background: "#fffbeb", color: "#92400e", borderRadius: 9, padding: 12, fontSize: 13 }}>최고관리자(admin00)가 목록에 없습니다. 실제 계정 ID인 admin이 admin_accounts에 있는지 확인해주세요.</p>}
           {!loading && !accounts.some((a) => a.admin_id === "admin11") && <p style={{ background: "#fffbeb", color: "#92400e", borderRadius: 9, padding: 12, fontSize: 13 }}>admin11이 목록에 없습니다. Supabase admin_accounts 등록 여부와 API 응답을 확인해주세요.</p>}
           <div style={{ width: "100%", overflowX: "auto" }}>
             <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 730, fontSize: 14 }}>
