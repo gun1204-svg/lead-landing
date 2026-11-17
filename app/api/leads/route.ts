@@ -43,7 +43,12 @@ function getLandingLabel(landingKey: string) {
     "08": "비개방 코성형",
     "09": "일본 코수술",
     "10": "브이타이팅",
+    "11": "수능",
   };
+
+  if (landingKey === "11") {
+    return "11 수능";
+  }
 
   const name = names[landingKey];
 
