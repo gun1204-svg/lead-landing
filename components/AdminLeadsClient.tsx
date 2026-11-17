@@ -1408,6 +1408,16 @@ export default function AdminLeadsClient({
 
           {isMainAdmin && (
             <button
+              type="button"
+              onClick={() => router.push("/00/admin/accounts")}
+              style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #7c3aed", background: "#7c3aed", color: "#fff", fontWeight: 800, cursor: "pointer" }}
+            >
+              충전 / 단가 관리
+            </button>
+          )}
+
+          {isMainAdmin && (
+            <button
               onClick={() => router.push("/00/admin/permissions")}
               style={{
                 padding: "8px 12px",
@@ -1705,17 +1715,6 @@ export default function AdminLeadsClient({
        </form>
 
       {err && <p style={{ marginTop: 12, color: "crimson", whiteSpace: "pre-wrap" }}>{err}</p>}
-
-      {isMainAdmin && (
-        <div style={{ marginTop: 18, border: "1px solid #dbeafe", borderRadius: 14, padding: 16, background: "#f8fbff", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-          <div>
-            <strong style={{ fontSize: 16 }}>충전 · 단가 관리</strong>
-            <div style={{ fontSize: 13, color: "#475569", marginTop: 5 }}>관리자 계정별 잔액, 충전 및 리드 단가를 전용 페이지에서 관리합니다.</div>
-          </div>
-          <button type="button" onClick={() => router.push("/00/admin/accounts")} style={{ ...blackBtn, fontWeight: 800 }}>충전 / 단가 관리 열기</button>
-        </div>
-      )}
-
 
       {/* Mobile-only lead cards */}
       <div className="admin-mobile-leads">
@@ -2041,11 +2040,16 @@ export default function AdminLeadsClient({
                         onClick={() => deleteLead(l.id)}
                         disabled={!!deleting[l.id]}
                         style={{
-                          padding: "6px 10px",
+                          display: "block",
+                          width: 54,
+                          minHeight: 76,
+                          padding: "0 6px",
                           borderRadius: 10,
                           border: "1px solid #f1c0c0",
                           background: "#fff5f5",
                           color: "#b91c1c",
+                          fontSize: 13,
+                          fontWeight: 800,
                           cursor: deleting[l.id] ? "not-allowed" : "pointer",
                         }}
                       >

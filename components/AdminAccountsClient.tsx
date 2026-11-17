@@ -93,8 +93,14 @@ export default function AdminAccountsClient() {
   async function topup() {
     const value = Number(amount);
     if (!selectedId) { setTopupMessage("충전할 관리자 계정을 선택해주세요."); return; }
-    if (!Number.isSafeInteger(value) || value <= 0) { setTopupMessage("충전 금액은 1원 이상의 정수로 입력해주세요."); return; }
-    if (!window.confirm(`${selectedId} 계정에 ${currency(value)}원을 충전할까요?`)) return;
+    if (!Number.isSafeInteger(value) || value === 0) { setTopupMessage("금액은 0원을 제외한 정수로 입력해주세요. (차감은 -금액)"); return; }
+    const isWithdrawal = value < 0;
+    const targetAccounts = accounts.filter((a) => a.admin_id === selectedId);
+    if (isWithdrawal && targetAccounts.length !== 1) { setTopupMessage("차감 계정의 잔액을 명확히 확인할 수 없습니다. 관리자 계정 정보를 확인해주세요."); return; }
+    if (isWithdrawal && Number(targetAccounts[0].balance) < Math.abs(value)) { setTopupMessage("잔액보다 큰 금액은 차감할 수 없습니다."); return; }
+    if (!window.confirm(isWithdrawal
+      ? `${selectedId} 계정에서 ${currency(Math.abs(value))}원을 차감할까요?\n현재 잔액: ${currency(targetAccounts[0].balance)}원\n차감 후 예상 잔액: ${currency(Number(targetAccounts[0].balance) + value)}원`
+      : `${selectedId} 계정에 ${currency(value)}원을 충전할까요?`)) return;
     setTopupLoading(true); setTopupMessage("");
     try {
       const response = await fetch("/api/admin/accounts/topup", {
@@ -104,7 +110,7 @@ export default function AdminAccountsClient() {
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || `충전 실패 (${response.status})`);
       setAmount(""); setNote("");
-      await loadAccounts(); setTopupMessage(`${selectedId} 충전 완료`);
+      await loadAccounts(); setTopupMessage(`${selectedId} ${isWithdrawal ? "차감" : "충전"} 완료`);
     } catch (e) { setTopupMessage(e instanceof Error ? e.message : "충전하지 못했습니다."); }
     finally { setTopupLoading(false); }
   }
@@ -131,21 +137,21 @@ export default function AdminAccountsClient() {
         {error && <div role="alert" style={{ ...panel, color: "#b91c1c" }}>{error}</div>}
 
         <section style={panel}>
-          <h2 style={{ margin: "0 0 6px", fontSize: 19 }}>잔액 충전</h2>
-          <p style={{ margin: "0 0 16px", color: "#64748b", fontSize: 13 }}>기존 충전 API를 사용합니다. 실제 충전 차감/기록 규칙은 서버 설정을 따릅니다.</p>
+          <h2 style={{ margin: "0 0 6px", fontSize: 19 }}>잔액 충전 / 차감</h2>
+          <p style={{ margin: "0 0 16px", color: "#64748b", fontSize: 13 }}>양수는 충전, 음수(-)는 차감입니다. 차감은 서버 API에서도 음수 금액을 허용해야 실제 반영됩니다.</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12, alignItems: "end" }}>
             <label style={{ display: "grid", gap: 6, fontWeight: 700, fontSize: 13 }}>관리자 계정
               <select value={selectedId} onChange={(e) => setSelectedId(e.target.value)} style={control}><option value="">계정 선택</option>{ids.map((id) => <option key={id} value={id}>{id}</option>)}</select>
             </label>
-            <label style={{ display: "grid", gap: 6, fontWeight: 700, fontSize: 13 }}>충전 금액 (원)
-              <input type="number" min={1} step={1} placeholder="예: 350000" value={amount} onChange={(e) => setAmount(e.target.value)} style={control}/>
+            <label style={{ display: "grid", gap: 6, fontWeight: 700, fontSize: 13 }}>충전 / 차감 금액 (원)
+              <input type="number" step={1} placeholder="충전: 350000 / 차감: -350000" value={amount} onChange={(e) => setAmount(e.target.value)} style={control}/>
             </label>
             <label style={{ display: "grid", gap: 6, fontWeight: 700, fontSize: 13 }}>충전 메모
               <input placeholder="선택사항" value={note} onChange={(e) => setNote(e.target.value)} style={control}/>
             </label>
-            <button type="button" onClick={topup} disabled={topupLoading || loading} style={{ ...primary, height: 42, opacity: topupLoading || loading ? 0.55 : 1 }}>{topupLoading ? "충전 중..." : "충전하기"}</button>
+            <button type="button" onClick={topup} disabled={topupLoading || loading} style={{ ...primary, height: 42, opacity: topupLoading || loading ? 0.55 : 1 }}>{topupLoading ? "처리 중..." : Number(amount) < 0 ? "차감하기" : "충전하기"}</button>
           </div>
-          {topupMessage && <p role="status" style={{ marginBottom: 0, fontSize: 13, color: topupMessage.endsWith("충전 완료") ? "#047857" : "#b91c1c" }}>{topupMessage}</p>}
+          {topupMessage && <p role="status" style={{ marginBottom: 0, fontSize: 13, color: /(충전|차감) 완료$/.test(topupMessage) ? "#047857" : "#b91c1c" }}>{topupMessage}</p>}
         </section>
 
         <section style={panel}>

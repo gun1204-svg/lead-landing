@@ -8,17 +8,13 @@ export const revalidate = 0;
 
 type SessionUser = { email?: string | null; landing_key?: string | null };
 
-function normalizeLandingKey(v: unknown) {
+function normalizeLandingKey(v: unknown): string | null {
   const s = String(v ?? "").trim();
-  if (!s) return null;
-  if (/^\d{1,2}$/.test(s)) return s.padStart(2, "0");
-  return null;
+  return /^\d{1,2}$/.test(s) ? s.padStart(2, "0") : null;
 }
 
-// ✅ admin_id 입력을 유연하게: "01" -> "admin01"
-function normalizeAdminId(v: unknown) {
+function normalizeAdminId(v: unknown): string {
   const s = String(v ?? "").trim();
-  if (!s) return "";
   if (/^\d{1,2}$/.test(s)) return `admin${s.padStart(2, "0")}`;
   return s;
 }
@@ -30,34 +26,46 @@ export async function POST(req: Request) {
   if (!user?.email) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
-
-  // ✅ Root(00)만 충전 가능
-  const userLK = normalizeLandingKey(user?.landing_key);
-  if (userLK !== "00") {
+  if (user.email !== "admin" || normalizeLandingKey(user.landing_key) !== "00") {
     return NextResponse.json({ ok: false, error: "Root only" }, { status: 403 });
   }
 
   const body = await req.json().catch(() => ({}));
   const admin_id = normalizeAdminId(body?.admin_id);
-  const amount = Number(body?.amount ?? 0);
+  const amount = body?.amount;
   const note = String(body?.note ?? "").trim() || null;
 
-  if (!admin_id || !Number.isFinite(amount) || amount <= 0) {
+  if (!/^admin\d{2}$/.test(admin_id) ||
+      typeof amount !== "number" ||
+      !Number.isSafeInteger(amount) || amount === 0 ||
+      amount < -2147483648 || amount > 2147483647) {
     return NextResponse.json({ ok: false, error: "INVALID_INPUT" }, { status: 400 });
   }
 
-  // ✅ 핵심: topup_admin이 returns void면 data는 null일 수 있음
-  const { error } = await supabaseAdmin.rpc("topup_admin", {
-    p_admin_id: admin_id,
-    p_amount: Math.floor(amount),
-    p_note: note,
-  });
+  try {
+    const { data, error } = await supabaseAdmin.rpc("topup_admin", {
+      p_admin_id: admin_id,
+      p_amount: amount,
+      p_note: note,
+    });
 
-  if (error) {
-    // Supabase 함수에서 raise exception하면 여기로 온다
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    if (error) {
+      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    }
+
+    if (!data || data.ok !== true) {
+      const code = typeof data?.error === "string" ? data.error : "TOPUP_FAILED";
+      const status = code === "ADMIN_NOT_FOUND" ? 404 : 400;
+      return NextResponse.json({ ok: false, error: code, balance: data?.balance ?? null }, { status });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      balance: data.balance,
+      action: data.action,
+    });
+  } catch (e) {
+    console.error("topup_admin failed", e);
+    return NextResponse.json({ ok: false, error: "SERVER_ERROR" }, { status: 500 });
   }
-
-  // ✅ 성공이면 ok:true로 고정 응답
-  return NextResponse.json({ ok: true });
 }
